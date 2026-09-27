@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540209425492",
+    "project_id": "kiosk-mind",
+    "storage_bucket": "kiosk-mind.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540209425492:android:bac1944041dbf5ae7f51c1",
+        "android_client_info": {
+          "package_name": "com.example.kiosk_mind"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJhwOxIQYJm6MezDlOlwkQoFMtY69zI3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
