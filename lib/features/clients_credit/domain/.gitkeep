@@ -1,0 +1,1 @@
+Entites (Client, Debt), use cases (CreateClient, RecordDebt, RecordRepayment, GetClientBalance)

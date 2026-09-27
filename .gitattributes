@@ -1,0 +1,7 @@
+# Normalize line endings so the working tree matches the committed blobs.
+#
+# Without this, git checks out CRLF on Windows while the repository stores LF,
+# so every tracked file shows as modified and `git diff` is pure noise.
+# `text=auto` lets git auto-detect text vs binary, so images, .jar, .keystore
+# and other platform binaries are left untouched.
+* text=auto eol=lf

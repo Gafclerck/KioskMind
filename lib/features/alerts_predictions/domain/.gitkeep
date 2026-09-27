@@ -1,0 +1,1 @@
+Entites (StockAlert), use cases (EvaluateLowStockThreshold, PredictStockout), interface NotificationSender
