@@ -44,5 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Local architecture planning notes
+# Local-only files, not shared with the team
 /docs/ARCHITECTURE.md
+/AGENTS.md
