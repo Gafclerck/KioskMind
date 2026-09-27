@@ -1,0 +1,1 @@
+Cloud Function declenchee a l'ecriture Firestore + FCM pour les vraies notifications push. Modalite exacte (local immediat vs apres sync, prediction online-only vs partiellement locale) a trancher avec l'equipe.

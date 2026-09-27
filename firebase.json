@@ -1,0 +1,23 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "kiosk-mind",
+                    "appId": "1:540209425492:android:bac1944041dbf5ae7f51c1",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "kiosk-mind",
+                    "configurations": {
+                        "android": "1:540209425492:android:bac1944041dbf5ae7f51c1",
+                        "ios": "1:540209425492:ios:4af95570ab19f4307f51c1",
+                        "web": "1:540209425492:web:766c175245f574fc7f51c1"
+                    }
+                }
+            }
+        }
+    }
+}

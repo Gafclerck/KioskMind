@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local-only files, not shared with the team
+/docs/ARCHITECTURE.md
+/AGENTS.md
