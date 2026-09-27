@@ -2,6 +2,35 @@
 
 Application Flutter de gestion de caisse, stock et alertes pour borne.
 
+## Prerequis
+
+- Flutter 3.44.6 (stable)
+- Dart 3.12.2
+
+## Installation
+
+```bash
+git clone https://github.com/Gafclerck/KioskMind.git
+cd KioskMind
+flutter pub get
+```
+
+## Commandes
+
+```bash
+flutter pub get      # dependances
+flutter analyze      # lint et analyse statique
+flutter test         # tests
+dart format lib test # formatage
+flutter run          # lancer l'application
+```
+
+Pour un test unitaire :
+
+```bash
+flutter test test/widget_test.dart
+```
+
 ## Architecture
 
 Clean Architecture, structure feature-first. Chaque feature est decoupee en
@@ -18,56 +47,31 @@ Clean Architecture, structure feature-first. Chaque feature est decoupee en
 | `clients_credit/` | Clients, dettes, remboursements |
 | `export_reporting/` | Export achats et ventes vers Excel |
 
-Le detail de chaque couche est decrit dans les `.gitkeep` des dossiers.
-
-## Prerequis
-
-- Flutter 3.44.6 (stable)
-- Dart 3.12.2
-
-## Commandes
-
-```bash
-flutter pub get      # dependances
-flutter analyze      # lint et analyse statique
-flutter test         # tests
-flutter run          # lancer l'application
-```
-
-Pour un test unique :
-
-```bash
-flutter test test/widget_test.dart
-flutter test --plain-name "app builds and exposes its title"
-```
-
-Sous WSL, le SDK Flutter doit etre invoque via Windows, car ses scripts bash
-sont stockes en CRLF :
-
-```bash
-cmd.exe /c "cd /d D:\kiosk_mind && flutter analyze"
-```
+Regle de dependance : `presentation` et `data` dependent de `domain`, qui ne
+depend d'aucune couche exterieure. La logique metier et l'acces aux donnees
+n'ont pas leur place dans un widget.
 
 ## Structure
 
 ```text
 lib/
   main.dart    point d'entree, minimal
-  app.dart     widget racine, theme, router a terme
+  app.dart     widget racine, theme
   core/        code partage, uniquement si utilise par plusieurs features
-  features/    une dossier par feature : presentation / domain / data
+  features/    un dossier par feature : presentation / domain / data
 ```
 
-Regle de dependance : `presentation` et `data` dependent de `domain`, `domain`
-ne depend d'aucune couche exterieure.
+## Workflow de contribution
 
-## Workflow Git
-
-- `main` et `develop` sont proteges, aucun travail direct dessus.
+- `main` et `develop` sont proteges : aucun travail direct dessus.
 - Une branche dediee par tache : `feature/<nom>`, `fix/<nom>`, `refactor/<nom>`.
-- Commits conventionnels, une ligne, un changement logique par commit :
+- Commits conventionnels, une seule ligne, un changement logique par commit :
   `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`, `build:`, `ci:`.
-- Validation `flutter analyze` puis `flutter test` avant toute Pull Request.
+- Validation `dart format`, `flutter analyze` puis `flutter test` avant toute
+  Pull Request.
 
-La CI (.github/workflows/ci.yml) execute ces memes verifications sur chaque push
-et Pull Request visant `main` ou `develop`.
+## CI
+
+`.github/workflows/ci.yml` execute `flutter pub get`, `flutter analyze` et
+`flutter test` sur chaque push et chaque Pull Request visant `main` ou
+`develop`. Le formatage n'y est pas verifie.
