@@ -55,27 +55,30 @@ delete `.gitattributes`, and never commit the churn via `git add -A`.
 
 ## Architecture
 
-Source of truth is `docs/ARCHITECTURE.md` (user-authored, in French). It defines the feature list
-and the `core/` subfolders. Read it before adding a feature and do not invent a different layout.
+Clean Architecture, feature-first. The folder tree under `lib/` is the source of truth: each
+feature folder's `.gitkeep` records what belongs in each of its three layers, and
+`lib/core/README.md` does the same for the ten shared subfolders. Do not invent a different layout.
 
-Current state: `lib/main.dart` is a thin entry point, `lib/app.dart` is the root widget, and
-`lib/core/` and `lib/features/` exist as documented boundaries but are **empty on purpose**.
-There is no state management, routing, codegen, assets folder, or custom theming yet. The stock
-`flutter create` counter demo has been removed.
+Current state: `lib/main.dart` is a thin entry point, `lib/app.dart` is the root widget. Every
+feature and `core/` subfolder exists but is **empty**: folders fix the boundaries, they are not
+filled upfront. There is no state management, routing, codegen, assets folder, or custom theming
+yet. The stock `flutter create` counter demo has been removed.
 
-Since no feature code exists, the architecture doc is the target to build toward, not a
-convention to retrofit.
+Planned features: `auth`, `products_stock`, `sales`, `alerts_predictions`, `voice_assistant`,
+`clients_credit`, `export_reporting`. Shared subfolders: `di`, `constants`, `errors`, `network`,
+`theme`, `localization`, `routing`, `usecase`, `voice_services`, `widgets`.
 
-### Adding a feature
+### Adding code
 
-- Create `lib/features/<name>/{presentation,domain,data}` when you implement it, not before. Do
-  not scaffold empty layers.
-- `presentation` and `data` depend on `domain`; `domain` depends on neither.
-- `core/` is only for code genuinely used by two or more features. No speculative abstractions
-  and no placeholder classes.
+- Add code to a layer when you implement it. An empty folder is expected; a placeholder class is
+  not. Never delete a layer folder to "keep things tidy".
+- `presentation` and `data` depend on `domain`; `domain` depends on neither. Business logic and
+  data access never live inside widgets.
+- `core/` is only for code genuinely used by two or more features. Do not promote a helper there
+  before a second feature needs it.
 - Add a dependency only when code actually needs it, and check Dart 3.12.2 compatibility first.
-  Firebase, FCM, STT/TTS, i18n and Excel export are planned in the architecture doc but are
-  **not installed**. Do not add them speculatively.
+  Riverpod, Firebase, FCM, STT/TTS, i18n and Excel export are all planned but **not installed**.
+  Do not add them speculatively.
 - `test/widget_test.dart` only smoke-tests the placeholder home. Point it at the first real
   feature once one exists.
 

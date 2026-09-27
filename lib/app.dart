@@ -23,7 +23,6 @@ class KioskMindApp extends StatelessWidget {
 /// Temporary home used while no feature is implemented yet.
 ///
 /// Replace it with the first real feature from `lib/features/`.
-/// See `docs/ARCHITECTURE.md` for the expected feature layout.
 class _PlaceholderHome extends StatelessWidget {
   const _PlaceholderHome();
 

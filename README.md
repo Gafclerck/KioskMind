@@ -2,8 +2,23 @@
 
 Application Flutter de gestion de caisse, stock et alertes pour borne.
 
-L'architecture cible est decrite dans [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-C'est la reference pour le layout des features et le code partage.
+## Architecture
+
+Clean Architecture, structure feature-first. Chaque feature est decoupee en
+`presentation`, `domain` et `data`. Le code reellement partage vit dans
+`lib/core/`.
+
+| Feature | Role |
+|---|---|
+| `auth/` | Login, inscription, profil boutique |
+| `products_stock/` | Produits et mouvements de stock, offline-first sur Firestore |
+| `sales/` | Ventes, historique, tableau de bord |
+| `alerts_predictions/` | Alertes de stock bas et prediction de rupture, push FCM |
+| `voice_assistant/` | Orchestration vocale, interpretation d'intents |
+| `clients_credit/` | Clients, dettes, remboursements |
+| `export_reporting/` | Export achats et ventes vers Excel |
+
+Le detail de chaque couche est decrit dans les `.gitkeep` des dossiers.
 
 ## Prerequis
 
