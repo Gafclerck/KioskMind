@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'core/theme/app_theme.dart';
+
 /// Root widget of the application.
 ///
 /// Owns the theme and, once routing is introduced, the router.
@@ -12,9 +14,9 @@ class KioskMindApp extends StatelessWidget {
     return MaterialApp(
       title: 'KioskMind',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const _PlaceholderHome(),
     );
   }
