@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/auth_validators.dart';
 import '../controllers/login_controller.dart';
+import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -37,7 +38,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  void _goToSignup() {}
+  void _goToSignup() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SignupPage()));
+  }
 
   @override
   Widget build(BuildContext context) {

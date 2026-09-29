@@ -44,3 +44,31 @@ String? validatePassword(String? value) {
   }
   return null;
 }
+
+String? validateFullName(String? value) {
+  final String trimmed = (value ?? '').trim();
+  if (trimmed.isEmpty) {
+    return 'Nom complet requis';
+  }
+  if (!trimmed.contains(' ')) {
+    return 'Saisissez votre nom et votre prénom';
+  }
+  return null;
+}
+
+String? validatePasswordConfirmation(String? password, String? confirmation) {
+  if (confirmation == null || confirmation.isEmpty) {
+    return 'Confirmez votre mot de passe';
+  }
+  if (confirmation != password) {
+    return 'Les mots de passe ne correspondent pas';
+  }
+  return null;
+}
+
+String? validateTermsAccepted(bool? accepted) {
+  if (accepted == null || !accepted) {
+    return 'Vous devez accepter les conditions';
+  }
+  return null;
+}
