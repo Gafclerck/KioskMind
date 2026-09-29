@@ -11,9 +11,10 @@ void main() {
     expect(app.title, 'KioskMind');
   });
 
-  testWidgets('home renders the placeholder', (tester) async {
+  testWidgets('home starts on the onboarding carousel', (tester) async {
     await tester.pumpWidget(const KioskMindApp());
+    await tester.pump();
 
-    expect(find.text('KioskMind'), findsOneWidget);
+    expect(find.text('Dictez vos ventes'), findsOneWidget);
   });
 }

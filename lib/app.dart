@@ -1,35 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/onboarding/presentation/pages/onboarding_page.dart';
 
-/// Root widget of the application.
-///
-/// Owns the theme and, once routing is introduced, the router.
-/// Business logic and data access must never live here.
 class KioskMindApp extends StatelessWidget {
   const KioskMindApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KioskMind',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const _PlaceholderHome(),
+    return ProviderScope(
+      child: MaterialApp(
+        title: 'KioskMind',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        home: const OnboardingPage(),
+      ),
     );
-  }
-}
-
-/// Temporary home used while no feature is implemented yet.
-///
-/// Replace it with the first real feature from `lib/features/`.
-class _PlaceholderHome extends StatelessWidget {
-  const _PlaceholderHome();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('KioskMind')));
   }
 }
