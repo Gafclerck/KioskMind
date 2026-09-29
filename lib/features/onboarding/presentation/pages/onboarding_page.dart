@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/pages/login_page.dart';
 import '../controllers/onboarding_controller.dart';
 import '../widgets/dots_indicator.dart';
 import '../widgets/onboarding_slide.dart';
@@ -68,7 +69,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     _animateTo(OnboardingState.pageCount - 1);
   }
 
-  void _startApp() {}
+  void _startApp() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
