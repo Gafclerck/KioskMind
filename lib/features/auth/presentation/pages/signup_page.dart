@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/auth_validators.dart';
-import '../../domain/country_codes.dart';
 import '../providers/signup_provider.dart';
+import '../widgets/country_code_picker.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -104,31 +104,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 128,
-                      child: DropdownButtonFormField<String>(
-                        key: const ValueKey<String>('country_code'),
-                        initialValue: state.countryCode,
-                        items: countryCodes
-                            .map(
-                              (CountryCode country) => DropdownMenuItem<String>(
-                                value: country.code,
-                                child: Text(country.code),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (String? value) {
-                          if (value != null) {
-                            ref
-                                .read(signupProvider.notifier)
-                                .selectCountryCode(value);
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Indicatif',
-                        ),
-                      ),
-                    ),
+                    SizedBox(width: 136, child: const CountryCodePicker()),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(

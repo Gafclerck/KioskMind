@@ -183,4 +183,60 @@ void main() {
     expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
     expect(find.byIcon(Icons.visibility_outlined), findsNWidgets(1));
   });
+
+  testWidgets('opens the searchable country picker', (tester) async {
+    await pumpSignup(tester);
+
+    await tester.tap(find.text('+225'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choisir un pays'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('country_search')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('country_search')),
+      'Madagascar',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, 'Madagascar'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'France'), findsNothing);
+  });
+
+  testWidgets('filters countries by dial code', (tester) async {
+    await pumpSignup(tester);
+
+    await tester.tap(find.text('+225'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('country_search')),
+      '+261',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Madagascar'), findsOneWidget);
+    expect(find.text("Côte d'Ivoire"), findsNothing);
+  });
+
+  testWidgets('selecting a country updates the displayed code', (tester) async {
+    await pumpSignup(tester);
+
+    await tester.tap(find.text('+225'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('country_search')),
+      'France',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'France'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Choisir un pays'), findsNothing);
+    expect(find.text('+33'), findsOneWidget);
+  });
 }
