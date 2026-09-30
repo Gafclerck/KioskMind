@@ -1,13 +1,26 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/voice_flags.dart';
-import '../../data/catalog/catalog_fixture_loader.dart';
-import '../../data/catalog/in_memory_product_catalog.dart';
-import '../../data/handlers/call_journal.dart';
-import '../../data/handlers/mock/mock_voice_handlers.dart';
-import '../../domain/ports/handler_call_journal.dart';
-import '../../domain/ports/intent_handler.dart';
+import '../../../core/constants/voice_flags.dart';
+import '../data/catalog/catalog_fixture_loader.dart';
+import '../data/catalog/in_memory_product_catalog.dart';
+import '../data/handlers/call_journal.dart';
+import '../data/handlers/mock/mock_voice_handlers.dart';
+import '../domain/ports/handler_call_journal.dart';
+import '../domain/ports/intent_handler.dart';
+
+/// Composition root of the voice module.
+///
+/// It is the single place that knows whether a handler is the in-memory mock or
+/// the real use case, so the rest of the module never branches on that choice.
+/// It lives inside the feature rather than in `core/di` because `core/` is
+/// reserved for code two features or more share, and a core module must not
+/// depend on a feature: wiring voice handlers from there would break both rules.
+/// `core/di` stays free for genuinely cross-feature wiring.
+///
+/// This is not a fourth layer. It only assembles `domain` and `data`; the
+/// `presentation` layer consumes the providers declared here and never imports
+/// `data/` itself.
 
 /// Whether the composition root wires the in-memory handlers.
 ///

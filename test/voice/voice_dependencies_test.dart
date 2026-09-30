@@ -11,7 +11,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_input
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_context.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
-import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_providers.dart';
+import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 
 /// The catalog the composition root would build, without loading the asset.
 InMemoryProductCatalog buildCatalogFromDisk() {
