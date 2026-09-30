@@ -1,0 +1,5461 @@
+{
+  "version": 1,
+  "currency": "XOF",
+  "catalog": "voice/golden/catalog_fixture.json",
+  "cases": [
+    {
+      "id": "t001",
+      "utterance": "vendu deux savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t002",
+      "utterance": "j'ai vendu trois maggi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t003",
+      "utterance": "je vends un savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t004",
+      "utterance": "vendu une biere",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t005",
+      "utterance": "ça part deux eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t006",
+      "utterance": "vendu du the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t007",
+      "utterance": "on a vendu un cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t008",
+      "utterance": "vendu cinq allumettes",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t009",
+      "utterance": "je viens de vendre deux cassonade",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_cassonade",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t010",
+      "utterance": "vendu un beurre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_beurre_arachide",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t011",
+      "utterance": "ça part deux conserve",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_conserve",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t012",
+      "utterance": "vendu un paquet de pates",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t013",
+      "utterance": "vendu deux sachets de sel",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sel",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t014",
+      "utterance": "j'ai vendu un savon de menage",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t015",
+      "utterance": "vendu un magis",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": "faute de frappe sur l alias"
+    },
+    {
+      "id": "t016",
+      "utterance": "ça part une bouteille d'eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t017",
+      "utterance": "vendu du cafe moulu",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t018",
+      "utterance": "je vends un the vert",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t019",
+      "utterance": "vendu deux savons",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t020",
+      "utterance": "vendu une conserve de tomate",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_conserve",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t021",
+      "utterance": "stock du sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_sucre"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t022",
+      "utterance": "combien il reste de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_riz"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t023",
+      "utterance": "il reste combien de maggi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_maggi"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t024",
+      "utterance": "stock de savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_savon"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t025",
+      "utterance": "combien de biere",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_biere"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t026",
+      "utterance": "niveau de stock de l'eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_eau"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t027",
+      "utterance": "stock du cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_café"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t028",
+      "utterance": "il reste combien de cassonade",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_cassonade"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t029",
+      "utterance": "combien de pates",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_pates"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t030",
+      "utterance": "stock du sel",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_sel"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t031",
+      "utterance": "reçu dix cartons de lait en poudre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait_poudre",
+              "qty": 10
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t032",
+      "utterance": "j'ai reçu vingt kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 20
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t033",
+      "utterance": "reçu cinq sachets de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t034",
+      "utterance": "on a reçu douze biere",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 12
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t035",
+      "utterance": "j'ai achete six kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 6
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t036",
+      "utterance": "reçu trois bidons d'huile de palme",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_huile_palme",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t037",
+      "utterance": "approvisionnement de dix unites d'eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 10
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": "unites sans accent"
+    },
+    {
+      "id": "t038",
+      "utterance": "entree de stock: deux cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t039",
+      "utterance": "annule la derniere vente",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "cancel_last_sale",
+        "handlerArgs": {
+          "saleId": "$lastSaleId"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t040",
+      "utterance": "annule",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "cancel_last_sale",
+        "handlerArgs": {
+          "saleId": "$lastSaleId"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": "mot le plus court du jeu, tres frequent"
+    },
+    {
+      "id": "t041",
+      "utterance": "je me trompe, annule la vente",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "cancel_last_sale",
+        "handlerArgs": {
+          "saleId": "$lastSaleId"
+        }
+      },
+      "tags": [
+        "simple"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t042",
+      "utterance": "vendu deux sucre et un lait",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t043",
+      "utterance": "j'ai vendu trois maggi et deux savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 3
+            },
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t044",
+      "utterance": "ça part du riz et du sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": "quantites implicites a une unite chacune"
+    },
+    {
+      "id": "t045",
+      "utterance": "vendu une biere et une eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 1
+            },
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t046",
+      "utterance": "vendu deux cafe et un the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 2
+            },
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t047",
+      "utterance": "j'ai vendu du sucre, du sel et du riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_sel",
+              "qty": 1
+            },
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t048",
+      "utterance": "vendu quatre pates et deux conserve",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 4
+            },
+            {
+              "productId": "p_conserve",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t049",
+      "utterance": "on a vendu deux allumettes et un cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 2
+            },
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t050",
+      "utterance": "vendu un beurre et une cassonade",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_beurre_arachide",
+              "qty": 1
+            },
+            {
+              "productId": "p_cassonade",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t051",
+      "utterance": "j'ai vendu du sucre et du sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": "deux lignes pour le meme produit"
+    },
+    {
+      "id": "t052",
+      "utterance": "vendu cinq eau et cinq eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 5
+            },
+            {
+              "productId": "p_eau",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": "deux lignes pour le meme produit"
+    },
+    {
+      "id": "t053",
+      "utterance": "ça part un savon, un the et un cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            },
+            {
+              "productId": "p_thé",
+              "qty": 1
+            },
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t054",
+      "utterance": "vendu deux paillette et un ciment",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_paillette",
+              "qty": 2
+            },
+            {
+              "productId": "p_ciment",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t055",
+      "utterance": "j'ai vendu du sucre en poudre et du lait en poudre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait_poudre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": "deux sucres distincts, nommes sans ambiguite"
+    },
+    {
+      "id": "t056",
+      "utterance": "reçu du sucre et du sel",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_sel",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t057",
+      "utterance": "j'ai reçu deux riz et trois pates",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            },
+            {
+              "productId": "p_pates",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t058",
+      "utterance": "reçu dix eau et cinq savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 10
+            },
+            {
+              "productId": "p_savon",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t059",
+      "utterance": "approvisionnement de cafe et de the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            },
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t060",
+      "utterance": "on a reçu du sucre en poudre et du lait en poudre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 10
+            },
+            {
+              "productId": "p_lait_poudre",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t061",
+      "utterance": "reçu trois biere et deux allumettes",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 3
+            },
+            {
+              "productId": "p_allumettes",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t062",
+      "utterance": "j'ai achete du riz parfume et du savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            },
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t063",
+      "utterance": "vendu un sucre, deux laits et trois rizes",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_lait",
+              "qty": 2
+            },
+            {
+              "productId": "p_riz",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t064",
+      "utterance": "ça part une eau, un sel et un cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 1
+            },
+            {
+              "productId": "p_sel",
+              "qty": 1
+            },
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t065",
+      "utterance": "vendu deux pates et un savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 2
+            },
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t066",
+      "utterance": "j'ai vendu du maggi, du bouillon et du the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            },
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            },
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "notes": "bouillon est un alias de maggi"
+    },
+    {
+      "id": "t067",
+      "utterance": "vendu un sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t068",
+      "utterance": "vendu deux sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t069",
+      "utterance": "vendu trois sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t070",
+      "utterance": "vendu quatre sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 4
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t071",
+      "utterance": "vendu cinq sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t072",
+      "utterance": "vendu six sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 6
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t073",
+      "utterance": "vendu sept sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 7
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t074",
+      "utterance": "vendu huit sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 8
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t075",
+      "utterance": "vendu neuf sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 9
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t076",
+      "utterance": "vendu dix sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 10
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t077",
+      "utterance": "vendu onze sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 11
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t078",
+      "utterance": "vendu douze sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 12
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t079",
+      "utterance": "vendu treize sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 13
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t080",
+      "utterance": "vendu quatorze sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 14
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t081",
+      "utterance": "vendu quinze sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 15
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t082",
+      "utterance": "vendu seize sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 16
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t083",
+      "utterance": "vendu vingt sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 20
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t084",
+      "utterance": "vendu trente sucre",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 30
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t085",
+      "utterance": "j'ai vendu quarante-cinq maggi",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 45
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t086",
+      "utterance": "ça part soixante et une biere",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 61
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t087",
+      "utterance": "vendu soixante-dix-sept eau",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 77
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t088",
+      "utterance": "vendu quatre-vingts savon",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 80
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t089",
+      "utterance": "vendu quatre-vingt-dix cafe",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 90
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t090",
+      "utterance": "vendu cent allumettes",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 100
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t091",
+      "utterance": "reçu trois cents pates",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 300
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t092",
+      "utterance": "vendu quatre-vingt-dix-sept sucre",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 97
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t093",
+      "utterance": "ça part dix-sept savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 17
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t094",
+      "utterance": "reçu soixante-douze riz",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 72
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t095",
+      "utterance": "vendu dix-huit cafe",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 18
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t096",
+      "utterance": "j'ai vendu quatre-vingt-quatre eau",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 84
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t097",
+      "utterance": "vendu 2 sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t098",
+      "utterance": "vendu 3 maggi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t099",
+      "utterance": "vendu 1 savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t100",
+      "utterance": "vendu 12 biere",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 12
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t101",
+      "utterance": "vendu 40 eau",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 40
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t102",
+      "utterance": "j'ai vendu 7 cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 7
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t103",
+      "utterance": "ça part 2 riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t104",
+      "utterance": "vendu 1.the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "le STT colle le nombre au mot"
+    },
+    {
+      "id": "t105",
+      "utterance": "reçu 25 riz",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 25
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t106",
+      "utterance": "reçu 15 pates",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 15
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t107",
+      "utterance": "vendu 5.allumettes",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "le STT colle le nombre au mot"
+    },
+    {
+      "id": "t108",
+      "utterance": "vendu 30 conserves",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_conserve",
+              "qty": 30
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t109",
+      "utterance": "vendu 2.5 kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2.5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "quantite fractionnaire"
+    },
+    {
+      "id": "t110",
+      "utterance": "reçu 1,5 litre d'huile de palme",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_huile_palme",
+              "qty": 1.5
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "virgule decimale"
+    },
+    {
+      "id": "t111",
+      "utterance": "vendu 0 sucre",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "quantite nulle"
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t112",
+      "utterance": "vendu 1000 eau",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 1000
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t113",
+      "utterance": "reçu 500 sucre",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 500
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t114",
+      "utterance": "vendu 2 riz et 3cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            },
+            {
+              "productId": "p_café",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "deux nombres chiffres colles"
+    },
+    {
+      "id": "t115",
+      "utterance": "j'ai vendu 4,5 kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 4.5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t116",
+      "utterance": "vendu 2 sachets de savon et 3 de maggi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            },
+            {
+              "productId": "p_maggi",
+              "qty": 3
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_digits"
+      ],
+      "notes": "un nombre repris par un pronom"
+    },
+    {
+      "id": "t117",
+      "utterance": "j'ai vendu un maggi a cent francs",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t118",
+      "utterance": "vendu deux sucre a cent francs",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t119",
+      "utterance": "vendu un cafe a trois cents",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t120",
+      "utterance": "vendu un savon a deux cent cinquante",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t121",
+      "utterance": "vendu un riz a sept cents",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t122",
+      "utterance": "vendu un sucre a cent vingt",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "ecart de 20 %, dans la tolerance"
+    },
+    {
+      "id": "t123",
+      "utterance": "vendu un maggi a cent cinquante",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "ecart de 50 %, confirmation attendue"
+    },
+    {
+      "id": "t124",
+      "utterance": "vendu un cafe a cinq cents",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "ecart de 66 %, confirmation attendue"
+    },
+    {
+      "id": "t125",
+      "utterance": "vendu un riz a mille",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "ecart de 42 %, confirmation attendue"
+    },
+    {
+      "id": "t126",
+      "utterance": "vendu un savon a quatre cents",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "ecart de 60 %, confirmation attendue"
+    },
+    {
+      "id": "t127",
+      "utterance": "reçu du riz a cinq cent soixante",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1,
+              "unitCost": 560
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout identique au catalogue"
+    },
+    {
+      "id": "t128",
+      "utterance": "reçu du sucre a soixante-quinze",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1,
+              "unitCost": 75
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout identique au catalogue"
+    },
+    {
+      "id": "t129",
+      "utterance": "reçu du cafe a deux cent quarante",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1,
+              "unitCost": 240
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout identique au catalogue"
+    },
+    {
+      "id": "t130",
+      "utterance": "reçu du lait en poudre a quatre mille",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait_poudre",
+              "qty": 1,
+              "unitCost": 4000
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout dans la tolerance"
+    },
+    {
+      "id": "t131",
+      "utterance": "reçu du lait en poudre a six mille",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait_poudre",
+              "qty": 1,
+              "unitCost": 6000
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout tres different, confirmation attendue"
+    },
+    {
+      "id": "t132",
+      "utterance": "reçu du savon a cent quatre-vingt-dix",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1,
+              "unitCost": 190
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout identique au catalogue"
+    },
+    {
+      "id": "t133",
+      "utterance": "reçu du ciment a quatre mille huit cents",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_ciment",
+              "qty": 1,
+              "unitCost": 4800
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout identique au catalogue"
+    },
+    {
+      "id": "t134",
+      "utterance": "reçu du ciment a huit mille",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_ciment",
+              "qty": 1,
+              "unitCost": 8000
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "cout tres different, confirmation attendue"
+    },
+    {
+      "id": "t135",
+      "utterance": "vendu un sucre a cent francs le kilo",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix incoherent avec l unite du produit (SACHET)"
+    },
+    {
+      "id": "t136",
+      "utterance": "vendu un eau a cent francs",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "notes": "prix identique au catalogue"
+    },
+    {
+      "id": "t137",
+      "utterance": "vendu de l'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile_palme",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile de palme"
+    },
+    {
+      "id": "t138",
+      "utterance": "vendu deux huiles",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile vegetale"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile vegetale"
+    },
+    {
+      "id": "t139",
+      "utterance": "vendu un litre d'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile vegetale"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile vegetale"
+    },
+    {
+      "id": "t140",
+      "utterance": "reçu de l'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile_palme",
+                "qty": 3
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile de palme"
+    },
+    {
+      "id": "t141",
+      "utterance": "combien il reste d'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_huile_palme"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile de palme"
+    },
+    {
+      "id": "t142",
+      "utterance": "vendu une livre d'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile vegetale"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile vegetale"
+    },
+    {
+      "id": "t143",
+      "utterance": "combien de bidons d'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_huile_palme"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "le commerçant tranche pour huile de palme"
+    },
+    {
+      "id": "t144",
+      "utterance": "vendu une livre de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t145",
+      "utterance": "vendu deux sucres",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t146",
+      "utterance": "vendu un kilo de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t147",
+      "utterance": "combien il reste de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_sucre"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t148",
+      "utterance": "vendu du lait",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t149",
+      "utterance": "vendu deux laits",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t150",
+      "utterance": "combien il reste de lait",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_lait"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t151",
+      "utterance": "vendu un gros sac de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t152",
+      "utterance": "vendu deux kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t153",
+      "utterance": "combien de kilos de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_riz"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t154",
+      "utterance": "combien de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_riz"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "nom unique, aucune categorie"
+    },
+    {
+      "id": "t155",
+      "utterance": "vendu un litre d'huile de palme",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_huile_palme",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t156",
+      "utterance": "vendu un litre d'huile vegetale",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_huile",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t157",
+      "utterance": "vendu un litre d'huile de table",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_huile",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t158",
+      "utterance": "vendu de la cassonade",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_cassonade",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t159",
+      "utterance": "vendu un lait concentre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t160",
+      "utterance": "vendu du lait en poudre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait_poudre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t161",
+      "utterance": "vendu du riz parfume",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t162",
+      "utterance": "vendu une paillette",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_paillette",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t163",
+      "utterance": "vendu du riz paillette",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_paillette",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t164",
+      "utterance": "vendu du moulu",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t165",
+      "utterance": "vendu du beurre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_beurre_arachide",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t166",
+      "utterance": "reçu du lait en poudre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait_poudre",
+              "qty": 10
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t167",
+      "utterance": "reçu une paillette",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_paillette",
+              "qty": 6
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t168",
+      "utterance": "combien il reste de riz parfume",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_riz"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t169",
+      "utterance": "combien il reste d'huile de palme",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_huile_palme"
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "notes": "alias exact, un seul candidat"
+    },
+    {
+      "id": "t170",
+      "utterance": "vendu du sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_sucre",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 2
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t171",
+      "utterance": "vendu du riz",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_riz",
+                "qty": 3
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 3
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t172",
+      "utterance": "j'ai vendu du cafe",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_café",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 1
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t173",
+      "utterance": "ça part du savon",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_savon",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 2
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t174",
+      "utterance": "vendu de l'eau",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit et quantite manquants",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_eau",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "eau"
+          },
+          {
+            "slot": "items[0].qty",
+            "value": 1
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "deux questions successives"
+    },
+    {
+      "id": "t175",
+      "utterance": "stock",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_sucre"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "sucre"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t176",
+      "utterance": "combien il reste",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_riz"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "riz"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t177",
+      "utterance": "il reste combien",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_maggi"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "maggi"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t178",
+      "utterance": "niveau de stock",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_savon"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "savon"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t179",
+      "utterance": "reçu du sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_sucre",
+                "qty": 10
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 10
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t180",
+      "utterance": "j'ai reçu du riz",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_riz",
+                "qty": 25
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 25
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t181",
+      "utterance": "approvisionnement",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit et quantite manquants",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_ciment",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "ciment"
+          },
+          {
+            "slot": "items[0].qty",
+            "value": 2
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "deux questions successives"
+    },
+    {
+      "id": "t182",
+      "utterance": "vendu",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit et quantite manquants"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "rien a demander, la phrase est vide"
+    },
+    {
+      "id": "t183",
+      "utterance": "ça part",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit et quantite manquants"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "rien a demander, la phrase est vide"
+    },
+    {
+      "id": "t184",
+      "utterance": "j'ai vendu un truc",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit inconnu"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "aucune resolution determinable"
+    },
+    {
+      "id": "t185",
+      "utterance": "reçu une marchandise",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit inconnu"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "aucune resolution determinable"
+    },
+    {
+      "id": "t186",
+      "utterance": "annule la premiere vente",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "hors perimetre: seule la derniere vente est annulable"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "la question ne peut pas etre posee"
+    },
+    {
+      "id": "t187",
+      "utterance": "annule la vente d'hier",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "hors perimetre: la session ne voit pas l historique"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": "la question ne peut pas etre posee"
+    },
+    {
+      "id": "t188",
+      "utterance": "vendu deux sachets",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant, l unite ne suffit pas",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_savon",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "savon"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t189",
+      "utterance": "reçu deux cartons",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_maggi",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "maggi"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t190",
+      "utterance": "combien de sachets",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_sel"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "sel"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t191",
+      "utterance": "quel temps fait-il",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "meteo"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t192",
+      "utterance": "appelle ma femme",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "appel"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t193",
+      "utterance": "ouvre la caisse",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "caisse"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t194",
+      "utterance": "supprime le produit",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "action destructive interdite"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t195",
+      "utterance": "efface la vente",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "action destructive interdite"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t196",
+      "utterance": "archive le sucre",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "action destructive interdite"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t197",
+      "utterance": "ferme la journee",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "cloture de caisse hors MVP"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t198",
+      "utterance": "envoie un message a mon fournisseur",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "messagerie"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t199",
+      "utterance": "mets une alarme a six heures",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "alarme"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t200",
+      "utterance": "joue de la musique",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "multimedia"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t201",
+      "utterance": "quelle est la meilleure recette de poulet",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "culture generale"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t202",
+      "utterance": "traduis ceci en anglais",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "traduction"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t203",
+      "utterance": "ouvre google",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "application tierce"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t204",
+      "utterance": "reserve une table",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "hors commerce"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t205",
+      "utterance": "calcule la racine de quatre-vingt-dix-sept",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "calcul"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t206",
+      "utterance": "raconte une histoire",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "culture generale"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t207",
+      "utterance": "eteins la lumiere",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "domotique"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t208",
+      "utterance": "vendeur deux lait en boite",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "produit archive, exclu du vocabulaire vocal"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t209",
+      "utterance": "vendu deux lait metal",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "produit archive"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t210",
+      "utterance": "stock du lait en boite",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "produit archive"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t211",
+      "utterance": "vendu du vieux lait",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "produit archive"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t212",
+      "utterance": "reçu du lait en boite",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "produit archive"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t213",
+      "utterance": "euh vendu deux sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "premier mot parasite"
+    },
+    {
+      "id": "t214",
+      "utterance": "bonjour, vendu un savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "formule de politesse en tete"
+    },
+    {
+      "id": "t215",
+      "utterance": "vendu deux sucre euh voila",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "remarque finale sans effet"
+    },
+    {
+      "id": "t216",
+      "utterance": "alors hein, ca part du riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "remarque en tete"
+    },
+    {
+      "id": "t217",
+      "utterance": "vendu un cafe, je te raconterai apres",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "prolongation de fin"
+    },
+    {
+      "id": "t218",
+      "utterance": "bonsoir, combien de biere",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_biere"
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "salutation avant une consultation"
+    },
+    {
+      "id": "t219",
+      "utterance": "euh euh euh vendu un the",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "hesitations repetees"
+    },
+    {
+      "id": "t220",
+      "utterance": "vendu deux maggi voila voila",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "confirmation spontanee du client"
+    },
+    {
+      "id": "t221",
+      "utterance": "du coup j'ai vendu du sel",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sel",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "connecteur en tete"
+    },
+    {
+      "id": "t222",
+      "utterance": "en fait, vendu une eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "notes": "connecteur en tete"
+    },
+    {
+      "id": "t223",
+      "utterance": "vendu 2 sucres",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "pluriel"
+    },
+    {
+      "id": "t224",
+      "utterance": "Vendu 2 savon",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "majuscule initiale"
+    },
+    {
+      "id": "t225",
+      "utterance": "vendu 2 BiÈre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "capitales et accent combines"
+    },
+    {
+      "id": "t226",
+      "utterance": "vendu 2 saché de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "accent sur le dernier e"
+    },
+    {
+      "id": "t227",
+      "utterance": "vendu 2 sachett de sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "double t"
+    },
+    {
+      "id": "t228",
+      "utterance": "vendu 2 sucres en powder",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "anglicisme du commercant"
+    },
+    {
+      "id": "t229",
+      "utterance": "vendu 2 maggi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "nom propre sans majuscule"
+    },
+    {
+      "id": "t230",
+      "utterance": "vendu 2 magi",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "une lettre manquante"
+    },
+    {
+      "id": "t231",
+      "utterance": "vendu 2 savon de menage",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "accent manquant"
+    },
+    {
+      "id": "t232",
+      "utterance": "vendu 2 the vert",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "accent manquant sur the"
+    },
+    {
+      "id": "t233",
+      "utterance": "vendu 2 cafe molo",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "faute de frappe"
+    },
+    {
+      "id": "t234",
+      "utterance": "vendu 2 pate",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "singulier"
+    },
+    {
+      "id": "t235",
+      "utterance": "vendu 2PACK de pate",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_pates",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "parole collee au mot"
+    },
+    {
+      "id": "t236",
+      "utterance": "vendu 2 allumette",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "singulier"
+    },
+    {
+      "id": "t237",
+      "utterance": "vendu 2 conssrv",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_conserve",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "lettres transposees"
+    },
+    {
+      "id": "t238",
+      "utterance": "vendu 2 savon.",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "ponctuation finale"
+    },
+    {
+      "id": "t239",
+      "utterance": "vendu 2 savon?",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "point d interrogation"
+    },
+    {
+      "id": "t240",
+      "utterance": "vendu 2 allumettes!",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_allumettes",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "exclamation"
+    },
+    {
+      "id": "t241",
+      "utterance": "  vendu 2 savon  ",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "espaces autour"
+    },
+    {
+      "id": "t242",
+      "utterance": "VENDU 2 SAVON",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "notes": "tout en majuscules"
+    },
+    {
+      "id": "t243",
+      "utterance": "j'ai vendu deux sucre, trois laits et une eau",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait",
+              "qty": 3
+            },
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "trois articles dans une seule phrase"
+    },
+    {
+      "id": "t244",
+      "utterance": "vendu un riz, attends, non, deux riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "rectification en cours de phrase"
+    },
+    {
+      "id": "t245",
+      "utterance": "vendu cent quatrevingts sucre",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 180
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "nombre compose sans trait d'union"
+    },
+    {
+      "id": "t246",
+      "utterance": "vendu deux cent soixante quinze biere",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 275
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "grande quantite, confirmation attendue"
+    },
+    {
+      "id": "t247",
+      "utterance": "reçu soixante quinze kilos de riz a cinq cent soixante",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 75,
+              "unitCost": 560
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "quantite inhabituelle et cout"
+    },
+    {
+      "id": "t248",
+      "utterance": "annule celle-la",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "reference anaphorique non resolvable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "pronom demonstratif"
+    },
+    {
+      "id": "t249",
+      "utterance": "vendu le meme sucre que tout a l'heure",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "reference anaphorique non resolvable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t250",
+      "utterance": "vendu le reste de sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite relative non determinable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t251",
+      "utterance": "stock comme hier",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit non nomme"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t252",
+      "utterance": "vendu deux de chaque",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit non nomme"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t253",
+      "utterance": "vendu le prix du sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "demande de prix, pas une vente"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t254",
+      "utterance": "combien coute le riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_riz"
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "formulation prix, reponse par le stock"
+    },
+    {
+      "id": "t255",
+      "utterance": "vendu un riz a sept cents le kilo et un sucre",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "le prix ne porte que sur un article"
+    },
+    {
+      "id": "t256",
+      "utterance": "j'ai vendu du sucre pas du riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "la negation porte sur un seul article"
+    },
+    {
+      "id": "t257",
+      "utterance": "vendu sucre, enfin non, du riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "article annonce puis retracte"
+    },
+    {
+      "id": "t258",
+      "utterance": "ça part un sucre et aussi un peu de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "connecteur informel entre deux articles"
+    },
+    {
+      "id": "t259",
+      "utterance": "reçu ce qui manque pour le riz",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite non determinable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t260",
+      "utterance": "vendu le paquet de sucre de la veille",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite non determinable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "reference temporelle"
+    },
+    {
+      "id": "t261",
+      "utterance": "vendu du sucre deux fois",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "le mot deux porte sur la repetition"
+    },
+    {
+      "id": "t262",
+      "utterance": "combien de sacs de ciment il me reste",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "query_stock",
+        "handlerArgs": {
+          "productId": "p_ciment"
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "question inversee"
+    },
+    {
+      "id": "t263",
+      "utterance": "vendu un demi sac de riz",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 0.5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "quantite fractionnaire"
+    },
+    {
+      "id": "t264",
+      "utterance": "vendu une cafe",
+      "expected": {
+        "outcome": "EXECUTE",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "genre errone"
+    },
+    {
+      "id": "t265",
+      "utterance": "vendu une biere et une autre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit non nomme"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "deuxieme article indetermine"
+    },
+    {
+      "id": "t266",
+      "utterance": "vendu tout",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "portee non bornee"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t267",
+      "utterance": "annule tout",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "portee non bornee, une annulation ne porte que sur une vente"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "t268",
+      "utterance": "reçu la commande de ce matin",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "aucun use case de commande"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": "commande client hors MVP"
+    },
+    {
+      "id": "t269",
+      "utterance": "vendu le meme riz que la dame",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite referencee, non determinable hors historique"
+      },
+      "tags": [
+        "hard"
+      ],
+      "notes": ""
+    }
+  ]
+}
