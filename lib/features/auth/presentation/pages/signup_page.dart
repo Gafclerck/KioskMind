@@ -16,6 +16,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmationController = TextEditingController();
 
@@ -23,6 +24,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   void dispose() {
     _fullNameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmationController.dispose();
     super.dispose();
@@ -30,9 +32,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inscription bientôt disponible')),
-      );
+      ref.read(signupProvider.notifier).submit();
     }
   }
 
@@ -51,6 +51,26 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final SignupState state = ref.watch(signupProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+
+    ref.listen<SignupState>(signupProvider, (
+      SignupState? previous,
+      SignupState next,
+    ) {
+      final SignupNotifier notifier = ref.read(signupProvider.notifier);
+      if (next.success && !(previous?.success ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compte créé avec succès')),
+        );
+        notifier.clearSubmissionResult();
+        Navigator.of(context).maybePop();
+      } else if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+        notifier.clearSubmissionResult();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Créer un compte')),
@@ -77,6 +97,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   validator: validateFullName,
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setFullName(value),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -118,9 +140,24 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           hintText: '07 00 00 00 00',
                         ),
                         validator: validatePhoneNumber,
+                        onChanged: (String value) =>
+                            ref.read(signupProvider.notifier).setPhone(value),
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Adresse e-mail',
+                    prefixIcon: Icon(Icons.mail_outline),
+                  ),
+                  validator: validateEmail,
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setEmail(value),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -226,11 +263,20 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: _submit,
+                  onPressed: state.isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Créer mon compte'),
+                  child: state.isSubmitting
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: scheme.onPrimary,
+                          ),
+                        )
+                      : const Text('Créer mon compte'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
