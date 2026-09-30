@@ -43,4 +43,5 @@ flutter:
 
   assets:
     - assets/images/onboarding/
+    - voice/intent_catalog.json
     - voice/golden/catalog_fixture.json

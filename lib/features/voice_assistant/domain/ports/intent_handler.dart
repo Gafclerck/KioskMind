@@ -15,8 +15,20 @@ abstract interface class IntentHandler<TInput extends IntentInput, TOutput> {
   Future<Result<TOutput>> execute(CommandContext context, TInput input);
 }
 
-typedef RecordSaleHandler = IntentHandler<SaleIntentInput, RecordSaleResult>;
+/// Every intent the module can route, in catalog order.
+///
+/// The catalog validates its `handler` values against this set, so a command
+/// cannot be described in `voice/intent_catalog.json` without a port able to
+/// execute it. Adding a command means adding it here, in the catalog, and
+/// writing the handler: no other file has to change.
+const Set<String> kSupportedIntentIds = <String>{
+  'record_sale',
+  'record_restock',
+  'query_stock',
+  'cancel_last_sale',
+};
 
+typedef RecordSaleHandler = IntentHandler<SaleIntentInput, RecordSaleResult>;
 typedef RecordRestockHandler =
     IntentHandler<RestockIntentInput, RecordRestockResult>;
 

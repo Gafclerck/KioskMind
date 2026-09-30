@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "currency": "XOF",
+  "intents": [
+    {
+      "id": "record_sale",
+      "handler": "record_sale",
+      "risk": "WRITE_REVERSIBLE",
+      "description": "Enregistrer une vente. A utiliser quand le commerçant indique ce qu'il vient de vendre. Toutes les lignes de la phrase forment une seule vente.",
+      "triggers": [
+        "vendu",
+        "j'ai vendu",
+        "je vends",
+        "vends",
+        "on a vendu",
+        "ca part",
+        "vente de",
+        "je viens de vendre",
+        "tu as vendu"
+      ],
+      "examples": [
+        "vendu deux sucre et un lait",
+        "j'ai vendu trois sachets de Maggi à cent francs",
+        "ça part deux riz et trois toothpaste"
+      ],
+      "slots": [
+        {
+          "name": "items",
+          "type": "item_list",
+          "required": true,
+          "description": "Les lignes de la vente, dans l'ordre où elles sont dites.",
+          "lineSlots": [
+            {
+              "name": "productName",
+              "type": "product_name",
+              "required": true,
+              "description": "Nom ou alias du produit, tel que le commerçant l'a pronuncié. Ne jamais produire d'identifiant de produit."
+            },
+            {
+              "name": "qty",
+              "type": "quantity",
+              "required": true,
+              "description": "Quantité vendue, en nombre positif."
+            },
+            {
+              "name": "unit",
+              "type": "unit",
+              "required": false,
+              "description": "Unité prononcée, seulement si elle diffère de celle du produit."
+            },
+            {
+              "name": "unitPrice",
+              "type": "money",
+              "required": false,
+              "description": "Prix unitaire annoncé par le commerçant. Sert de signal de doute : le prix du catalogue fait foi."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "record_restock",
+      "handler": "record_restock",
+      "risk": "WRITE_REVERSIBLE",
+      "description": "Enregistrer un approvisionnement, c'est-à-dire une entrée de stock. A utiliser quand le commerçant annonce une réception ou un achat, jamais une vente.",
+      "triggers": [
+        "recu",
+        "j'ai recu",
+        "j'ai achete",
+        "jai achete",
+        "on a recu",
+        "approvisionnement",
+        "j'ai pris",
+        "entree de stock"
+      ],
+      "examples": [
+        "reçu dix cartons de lait",
+        "j'ai acheté vingt kilos de riz à onze mille",
+        "reçu du sucre"
+      ],
+      "slots": [
+        {
+          "name": "items",
+          "type": "item_list",
+          "required": true,
+          "description": "Les lignes de l'approvisionnement, dans l'ordre où elles sont dites.",
+          "lineSlots": [
+            {
+              "name": "productName",
+              "type": "product_name",
+              "required": true,
+              "description": "Nom ou alias du produit, tel que le commerçant l'a pronuncié. Ne jamais produire d'identifiant de produit."
+            },
+            {
+              "name": "qty",
+              "type": "quantity",
+              "required": true,
+              "description": "Quantité reçue, en nombre positif."
+            },
+            {
+              "name": "unit",
+              "type": "unit",
+              "required": false,
+              "description": "Unité prononcée, seulement si elle diffère de celle du produit."
+            },
+            {
+              "name": "unitCost",
+              "type": "money",
+              "required": false,
+              "description": "Coût d'achat unitaire annoncé par le commerçant. Absent si le prix n'a pas été dit."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "query_stock",
+      "handler": "query_stock",
+      "risk": "READ",
+      "description": "Consulter le stock restant d'un produit. Ne modifie aucune donnée.",
+      "triggers": [
+        "stock de",
+        "stock du",
+        "combien il reste",
+        "combien reste",
+        "il reste combien",
+        "combien de",
+        "quel stock",
+        "niveau de stock"
+      ],
+      "examples": [
+        "combien il reste de riz",
+        "stock du sucre",
+        "il reste combien de lait"
+      ],
+      "slots": [
+        {
+          "name": "productName",
+          "type": "product_name",
+          "required": true,
+          "description": "Nom ou alias du produit concerné. Ne jamais produire d'identifiant de produit.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "cancel_last_sale",
+      "handler": "cancel_last_sale",
+      "risk": "WRITE_REVERSIBLE",
+      "description": "Annuler la dernière vente enregistrée par la voix dans cette session. La vente est marquée annulée et le stock est restitué, elle n'est jamais supprimée. Ne pas utiliser pour autre chose qu'une vente.",
+      "triggers": [
+        "annule",
+        "annuler",
+        "annule la derniere vente",
+        "annule la vente",
+        "je me trompe",
+        "c'est faux",
+        "je retire la vente"
+      ],
+      "examples": [
+        "annule la dernière vente",
+        "annule",
+        "je me trompe, annule"
+      ],
+      "slots": []
+    }
+  ]
+}
