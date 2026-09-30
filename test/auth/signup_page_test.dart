@@ -65,7 +65,7 @@ void main() {
     expect(find.text('Mot de passe'), findsOneWidget);
     expect(find.text('Confirmer le mot de passe'), findsOneWidget);
     expect(find.text('Créer mon compte'), findsOneWidget);
-    expect(find.text("S'inscrire avec Google"), findsOneWidget);
+    expect(find.text("S'inscrire avec Google"), findsNothing);
     expect(find.text('Déjà un compte ?'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
   });

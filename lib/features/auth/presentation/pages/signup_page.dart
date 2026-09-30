@@ -40,12 +40,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     Navigator.of(context).maybePop();
   }
 
-  void _googleSignUp() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Google bientôt disponible')));
-  }
-
   @override
   Widget build(BuildContext context) {
     final SignupState state = ref.watch(signupProvider);
@@ -255,15 +249,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                       : const Text('Créer mon compte'),
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _googleSignUp,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  icon: const Icon(Icons.g_mobiledata_outlined, size: 28),
-                  label: const Text("S'inscrire avec Google"),
-                ),
-                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
