@@ -43,6 +43,34 @@ void main() {
         messageForFirebaseAuthCode('network-request-failed'),
         'Problème de connexion réseau',
       );
+      expect(
+        messageForFirebaseAuthCode('invalid-phone-number'),
+        'Numéro de téléphone invalide',
+      );
+      expect(
+        messageForFirebaseAuthCode('missing-phone-number'),
+        'Numéro de téléphone manquant',
+      );
+      expect(
+        messageForFirebaseAuthCode('invalid-verification-code'),
+        'Code de vérification invalide',
+      );
+      expect(
+        messageForFirebaseAuthCode('invalid-verification-id'),
+        'Code de vérification expiré, renvoyez un nouveau code',
+      );
+      expect(
+        messageForFirebaseAuthCode('quota-exceeded'),
+        'Trop de SMS envoyés, réessayez plus tard',
+      );
+      expect(
+        messageForFirebaseAuthCode('too-many-requests'),
+        'Trop de tentatives, veuillez patienter',
+      );
+      expect(
+        messageForFirebaseAuthCode('app-not-authorized'),
+        'Application non autorisée pour ce numéro',
+      );
     });
 
     test('falls back to a generic message for unknown codes', () {

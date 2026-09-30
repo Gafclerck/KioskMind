@@ -5,6 +5,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/login_provider.dart';
 import '../widgets/forgot_password_dialog.dart';
+import '../widgets/phone_otp_dialog.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -56,24 +57,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       LoginState next,
     ) {
       final LoginNotifier notifier = ref.read(loginProvider.notifier);
-      if (next.success && !(previous?.success ?? false)) {
+      if (next.successMessage != null &&
+          next.successMessage != previous?.successMessage) {
         AppToast.show(
           ref,
-          message: 'Connexion réussie',
+          message: next.successMessage!,
           type: AppToastType.success,
         );
         notifier.clearSubmissionResult();
-      } else if (next.notice != null && next.notice != previous?.notice) {
-        AppToast.show(ref, message: next.notice!, type: AppToastType.info);
-        notifier.clearSubmissionResult();
       } else if (next.errorMessage != null &&
-          next.errorMessage != previous?.errorMessage) {
+          next.errorMessage != previous?.errorMessage &&
+          !next.otpRequested) {
         AppToast.show(
           ref,
           message: next.errorMessage!,
           type: AppToastType.error,
         );
         notifier.clearSubmissionResult();
+      }
+      if (next.otpRequested && !(previous?.otpRequested ?? false)) {
+        showDialog<void>(
+          context: context,
+          builder: (_) => const PhoneOtpDialog(),
+        );
       }
     });
 

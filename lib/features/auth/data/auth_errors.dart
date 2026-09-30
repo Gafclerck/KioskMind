@@ -29,6 +29,20 @@ String messageForFirebaseAuthCode(String code) {
       return "La connexion par e-mail n'est pas activée";
     case 'network-request-failed':
       return 'Problème de connexion réseau';
+    case 'invalid-phone-number':
+      return 'Numéro de téléphone invalide';
+    case 'missing-phone-number':
+      return 'Numéro de téléphone manquant';
+    case 'invalid-verification-code':
+      return 'Code de vérification invalide';
+    case 'invalid-verification-id':
+      return 'Code de vérification expiré, renvoyez un nouveau code';
+    case 'quota-exceeded':
+      return 'Trop de SMS envoyés, réessayez plus tard';
+    case 'too-many-requests':
+      return 'Trop de tentatives, veuillez patienter';
+    case 'app-not-authorized':
+      return 'Application non autorisée pour ce numéro';
     default:
       return "Une erreur est survenue, réessayez";
   }
