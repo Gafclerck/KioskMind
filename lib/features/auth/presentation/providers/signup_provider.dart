@@ -32,7 +32,7 @@ class SignupState {
   }
 }
 
-class SignupController extends Notifier<SignupState> {
+class SignupNotifier extends Notifier<SignupState> {
   @override
   SignupState build() => const SignupState();
 
@@ -57,5 +57,6 @@ class SignupController extends Notifier<SignupState> {
   }
 }
 
-final signupControllerProvider =
-    NotifierProvider<SignupController, SignupState>(SignupController.new);
+final signupProvider = NotifierProvider<SignupNotifier, SignupState>(
+  SignupNotifier.new,
+);

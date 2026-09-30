@@ -14,7 +14,7 @@ class LoginState {
   }
 }
 
-class LoginController extends Notifier<LoginState> {
+class LoginNotifier extends Notifier<LoginState> {
   @override
   LoginState build() => const LoginState();
 
@@ -27,6 +27,6 @@ class LoginController extends Notifier<LoginState> {
   }
 }
 
-final loginControllerProvider = NotifierProvider<LoginController, LoginState>(
-  LoginController.new,
+final loginProvider = NotifierProvider<LoginNotifier, LoginState>(
+  LoginNotifier.new,
 );

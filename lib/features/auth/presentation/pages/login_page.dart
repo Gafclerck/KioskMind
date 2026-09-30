@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/auth_validators.dart';
-import '../controllers/login_controller.dart';
+import '../providers/login_provider.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -46,7 +46,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final LoginState state = ref.watch(loginControllerProvider);
+    final LoginState state = ref.watch(loginProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
@@ -99,9 +99,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => ref
-                        .read(loginControllerProvider.notifier)
-                        .toggleIdentifierMode(),
+                    onPressed: () =>
+                        ref.read(loginProvider.notifier).toggleIdentifierMode(),
                     child: Text(
                       state.emailMode
                           ? "Utiliser le téléphone"
@@ -118,7 +117,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(loginControllerProvider.notifier)
+                          .read(loginProvider.notifier)
                           .togglePasswordVisibility(),
                       icon: Icon(
                         state.obscurePassword

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/auth_validators.dart';
 import '../../domain/country_codes.dart';
-import '../controllers/signup_controller.dart';
+import '../providers/signup_provider.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -48,7 +48,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final SignupState state = ref.watch(signupControllerProvider);
+    final SignupState state = ref.watch(signupProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
@@ -98,7 +98,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                         onChanged: (String? value) {
                           if (value != null) {
                             ref
-                                .read(signupControllerProvider.notifier)
+                                .read(signupProvider.notifier)
                                 .selectCountryCode(value);
                           }
                         },
@@ -132,7 +132,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(signupControllerProvider.notifier)
+                          .read(signupProvider.notifier)
                           .togglePasswordVisibility(),
                       icon: Icon(
                         state.obscurePassword
@@ -142,9 +142,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     ),
                   ),
                   validator: validatePassword,
-                  onChanged: (String value) => ref
-                      .read(signupControllerProvider.notifier)
-                      .setPassword(value),
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setPassword(value),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -156,7 +155,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(signupControllerProvider.notifier)
+                          .read(signupProvider.notifier)
                           .toggleConfirmationVisibility(),
                       icon: Icon(
                         state.obscureConfirmation
@@ -182,7 +181,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           onChanged: (bool? value) {
                             field.didChange(value ?? false);
                             ref
-                                .read(signupControllerProvider.notifier)
+                                .read(signupProvider.notifier)
                                 .setAcceptedTerms(value ?? false);
                           },
                           controlAffinity: ListTileControlAffinity.leading,

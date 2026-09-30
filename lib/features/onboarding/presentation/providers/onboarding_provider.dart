@@ -12,7 +12,7 @@ class OnboardingState {
   bool get isLast => currentIndex == pageCount - 1;
 }
 
-class OnboardingController extends Notifier<OnboardingState> {
+class OnboardingNotifier extends Notifier<OnboardingState> {
   @override
   OnboardingState build() => const OnboardingState(currentIndex: 0);
 
@@ -29,7 +29,7 @@ class OnboardingController extends Notifier<OnboardingState> {
   }
 }
 
-final onboardingControllerProvider =
-    NotifierProvider<OnboardingController, OnboardingState>(
-      OnboardingController.new,
+final onboardingProvider =
+    NotifierProvider<OnboardingNotifier, OnboardingState>(
+      OnboardingNotifier.new,
     );
