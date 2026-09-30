@@ -35,6 +35,9 @@ ProviderContainer buildContainer({
 }
 
 void main() {
+  // The catalog provider reads the bundled asset, which needs the test binding.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('the mock flag', () {
     test(
       'defaults to true so the demo runs before the real use cases land',
@@ -42,6 +45,27 @@ void main() {
         expect(kVoiceUseMocks, isTrue);
       },
     );
+
+    test('is what the provider hands out with no override', () {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(voiceUseMocksProvider), kVoiceUseMocks);
+    });
+  });
+
+  group('the bundled catalog provider', () {
+    test('reads the declared asset and hands a usable shop over', () async {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final InMemoryProductCatalog catalog = await container.read(
+        voiceMockCatalogProvider.future,
+      );
+
+      expect(await catalog.readActiveProducts(), isNotEmpty);
+      expect(await catalog.findById('p_sucre'), isNotNull);
+    });
   });
 
   group('the composition root', () {

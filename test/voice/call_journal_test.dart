@@ -55,6 +55,11 @@ void main() {
       });
     });
 
+    test('carries the sale identifier a cancellation targets', () {
+      const CancelLastSaleInput input = CancelLastSaleInput(saleId: 'cmd-1');
+      expect(input.toArguments(), <String, Object?>{'saleId': 'cmd-1'});
+    });
+
     test('adds the spoken cost to a restock line when there is one', () {
       const RestockIntentInput input = RestockIntentInput(
         items: <RestockIntentLine>[
