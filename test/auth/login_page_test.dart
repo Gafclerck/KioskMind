@@ -1,14 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kiosk_mind/core/theme/app_theme.dart';
+import 'package:kiosk_mind/features/auth/domain/auth_gateway.dart';
 import 'package:kiosk_mind/features/auth/presentation/pages/login_page.dart';
 import 'package:kiosk_mind/features/auth/presentation/pages/signup_page.dart';
+import 'package:kiosk_mind/features/auth/presentation/providers/auth_gateway_provider.dart';
 
-Future<void> pumpLogin(WidgetTester tester) async {
+import 'fakes.dart';
+
+Future<void> pumpLogin(WidgetTester tester, {FakeAuthGateway? gateway}) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        authGatewayProvider.overrideWithValue(gateway ?? FakeAuthGateway()),
+      ],
       child: MaterialApp(theme: AppTheme.lightTheme, home: LoginPage()),
     ),
   );
@@ -18,6 +27,16 @@ Future<void> pumpLogin(WidgetTester tester) async {
 Finder loginField() => find.byType(TextFormField).first;
 
 Finder passwordField() => find.byType(TextFormField).at(1);
+
+Future<void> switchToEmailMode(WidgetTester tester) async {
+  await tester.tap(find.text('Utiliser l\'e-mail'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapSubmit(WidgetTester tester) async {
+  await tester.tap(find.text('Se connecter'));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   testWidgets('renders the header and phone-first fields', (tester) async {
@@ -41,8 +60,7 @@ void main() {
 
     expect(find.text('Utiliser l\'e-mail'), findsOneWidget);
 
-    await tester.tap(find.text('Utiliser l\'e-mail'));
-    await tester.pumpAndSettle();
+    await switchToEmailMode(tester);
 
     expect(find.text('Adresse e-mail'), findsOneWidget);
     expect(find.text('Utiliser le téléphone'), findsOneWidget);
@@ -63,8 +81,7 @@ void main() {
   testWidgets('shows validation errors on empty submit', (tester) async {
     await pumpLogin(tester);
 
-    await tester.tap(find.text('Se connecter'));
-    await tester.pumpAndSettle();
+    await tapSubmit(tester);
 
     expect(find.text('Saisissez votre numéro de téléphone'), findsOneWidget);
     expect(find.text('Saisissez votre mot de passe'), findsOneWidget);
@@ -74,23 +91,86 @@ void main() {
     await pumpLogin(tester);
 
     await tester.enterText(loginField(), 'abc');
-    await tester.tap(find.text('Se connecter'));
-    await tester.pumpAndSettle();
+    await tapSubmit(tester);
 
     expect(find.text('Numéro invalide (8 à 15 chiffres)'), findsOneWidget);
   });
 
-  testWidgets('submits a valid form and shows a confirmation snackbar', (
+  testWidgets('phone submit announces that OTP arrives in Phase B', (
     tester,
   ) async {
-    await pumpLogin(tester);
+    final FakeAuthGateway gateway = FakeAuthGateway();
+    await pumpLogin(tester, gateway: gateway);
 
     await tester.enterText(loginField(), '0700000000');
+    await tester.enterText(passwordField(), 'password123');
+    await tapSubmit(tester);
+
+    expect(gateway.signInCalls, 0);
+    expect(
+      find.text('La connexion par téléphone (OTP) arrivera en Phase B'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('submits a valid email form and shows a confirmation snackbar', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway();
+    await pumpLogin(tester, gateway: gateway);
+
+    await switchToEmailMode(tester);
+    await tester.enterText(loginField(), 'david@example.com');
+    await tester.enterText(passwordField(), 'password123');
+    await tapSubmit(tester);
+
+    expect(gateway.signInCalls, 1);
+    expect(gateway.lastSignInEmail, 'david@example.com');
+    expect(find.text('Connexion réussie'), findsOneWidget);
+  });
+
+  testWidgets('shows the French error message when login fails', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway(
+      onSignIn: ({required String email, required String password}) async {
+        throw const AuthException('Identifiants invalides');
+      },
+    );
+    await pumpLogin(tester, gateway: gateway);
+
+    await switchToEmailMode(tester);
+    await tester.enterText(loginField(), 'david@example.com');
+    await tester.enterText(passwordField(), 'password123');
+    await tapSubmit(tester);
+
+    expect(find.text('Identifiants invalides'), findsOneWidget);
+  });
+
+  testWidgets('disables the button while submitting', (tester) async {
+    final Completer<void> completer = Completer<void>();
+    final FakeAuthGateway gateway = FakeAuthGateway(
+      onSignIn: ({required String email, required String password}) =>
+          completer.future,
+    );
+    await pumpLogin(tester, gateway: gateway);
+
+    await switchToEmailMode(tester);
+    await tester.enterText(loginField(), 'david@example.com');
     await tester.enterText(passwordField(), 'password123');
     await tester.tap(find.text('Se connecter'));
     await tester.pump();
 
-    expect(find.text('Connexion bientôt disponible'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+
+    completer.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
   testWidgets('navigates to the signup page', (tester) async {
