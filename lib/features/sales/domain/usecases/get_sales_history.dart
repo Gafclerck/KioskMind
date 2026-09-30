@@ -6,9 +6,7 @@ class GetSalesHistory {
 
   GetSalesHistory(this.repository);
 
-  Future<List<Sale>> call(String shopId) {
-    return repository.getSalesHistory(
-      shopId: shopId,
-    );
+  Future<List<Sale>> call() async {
+    return await repository.getSalesHistory();
   }
 }

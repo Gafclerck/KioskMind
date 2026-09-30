@@ -1,38 +1,35 @@
-enum SaleStatus {
-  active,
-  cancelled,
+class Sale {
+  final DateTime dateTime;
+  final DateTime createdAt;
+  final double total;
+  final List<SaleItem> items;
+  final String source;
+  final String status;
+  final DateTime? cancelledAt;
+
+  Sale({
+    required this.dateTime,
+    required this.createdAt,
+    required this.total,
+    required this.items,
+    required this.source,
+    required this.status,
+    this.cancelledAt,
+  });
 }
 
 class SaleItem {
   final String productId;
-  final String productName;
-  final int quantity;
+  final String name;
+  final double qty;
   final double unitPrice;
+  final double? unitCost;
 
-  const SaleItem({
+  SaleItem({
     required this.productId,
-    required this.productName,
-    required this.quantity,
+    required this.name,
+    required this.qty,
     required this.unitPrice,
-  });
-
-  double get total => quantity * unitPrice;
-}
-
-class Sale {
-  final String id;
-  final String shopId;
-  final DateTime date;
-  final List<SaleItem> items;
-  final double totalAmount;
-  final SaleStatus status;
-
-  const Sale({
-    required this.id,
-    required this.shopId,
-    required this.date,
-    required this.items,
-    required this.totalAmount,
-    required this.status,
+    this.unitCost,
   });
 }

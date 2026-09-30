@@ -1,18 +1,16 @@
-import '../entities/sale.dart';
-import '../repositories/sales_repository.dart';
+import '../entities/daily_stats.dart';
+import '../repositories/daily_stats_repository.dart';
 
 class GetSalesDashboard {
-  final SalesRepository repository;
+  final DailyStatsRepository repository;
 
   GetSalesDashboard(this.repository);
 
-  Future<List<Sale>> call({
-    required String shopId,
+  Future<List<DailyStats>> call({
     required DateTime startDate,
     required DateTime endDate,
-  }) {
-    return repository.getSalesByDateRange(
-      shopId: shopId,
+  }) async {
+    return await repository.getDailyStats(
       startDate: startDate,
       endDate: endDate,
     );
