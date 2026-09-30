@@ -47,6 +47,15 @@ class FirebaseAuthGateway implements AuthGateway {
     }
   }
 
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (error) {
+      throw authErrorFrom(error);
+    }
+  }
+
   Future<void> _storeProfile({
     required String? uid,
     required String fullName,

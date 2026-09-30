@@ -28,6 +28,10 @@ void main() {
         'Mot de passe incorrect',
       );
       expect(
+        messageForFirebaseAuthCode('missing-email'),
+        'Adresse e-mail manquante',
+      );
+      expect(
         messageForFirebaseAuthCode('invalid-credential'),
         'Identifiants invalides',
       );

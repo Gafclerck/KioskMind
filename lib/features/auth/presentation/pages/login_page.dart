@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/login_provider.dart';
+import '../widgets/forgot_password_dialog.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -32,10 +33,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _forgotPassword() {
-    AppToast.show(
-      ref,
-      message: 'Réinitialisation bientôt disponible',
-      type: AppToastType.info,
+    showDialog<void>(
+      context: context,
+      builder: (_) => const ForgotPasswordDialog(),
     );
   }
 

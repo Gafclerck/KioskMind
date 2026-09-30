@@ -45,6 +45,11 @@ Future<void> tapSubmit(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Finder dialogEmailField() => find.descendant(
+  of: find.byType(AlertDialog),
+  matching: find.byType(TextFormField),
+);
+
 void main() {
   testWidgets('renders the header and phone-first fields', (tester) async {
     await pumpLogin(tester);
@@ -188,5 +193,69 @@ void main() {
 
     expect(find.text('Créer un compte'), findsOneWidget);
     expect(find.byType(SignupPage), findsOneWidget);
+  });
+
+  testWidgets('forgot password shows the dialog and rejects an invalid email', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway();
+    await pumpLogin(tester, gateway: gateway);
+
+    await tester.tap(find.text('Mot de passe oublié ?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Réinitialiser le mot de passe'), findsOneWidget);
+
+    await tester.enterText(dialogEmailField(), 'pas-un-email');
+    await tester.tap(find.text('Envoyer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Adresse e-mail invalide'), findsOneWidget);
+    expect(gateway.sendResetCalls, 0);
+  });
+
+  testWidgets('forgot password sends the reset link and dismisses on success', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway();
+    await pumpLogin(tester, gateway: gateway);
+
+    await tester.tap(find.text('Mot de passe oublié ?'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(dialogEmailField(), 'david@example.com');
+    await tester.tap(find.text('Envoyer'));
+    await tester.pumpAndSettle();
+
+    expect(gateway.sendResetCalls, 1);
+    expect(gateway.lastResetEmail, 'david@example.com');
+    expect(find.text('Réinitialiser le mot de passe'), findsNothing);
+    expect(find.text('Lien de réinitialisation envoyé'), findsOneWidget);
+  });
+
+  testWidgets('forgot password surfaces the French error inline', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway(
+      onSendReset: ({required String email}) async {
+        throw const AuthException(
+          'Aucun compte associé à cette adresse e-mail',
+        );
+      },
+    );
+    await pumpLogin(tester, gateway: gateway);
+
+    await tester.tap(find.text('Mot de passe oublié ?'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(dialogEmailField(), 'inconnu@example.com');
+    await tester.tap(find.text('Envoyer'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Aucun compte associé à cette adresse e-mail'),
+      findsOneWidget,
+    );
+    expect(find.text('Réinitialiser le mot de passe'), findsOneWidget);
   });
 }

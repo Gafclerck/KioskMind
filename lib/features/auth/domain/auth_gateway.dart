@@ -11,6 +11,8 @@ abstract class AuthGateway {
     required String email,
     required String password,
   });
+
+  Future<void> sendPasswordResetEmail({required String email});
 }
 
 class AuthException implements Exception {

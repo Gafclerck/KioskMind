@@ -21,6 +21,8 @@ String messageForFirebaseAuthCode(String code) {
       return 'Aucun compte associé à cette adresse e-mail';
     case 'wrong-password':
       return 'Mot de passe incorrect';
+    case 'missing-email':
+      return 'Adresse e-mail manquante';
     case 'invalid-credential':
       return 'Identifiants invalides';
     case 'operation-not-allowed':

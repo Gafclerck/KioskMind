@@ -12,16 +12,21 @@ typedef SignUpCall =
       required String password,
     });
 
+typedef SendResetCall = Future<void> Function({required String email});
+
 class FakeAuthGateway implements AuthGateway {
-  FakeAuthGateway({this.onSignIn, this.onSignUp});
+  FakeAuthGateway({this.onSignIn, this.onSignUp, this.onSendReset});
 
   final SignInCall? onSignIn;
   final SignUpCall? onSignUp;
+  final SendResetCall? onSendReset;
 
   int signInCalls = 0;
   int signUpCalls = 0;
+  int sendResetCalls = 0;
   String? lastSignInEmail;
   String? lastSignUpEmail;
+  String? lastResetEmail;
 
   @override
   Future<void> signInWithEmail({
@@ -56,6 +61,17 @@ class FakeAuthGateway implements AuthGateway {
         email: email,
         password: password,
       );
+    }
+    return Future<void>.value();
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) {
+    sendResetCalls++;
+    lastResetEmail = email;
+    final SendResetCall? call = onSendReset;
+    if (call != null) {
+      return call(email: email);
     }
     return Future<void>.value();
   }
