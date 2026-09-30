@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/login_provider.dart';
 import 'signup_page.dart';
@@ -31,8 +32,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Réinitialisation bientôt disponible')),
+    AppToast.show(
+      ref,
+      message: 'Réinitialisation bientôt disponible',
+      type: AppToastType.info,
     );
   }
 
@@ -54,20 +57,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ) {
       final LoginNotifier notifier = ref.read(loginProvider.notifier);
       if (next.success && !(previous?.success ?? false)) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Connexion réussie')));
+        AppToast.show(
+          ref,
+          message: 'Connexion réussie',
+          type: AppToastType.success,
+        );
         notifier.clearSubmissionResult();
       } else if (next.notice != null && next.notice != previous?.notice) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.notice!)));
+        AppToast.show(ref, message: next.notice!, type: AppToastType.info);
         notifier.clearSubmissionResult();
       } else if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+        AppToast.show(
+          ref,
+          message: next.errorMessage!,
+          type: AppToastType.error,
+        );
         notifier.clearSubmissionResult();
       }
     });

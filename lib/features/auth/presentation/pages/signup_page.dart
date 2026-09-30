@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/signup_provider.dart';
 import '../widgets/country_code_picker.dart';
@@ -52,16 +53,20 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     ) {
       final SignupNotifier notifier = ref.read(signupProvider.notifier);
       if (next.success && !(previous?.success ?? false)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Compte créé avec succès')),
+        AppToast.show(
+          ref,
+          message: 'Compte créé avec succès',
+          type: AppToastType.success,
         );
         notifier.clearSubmissionResult();
         Navigator.of(context).maybePop();
       } else if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+        AppToast.show(
+          ref,
+          message: next.errorMessage!,
+          type: AppToastType.error,
+        );
         notifier.clearSubmissionResult();
       }
     });

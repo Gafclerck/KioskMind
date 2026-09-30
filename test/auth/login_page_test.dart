@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kiosk_mind/core/theme/app_theme.dart';
+import 'package:kiosk_mind/core/widgets/app_toast.dart';
 import 'package:kiosk_mind/features/auth/domain/auth_gateway.dart';
 import 'package:kiosk_mind/features/auth/presentation/pages/login_page.dart';
 import 'package:kiosk_mind/features/auth/presentation/pages/signup_page.dart';
@@ -18,7 +19,13 @@ Future<void> pumpLogin(WidgetTester tester, {FakeAuthGateway? gateway}) async {
       overrides: [
         authGatewayProvider.overrideWithValue(gateway ?? FakeAuthGateway()),
       ],
-      child: MaterialApp(theme: AppTheme.lightTheme, home: LoginPage()),
+      child: MaterialApp(
+        theme: AppTheme.lightTheme,
+        builder: (BuildContext context, Widget? child) {
+          return AppToastHost(child: child ?? const SizedBox.shrink());
+        },
+        home: LoginPage(),
+      ),
     ),
   );
   await tester.pump();
@@ -113,7 +120,7 @@ void main() {
     );
   });
 
-  testWidgets('submits a valid email form and shows a confirmation snackbar', (
+  testWidgets('submits a valid email form and shows a confirmation toast', (
     tester,
   ) async {
     final FakeAuthGateway gateway = FakeAuthGateway();
