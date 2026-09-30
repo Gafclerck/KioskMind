@@ -46,4 +46,5 @@ app.*.map.json
 
 # Local-only files, not shared with the team
 /docs/ARCHITECTURE.md
+/docs/voice/
 /AGENTS.md
