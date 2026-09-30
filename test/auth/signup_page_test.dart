@@ -184,6 +184,43 @@ void main() {
     expect(find.byIcon(Icons.visibility_outlined), findsNWidgets(1));
   });
 
+  testWidgets('fits a standard phone screen without scroll', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpSignup(tester);
+
+    expect(tester.takeException(), isNull);
+    final ScrollPosition position = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    expect(position.maxScrollExtent, 0);
+    expect(find.text('Créer un compte'), findsOneWidget);
+  });
+
+  testWidgets('does not overflow on a small screen and stays scrollable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 560);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpSignup(tester);
+
+    expect(tester.takeException(), isNull);
+    final ScrollPosition position = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    expect(position.maxScrollExtent, greaterThan(0));
+
+    await tapSubmit(tester);
+
+    expect(find.text('Nom complet requis'), findsOneWidget);
+  });
+
   testWidgets('opens the searchable country picker', (tester) async {
     await pumpSignup(tester);
 
