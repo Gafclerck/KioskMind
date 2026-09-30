@@ -31,6 +31,10 @@ List<ProductSnapshot> parseCatalogFixture(String source) {
     throw const FormatException('Fixture "products": liste vide');
   }
 
+  return _parseProducts(rawProducts);
+}
+
+List<ProductSnapshot> _parseProducts(List<Object?> rawProducts) {
   final List<ProductSnapshot> products = <ProductSnapshot>[];
   final Set<String> seenIds = <String>{};
   for (int index = 0; index < rawProducts.length; index++) {

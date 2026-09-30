@@ -31,21 +31,30 @@ final class MockCancelLastSaleHandler implements CancelLastSaleHandler {
       return Failed<CancelLastSaleResult>(AlreadyCancelled(input.saleId));
     }
 
-    final List<SaleLineResult> restored = <SaleLineResult>[
-      for (final SaleLineResult line in sale.lines)
+    final List<SaleLineResult> restored = _restoredLines(sale.lines);
+    _catalog.applyCancellation(sale.saleId, context.dateTime, restored);
+    return Success<CancelLastSaleResult>((
+      saleId: sale.saleId,
+      restored: restored,
+    ));
+  }
+
+  /// Current stock has to be re-read: the sale document holds the quantities
+  /// sold, not the stock left afterwards.
+  List<SaleLineResult> _restoredLines(List<SaleLineResult> sold) {
+    return <SaleLineResult>[
+      for (final SaleLineResult line in sold)
         (
           productId: line.productId,
           name: line.name,
           unit: line.unit,
           qty: line.qty,
           appliedUnitPrice: line.appliedUnitPrice,
-          resultingStock: _catalog.stockAfter(line.productId, line.qty)!,
+          // A sale only ever names products this catalog still holds: it
+          // refuses unknown ones and archives instead of deleting them.
+          resultingStock:
+              _catalog.productById(line.productId)!.stock + line.qty,
         ),
     ];
-    _catalog.applyCancellation(sale.saleId, context.dateTime, restored);
-    return Success<CancelLastSaleResult>((
-      saleId: sale.saleId,
-      restored: restored,
-    ));
   }
 }

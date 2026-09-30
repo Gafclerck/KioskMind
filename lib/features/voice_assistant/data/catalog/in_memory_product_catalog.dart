@@ -69,12 +69,6 @@ final class InMemoryProductCatalog implements ProductCatalogReader {
 
   double? stockOf(String productId) => _products[productId]?.stock;
 
-  /// Stock the product would have after [delta], without writing anything.
-  double? stockAfter(String productId, double delta) {
-    final ProductSnapshot? product = _products[productId];
-    return product == null ? null : product.stock + delta;
-  }
-
   /// Previous successful result for this command identifier, if any. A replayed
   /// command returns it instead of writing twice (contract A3).
   RecordSaleResult? saleResultByCommandId(String commandId) {
@@ -152,6 +146,8 @@ final class InMemoryProductCatalog implements ProductCatalogReader {
   }
 
   void _adjustStock(String productId, double delta) {
+    // Callers pass product identifiers they have just validated against this
+    // catalog, and it never deletes a product, so one is always present.
     final ProductSnapshot product = _products[productId]!;
     _products[productId] = product.withStock(product.stock + delta);
   }

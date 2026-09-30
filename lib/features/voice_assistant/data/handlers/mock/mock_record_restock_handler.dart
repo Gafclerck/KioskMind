@@ -71,7 +71,7 @@ final class MockRecordRestockHandler implements RecordRestockHandler {
       name: product.name,
       qty: item.qty,
       appliedUnitCost: item.spokenUnitCost,
-      resultingStock: _catalog.stockAfter(product.id, item.qty)!,
+      resultingStock: product.stock + item.qty,
     ));
   }
 }

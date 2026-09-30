@@ -84,7 +84,7 @@ final class MockRecordSaleHandler implements RecordSaleHandler {
       unit: product.unit,
       qty: item.qty,
       appliedUnitPrice: product.price,
-      resultingStock: _catalog.stockAfter(product.id, -item.qty)!,
+      resultingStock: product.stock - item.qty,
     ));
   }
 }

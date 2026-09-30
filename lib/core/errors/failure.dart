@@ -1,16 +1,14 @@
 /// Base type of every typed failure.
 ///
-/// A failure carries a stable code and machine context, never a displayable
-/// string: user-facing text is produced later from [code], in the language the
-/// merchant selected. See decision D12.
+/// A failure carries a stable code and typed fields, never a displayable string:
+/// user-facing text is produced later from [code], in the language the merchant
+/// selected. The fields are the machine context, so no parallel map is needed.
+/// See decision D12.
 sealed class Failure {
   const Failure(this.code);
 
   /// Stable identifier, uppercase and underscore separated.
   final String code;
-
-  /// Details for logs and assertions. Subclasses derive it from their fields.
-  Map<String, Object?> get context => const <String, Object?>{};
 }
 
 final class UnknownProduct extends Failure {
@@ -19,12 +17,6 @@ final class UnknownProduct extends Failure {
 
   final String productId;
   final String? productName;
-
-  @override
-  Map<String, Object?> get context => <String, Object?>{
-    'productId': productId,
-    if (productName != null) 'productName': productName,
-  };
 }
 
 final class ArchivedProduct extends Failure {
@@ -33,12 +25,6 @@ final class ArchivedProduct extends Failure {
 
   final String productId;
   final String? productName;
-
-  @override
-  Map<String, Object?> get context => <String, Object?>{
-    'productId': productId,
-    if (productName != null) 'productName': productName,
-  };
 }
 
 final class InvalidQuantity extends Failure {
@@ -47,21 +33,12 @@ final class InvalidQuantity extends Failure {
 
   final String productId;
   final double qty;
-
-  @override
-  Map<String, Object?> get context => <String, Object?>{
-    'productId': productId,
-    'qty': qty,
-  };
 }
 
 final class EmptyItems extends Failure {
   const EmptyItems(this.intentId) : super('EMPTY_ITEMS');
 
   final String intentId;
-
-  @override
-  Map<String, Object?> get context => <String, Object?>{'intentId': intentId};
 }
 
 final class SaleNotFound extends Failure {
