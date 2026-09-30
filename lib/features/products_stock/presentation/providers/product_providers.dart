@@ -2,13 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/repositories/product_repository_impl.dart';
+import '../../data/repositories/product_repository_impl.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/usecases/create_product.dart';
 
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
-  // TEMPORAIRE : à remplacer par le provider d'utilisateur de l'Epic 1.
   final uid = FirebaseAuth.instance.currentUser?.uid;
   if (uid == null) throw StateError('Aucun utilisateur connecté');
 
@@ -18,15 +17,18 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
   );
 });
 
+final productsProvider = StreamProvider<List<Product>>((ref) {
+  return ref.watch(productRepositoryProvider).watchProducts();
+});
+
 final createProductProvider = Provider<CreateProduct>((ref) {
   return CreateProduct(ref.watch(productRepositoryProvider));
 });
 
 class ProductActionsNotifier extends Notifier<AsyncValue<void>> {
   @override
-  AsyncValue<void> build() => const AsyncData(null); // au repos
+  AsyncValue<void> build() => const AsyncData(null);
 
-  /// Retourne true si la création a réussi.
   Future<bool> create(Product product) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -38,5 +40,5 @@ class ProductActionsNotifier extends Notifier<AsyncValue<void>> {
 
 final productActionsProvider =
     NotifierProvider<ProductActionsNotifier, AsyncValue<void>>(
-  ProductActionsNotifier.new,
-);
+      ProductActionsNotifier.new,
+    );

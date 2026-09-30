@@ -17,13 +17,13 @@ abstract final class ProductModel {
   }
 
   static Map<String, dynamic> toFirestore(Product product) => {
-        'name': product.name,
-        'imageUrl': product.imageUrl,
-        'category': product.category,
-        'unit': product.unit,
-        'purchasePrice': product.purchasePrice,
-        'salePrice': product.salePrice,
-        'quantity': product.quantity,
-        'alertThreshold': product.alertThreshold,
-      };
+    'name': product.name,
+    'imageUrl': product.imageUrl,
+    'category': product.category,
+    'unit': product.unit,
+    'purchasePrice': product.purchasePrice,
+    'salePrice': product.salePrice,
+    'quantity': product.quantity,
+    'alertThreshold': product.alertThreshold,
+  };
 }

@@ -9,14 +9,26 @@ class ProductRepositoryImpl implements ProductRepository {
     required FirebaseFirestore firestore,
     required String userId,
   }) : _products = firestore
-            .collection('users')
-            .doc(userId)
-            .collection('products');
+           .collection('users')
+           .doc(userId)
+           .collection('products');
 
   final CollectionReference<Map<String, dynamic>> _products;
 
   @override
   Future<void> createProduct(Product product) {
     return _products.doc().set(ProductModel.toFirestore(product));
+  }
+
+  @override
+  Stream<List<Product>> watchProducts() {
+    return _products
+        .orderBy('name')
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+              .toList(),
+        );
   }
 }
