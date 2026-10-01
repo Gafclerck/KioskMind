@@ -20,17 +20,6 @@ abstract class AuthGateway {
   });
 
   Future<String?> findEmailByPhone({required String phoneNumber});
-
-  void sendPhoneVerificationCode({
-    required String phoneNumber,
-    required void Function(String verificationId) onCodeSent,
-    required void Function(AuthException error) onError,
-  });
-
-  Future<void> signInWithPhoneCredential({
-    required String verificationId,
-    required String smsCode,
-  });
 }
 
 class AuthException implements Exception {

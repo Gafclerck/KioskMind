@@ -16,49 +16,23 @@ typedef SignUpCall =
 
 typedef SendResetCall = Future<void> Function({required String email});
 
-typedef SendPhoneCodeCall =
-    void Function({
-      required String phoneNumber,
-      required void Function(String verificationId) onCodeSent,
-      required void Function(AuthException error) onError,
-    });
-
-typedef VerifyPhoneCredentialCall =
-    Future<void> Function({
-      required String verificationId,
-      required String smsCode,
-    });
-
 class FakeAuthGateway implements AuthGateway {
-  FakeAuthGateway({
-    this.onSignIn,
-    this.onSignUp,
-    this.onSendReset,
-    this.onSendPhoneCode,
-    this.onVerifyPhoneCredential,
-  });
+  FakeAuthGateway({this.onSignIn, this.onSignUp, this.onSendReset});
 
   final SignInCall? onSignIn;
   final SignUpCall? onSignUp;
   final SendResetCall? onSendReset;
-  final SendPhoneCodeCall? onSendPhoneCode;
-  final VerifyPhoneCredentialCall? onVerifyPhoneCredential;
 
   final Map<String, String> phoneEmails = <String, String>{};
 
   int signInCalls = 0;
   int signUpCalls = 0;
   int sendResetCalls = 0;
-  int sendPhoneCodeCalls = 0;
-  int verifyPhoneCredentialCalls = 0;
   int phoneInUseCalls = 0;
   int phoneSearchCalls = 0;
   String? lastSignInEmail;
   String? lastSignUpEmail;
   String? lastResetEmail;
-  String? lastPhoneNumber;
-  String? lastVerificationId;
-  String? lastSmsCode;
   String? lastCheckedPhone;
   String? lastCheckedCountryCode;
   String? lastPhoneSearchNumber;
@@ -132,37 +106,6 @@ class FakeAuthGateway implements AuthGateway {
     final SendResetCall? call = onSendReset;
     if (call != null) {
       return call(email: email);
-    }
-    return Future<void>.value();
-  }
-
-  @override
-  void sendPhoneVerificationCode({
-    required String phoneNumber,
-    required void Function(String verificationId) onCodeSent,
-    required void Function(AuthException error) onError,
-  }) {
-    sendPhoneCodeCalls++;
-    lastPhoneNumber = phoneNumber;
-    final SendPhoneCodeCall? call = onSendPhoneCode;
-    if (call != null) {
-      call(phoneNumber: phoneNumber, onCodeSent: onCodeSent, onError: onError);
-      return;
-    }
-    scheduleMicrotask(() => onCodeSent('verification-id'));
-  }
-
-  @override
-  Future<void> signInWithPhoneCredential({
-    required String verificationId,
-    required String smsCode,
-  }) {
-    verifyPhoneCredentialCalls++;
-    lastVerificationId = verificationId;
-    lastSmsCode = smsCode;
-    final VerifyPhoneCredentialCall? call = onVerifyPhoneCredential;
-    if (call != null) {
-      return call(verificationId: verificationId, smsCode: smsCode);
     }
     return Future<void>.value();
   }

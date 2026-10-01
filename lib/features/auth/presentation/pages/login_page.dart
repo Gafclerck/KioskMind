@@ -5,7 +5,6 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/login_provider.dart';
 import '../widgets/forgot_password_dialog.dart';
-import '../widgets/phone_otp_dialog.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -66,20 +65,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         );
         notifier.clearSubmissionResult();
       } else if (next.errorMessage != null &&
-          next.errorMessage != previous?.errorMessage &&
-          !next.otpRequested) {
+          next.errorMessage != previous?.errorMessage) {
         AppToast.show(
           ref,
           message: next.errorMessage!,
           type: AppToastType.error,
         );
         notifier.clearSubmissionResult();
-      }
-      if (next.otpRequested && !(previous?.otpRequested ?? false)) {
-        showDialog<void>(
-          context: context,
-          builder: (_) => const PhoneOtpDialog(),
-        );
       }
     });
 

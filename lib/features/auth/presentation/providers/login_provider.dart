@@ -13,8 +13,6 @@ class LoginState {
     this.password = '',
     this.isSubmitting = false,
     this.errorMessage,
-    this.otpRequested = false,
-    this.otpVerificationId,
     this.successMessage,
     this.success = false,
   });
@@ -25,8 +23,6 @@ class LoginState {
   final String password;
   final bool isSubmitting;
   final String? errorMessage;
-  final bool otpRequested;
-  final String? otpVerificationId;
   final String? successMessage;
   final bool success;
 
@@ -39,8 +35,6 @@ class LoginState {
     String? password,
     bool? isSubmitting,
     Object? errorMessage = _unset,
-    bool? otpRequested,
-    Object? otpVerificationId = _unset,
     Object? successMessage = _unset,
     bool? success,
   }) {
@@ -53,10 +47,6 @@ class LoginState {
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
           : errorMessage as String?,
-      otpRequested: otpRequested ?? this.otpRequested,
-      otpVerificationId: identical(otpVerificationId, _unset)
-          ? this.otpVerificationId
-          : otpVerificationId as String?,
       successMessage: identical(successMessage, _unset)
           ? this.successMessage
           : successMessage as String?,
@@ -97,14 +87,6 @@ class LoginNotifier extends Notifier<LoginState> {
     );
   }
 
-  void cancelOtp() {
-    state = state.copyWith(
-      otpRequested: false,
-      otpVerificationId: null,
-      errorMessage: null,
-    );
-  }
-
   Future<void> submit() async {
     if (state.isSubmitting) {
       return;
@@ -115,16 +97,12 @@ class LoginNotifier extends Notifier<LoginState> {
       successMessage: null,
       success: false,
     );
-    if (!state.emailMode) {
-      await _requestPhoneCode();
-      return;
-    }
     final AuthGateway gateway = ref.read(authGatewayProvider);
     try {
-      await gateway.signInWithEmail(
-        email: state.identifier,
-        password: state.password,
-      );
+      final String email = state.emailMode
+          ? state.identifier
+          : await _resolveEmail(gateway);
+      await gateway.signInWithEmail(email: email, password: state.password);
       state = state.copyWith(
         isSubmitting: false,
         success: true,
@@ -140,94 +118,15 @@ class LoginNotifier extends Notifier<LoginState> {
     }
   }
 
-  Future<bool> resendPhoneOtp() async {
-    if (state.isSubmitting) {
-      return false;
-    }
-    return _requestPhoneCode();
-  }
-
-  Future<bool> verifyPhoneOtp(String smsCode) async {
-    final String? verificationId = state.otpVerificationId;
-    if (verificationId == null || state.isSubmitting) {
-      return false;
-    }
-    state = state.copyWith(
-      isSubmitting: true,
-      errorMessage: null,
-      successMessage: null,
+  Future<String> _resolveEmail(AuthGateway gateway) async {
+    final String normalized = _normalizePhone(state.identifier);
+    final String? email = await gateway.findEmailByPhone(
+      phoneNumber: normalized,
     );
-    final AuthGateway gateway = ref.read(authGatewayProvider);
-    try {
-      await gateway.signInWithPhoneCredential(
-        verificationId: verificationId,
-        smsCode: smsCode,
-      );
-      state = state.copyWith(
-        isSubmitting: false,
-        otpRequested: false,
-        otpVerificationId: null,
-        success: true,
-        successMessage: 'Code vérifié, connexion réussie',
-      );
-      return true;
-    } on AuthException catch (error) {
-      state = state.copyWith(isSubmitting: false, errorMessage: error.message);
-      return false;
-    } catch (_) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: "Une erreur est survenue, réessayez",
-      );
-      return false;
+    if (email == null) {
+      throw phoneNotFoundException;
     }
-  }
-
-  Future<bool> _requestPhoneCode() async {
-    state = state.copyWith(
-      errorMessage: null,
-      otpRequested: false,
-      otpVerificationId: null,
-    );
-    final AuthGateway gateway = ref.read(authGatewayProvider);
-    final String phoneNumber = _normalizePhone(state.identifier);
-    try {
-      final String verificationId = await _awaitCodeSent(gateway, phoneNumber);
-      state = state.copyWith(
-        isSubmitting: false,
-        otpRequested: true,
-        otpVerificationId: verificationId,
-        successMessage: null,
-      );
-      return true;
-    } on AuthException catch (error) {
-      state = state.copyWith(isSubmitting: false, errorMessage: error.message);
-      return false;
-    } catch (_) {
-      state = state.copyWith(
-        isSubmitting: false,
-        errorMessage: "Une erreur est survenue, réessayez",
-      );
-      return false;
-    }
-  }
-
-  Future<String> _awaitCodeSent(AuthGateway gateway, String phoneNumber) {
-    final Completer<String> completer = Completer<String>();
-    gateway.sendPhoneVerificationCode(
-      phoneNumber: phoneNumber,
-      onCodeSent: (String verificationId) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
-      onError: (AuthException error) {
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-      },
-    );
-    return completer.future;
+    return email;
   }
 
   String _normalizePhone(String value) {

@@ -27,8 +27,6 @@ void main() {
     expect(state.isSubmitting, isFalse);
     expect(state.success, isFalse);
     expect(state.errorMessage, isNull);
-    expect(state.otpRequested, isFalse);
-    expect(state.otpVerificationId, isNull);
     expect(state.successMessage, isNull);
   });
 
@@ -52,9 +50,10 @@ void main() {
   });
 
   test(
-    'normalizes a local phone number to +225 when requesting a code',
+    'resolves the email from a normalized +225 phone and signs in',
     () async {
-      final FakeAuthGateway gateway = FakeAuthGateway();
+      final FakeAuthGateway gateway = FakeAuthGateway()
+        ..registerPhone('+2250700000000', 'david@example.com');
       final ProviderContainer container = makeContainer(gateway);
       addTearDown(container.dispose);
 
@@ -64,55 +63,18 @@ void main() {
 
       await notifier.submit();
 
-      expect(gateway.sendPhoneCodeCalls, 1);
-      expect(gateway.lastPhoneNumber, '+2250700000000');
+      expect(gateway.phoneSearchCalls, 1);
+      expect(gateway.lastPhoneSearchNumber, '+2250700000000');
+      expect(gateway.signInCalls, 1);
+      expect(gateway.lastSignInEmail, 'david@example.com');
       final LoginState state = container.read(loginProvider);
-      expect(state.otpRequested, isTrue);
-      expect(state.otpVerificationId, 'verification-id');
-      expect(state.success, isFalse);
+      expect(state.isSubmitting, isFalse);
+      expect(state.success, isTrue);
+      expect(state.successMessage, 'Connexion réussie');
     },
   );
 
-  test('keeps an already international phone number untouched', () async {
-    final FakeAuthGateway gateway = FakeAuthGateway();
-    final ProviderContainer container = makeContainer(gateway);
-    addTearDown(container.dispose);
-
-    final LoginNotifier notifier = container.read(loginProvider.notifier);
-    notifier.setIdentifier('+33612345678');
-    notifier.setPassword('password123');
-
-    await notifier.submit();
-
-    expect(gateway.lastPhoneNumber, '+33612345678');
-  });
-
-  test('exposes the French message when sending the code fails', () async {
-    final FakeAuthGateway gateway = FakeAuthGateway(
-      onSendPhoneCode:
-          ({
-            required String phoneNumber,
-            required void Function(String verificationId) onCodeSent,
-            required void Function(AuthException error) onError,
-          }) {
-            onError(const AuthException('Numéro de téléphone invalide'));
-          },
-    );
-    final ProviderContainer container = makeContainer(gateway);
-    addTearDown(container.dispose);
-
-    final LoginNotifier notifier = container.read(loginProvider.notifier);
-    notifier.setIdentifier('123');
-    notifier.setPassword('password123');
-
-    await notifier.submit();
-
-    final LoginState state = container.read(loginProvider);
-    expect(state.errorMessage, 'Numéro de téléphone invalide');
-    expect(state.otpRequested, isFalse);
-  });
-
-  test('verifies the phone OTP and succeeds on phone login', () async {
+  test('does not sign in when the phone number is unknown', () async {
     final FakeAuthGateway gateway = FakeAuthGateway();
     final ProviderContainer container = makeContainer(gateway);
     addTearDown(container.dispose);
@@ -120,63 +82,46 @@ void main() {
     final LoginNotifier notifier = container.read(loginProvider.notifier);
     notifier.setIdentifier('0700000000');
     notifier.setPassword('password123');
+
     await notifier.submit();
-    expect(container.read(loginProvider).otpRequested, isTrue);
 
-    final bool verified = await notifier.verifyPhoneOtp('123456');
-
-    expect(verified, isTrue);
-    expect(gateway.verifyPhoneCredentialCalls, 1);
-    expect(gateway.lastSmsCode, '123456');
-    expect(gateway.lastVerificationId, 'verification-id');
+    expect(gateway.phoneSearchCalls, 1);
+    expect(gateway.signInCalls, 0);
     final LoginState state = container.read(loginProvider);
-    expect(state.otpRequested, isFalse);
-    expect(state.success, isTrue);
-    expect(state.successMessage, 'Code vérifié, connexion réussie');
+    expect(
+      state.errorMessage,
+      'Aucun compte n\'est associé à ce numéro de téléphone. '
+      'Veuillez vous inscrire.',
+    );
+    expect(state.success, isFalse);
   });
 
   test(
-    'keeps OTP state and exposes the message when the code is invalid',
+    'signs in with the password of the email resolved from the phone',
     () async {
       final FakeAuthGateway gateway = FakeAuthGateway(
-        onVerifyPhoneCredential:
-            ({required String verificationId, required String smsCode}) async {
-              throw const AuthException('Code de vérification invalide');
-            },
-      );
+        onSignIn: ({required String email, required String password}) async {
+          if (password != 'password123') {
+            throw const AuthException('Mot de passe incorrect');
+          }
+        },
+      )..registerPhone('+2250700000000', 'david@example.com');
       final ProviderContainer container = makeContainer(gateway);
       addTearDown(container.dispose);
 
       final LoginNotifier notifier = container.read(loginProvider.notifier);
       notifier.setIdentifier('0700000000');
+      notifier.setPassword('wrong-password');
+
       await notifier.submit();
 
-      final bool verified = await notifier.verifyPhoneOtp('000000');
-
-      expect(verified, isFalse);
       final LoginState state = container.read(loginProvider);
-      expect(state.errorMessage, 'Code de vérification invalide');
-      expect(state.otpRequested, isTrue);
+      expect(gateway.signInCalls, 1);
+      expect(gateway.lastSignInEmail, 'david@example.com');
+      expect(state.errorMessage, 'Mot de passe incorrect');
       expect(state.success, isFalse);
     },
   );
-
-  test('resends a new phone verification code', () async {
-    final FakeAuthGateway gateway = FakeAuthGateway();
-    final ProviderContainer container = makeContainer(gateway);
-    addTearDown(container.dispose);
-
-    final LoginNotifier notifier = container.read(loginProvider.notifier);
-    notifier.setIdentifier('0700000000');
-    await notifier.submit();
-    expect(gateway.sendPhoneCodeCalls, 1);
-
-    final bool sent = await notifier.resendPhoneOtp();
-
-    expect(sent, isTrue);
-    expect(gateway.sendPhoneCodeCalls, 2);
-    expect(container.read(loginProvider).otpRequested, isTrue);
-  });
 
   test('exposes the French message when credentials are invalid', () async {
     final FakeAuthGateway gateway = FakeAuthGateway(

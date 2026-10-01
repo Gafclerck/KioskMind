@@ -50,11 +50,6 @@ Finder dialogEmailField() => find.descendant(
   matching: find.byType(TextFormField),
 );
 
-Finder otpCodeField() => find.descendant(
-  of: find.byType(AlertDialog),
-  matching: find.byType(TextField),
-);
-
 void main() {
   testWidgets('renders the header and phone-first fields', (tester) async {
     await pumpLogin(tester);
@@ -113,7 +108,25 @@ void main() {
     expect(find.text('Numéro invalide (8 à 15 chiffres)'), findsOneWidget);
   });
 
-  testWidgets('phone submit requests a code and opens the OTP dialog', (
+  testWidgets('phone submit resolves the email and shows the confirmation', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway()
+      ..registerPhone('+2250700000000', 'david@example.com');
+    await pumpLogin(tester, gateway: gateway);
+
+    await tester.enterText(loginField(), '0700000000');
+    await tester.enterText(passwordField(), 'password123');
+    await tapSubmit(tester);
+
+    expect(gateway.phoneSearchCalls, 1);
+    expect(gateway.lastPhoneSearchNumber, '+2250700000000');
+    expect(gateway.signInCalls, 1);
+    expect(gateway.lastSignInEmail, 'david@example.com');
+    expect(find.text('Connexion réussie'), findsOneWidget);
+  });
+
+  testWidgets('phone submit shows a toast when the number is unknown', (
     tester,
   ) async {
     final FakeAuthGateway gateway = FakeAuthGateway();
@@ -123,82 +136,33 @@ void main() {
     await tester.enterText(passwordField(), 'password123');
     await tapSubmit(tester);
 
-    expect(gateway.sendPhoneCodeCalls, 1);
-    expect(gateway.lastPhoneNumber, '+2250700000000');
-    expect(find.text('Code de vérification'), findsOneWidget);
+    expect(gateway.signInCalls, 0);
+    expect(
+      find.text(
+        'Aucun compte n\'est associé à ce numéro de téléphone. '
+        'Veuillez vous inscrire.',
+      ),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('entering the 6-digit code signs in on phone', (tester) async {
-    final FakeAuthGateway gateway = FakeAuthGateway();
-    await pumpLogin(tester, gateway: gateway);
-
-    await tester.enterText(loginField(), '0700000000');
-    await tester.enterText(passwordField(), 'password123');
-    await tapSubmit(tester);
-
-    await tester.enterText(otpCodeField(), '123456');
-    await tester.pumpAndSettle();
-
-    expect(gateway.verifyPhoneCredentialCalls, 1);
-    expect(gateway.lastSmsCode, '123456');
-    expect(find.text('Code de vérification'), findsNothing);
-    expect(find.text('Code vérifié, connexion réussie'), findsOneWidget);
-  });
-
-  testWidgets('shows the French error inline for an invalid code', (
+  testWidgets('phone submit shows a toast when the password is wrong', (
     tester,
   ) async {
     final FakeAuthGateway gateway = FakeAuthGateway(
-      onVerifyPhoneCredential:
-          ({required String verificationId, required String smsCode}) async {
-            throw const AuthException('Code de vérification invalide');
-          },
-    );
+      onSignIn: ({required String email, required String password}) async {
+        throw const AuthException('Mot de passe incorrect');
+      },
+    )..registerPhone('+2250700000000', 'david@example.com');
     await pumpLogin(tester, gateway: gateway);
 
     await tester.enterText(loginField(), '0700000000');
-    await tester.enterText(passwordField(), 'password123');
+    await tester.enterText(passwordField(), 'wrong-password');
     await tapSubmit(tester);
 
-    await tester.enterText(otpCodeField(), '000000');
-    await tester.pumpAndSettle();
-
-    expect(find.text('Code de vérification invalide'), findsOneWidget);
-    expect(find.text('Code de vérification'), findsOneWidget);
-  });
-
-  testWidgets('resends a new code from the dialog', (tester) async {
-    final FakeAuthGateway gateway = FakeAuthGateway();
-    await pumpLogin(tester, gateway: gateway);
-
-    await tester.enterText(loginField(), '0700000000');
-    await tester.enterText(passwordField(), 'password123');
-    await tapSubmit(tester);
-    expect(gateway.sendPhoneCodeCalls, 1);
-
-    await tester.tap(find.text('Renvoyer le code'));
-    await tester.pumpAndSettle();
-
-    expect(gateway.sendPhoneCodeCalls, 2);
-    expect(gateway.lastPhoneNumber, '+2250700000000');
-    expect(find.text('Nouveau code envoyé'), findsOneWidget);
-  });
-
-  testWidgets('cancelling the OTP dialog closes it without signing in', (
-    tester,
-  ) async {
-    final FakeAuthGateway gateway = FakeAuthGateway();
-    await pumpLogin(tester, gateway: gateway);
-
-    await tester.enterText(loginField(), '0700000000');
-    await tester.enterText(passwordField(), 'password123');
-    await tapSubmit(tester);
-
-    await tester.tap(find.text('Annuler'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Code de vérification'), findsNothing);
-    expect(gateway.verifyPhoneCredentialCalls, 0);
+    expect(gateway.signInCalls, 1);
+    expect(gateway.lastSignInEmail, 'david@example.com');
+    expect(find.text('Mot de passe incorrect'), findsOneWidget);
   });
 
   testWidgets('submits a valid email form and shows a confirmation toast', (
