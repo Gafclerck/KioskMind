@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/product.dart';
 import '../providers/product_providers.dart';
+import '../widgets/feedback_dialogs.dart';
 import '../widgets/product_card.dart';
 import 'add_product_page.dart';
+import 'edit_product_page.dart';
 
 class ProductListPage extends ConsumerWidget {
   const ProductListPage({super.key});
@@ -12,6 +15,40 @@ class ProductListPage extends ConsumerWidget {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddProductPage()));
+  }
+
+  Future<void> _openEditProduct(BuildContext context, Product product) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EditProductPage(product: product),
+      ),
+    );
+  }
+
+  Future<void> _deleteProduct(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final confirmed = await showDeleteConfirmation(
+      context,
+      productName: product.name,
+    );
+    if (!confirmed || !context.mounted) return;
+
+    final deleted = await ref
+        .read(productActionsProvider.notifier)
+        .delete(product.id);
+    if (!context.mounted) return;
+
+    if (!deleted) {
+      await showErrorDialog(
+        context,
+        title: 'Erreur de suppression',
+        message:
+            "Impossible de supprimer ce produit. Vérifiez votre connexion internet.",
+      );
+    }
   }
 
   @override
@@ -47,7 +84,15 @@ class ProductListPage extends ConsumerWidget {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: list.length,
-            itemBuilder: (context, index) => ProductCard(product: list[index]),
+            itemBuilder: (context, index) {
+              final product = list[index];
+              return ProductCard(
+                key: ValueKey<String>(product.id),
+                product: product,
+                onEdit: () => _openEditProduct(context, product),
+                onDelete: () => _deleteProduct(context, ref, product),
+              );
+            },
           );
         },
       ),

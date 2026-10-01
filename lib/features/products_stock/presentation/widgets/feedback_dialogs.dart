@@ -26,6 +26,43 @@ Future<void> showSuccessDialog(
   );
 }
 
+Future<bool> showDeleteConfirmation(
+  BuildContext context, {
+  required String productName,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      icon: Icon(
+        Icons.delete_outline,
+        color: Theme.of(context).colorScheme.error,
+        size: 40,
+      ),
+      title: const Text('Supprimer ce produit ?', textAlign: TextAlign.center),
+      content: Text(
+        '"$productName" sera définitivement retiré de votre stock. '
+        "L'historique des ventes associated ne sera pas modifié.",
+        textAlign: TextAlign.center,
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Supprimer'),
+        ),
+      ],
+    ),
+  );
+  return confirmed ?? false;
+}
+
 Future<bool> showErrorDialog(
   BuildContext context, {
   String title = 'Erreur de connexion',
