@@ -300,4 +300,46 @@ void main() {
     expect(find.text('Choisir un pays'), findsNothing);
     expect(find.text('+33'), findsOneWidget);
   });
+
+  testWidgets('starts flush under the AppBar without an extra top gap', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpSignup(tester);
+
+    expect(tester.takeException(), isNull);
+    final double appBarHeight = tester.getSize(find.byType(AppBar)).height;
+    final Offset headerTopLeft = tester.getTopLeft(
+      find.text('Rejoignez KioskMind pour piloter votre commerce'),
+    );
+    expect(headerTopLeft.dy, closeTo(appBarHeight + 24, 1));
+    final ScrollPosition position = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    expect(position.maxScrollExtent, 0);
+  });
+
+  testWidgets('keeps a four-digit dial code on a single line', (tester) async {
+    await pumpSignup(tester);
+
+    await tester.tap(find.text('+225'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('country_search')),
+      'Nigeria',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Nigeria'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('+234'), findsOneWidget);
+    final Size codeSize = tester.getSize(find.text('+234'));
+    expect(codeSize.height, lessThanOrEqualTo(24));
+  });
 }

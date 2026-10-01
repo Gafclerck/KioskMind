@@ -35,7 +35,12 @@ class CountryCodePicker extends ConsumerWidget {
           prefixIcon: Icon(Icons.flag_outlined),
           suffixIcon: Icon(Icons.expand_more),
         ),
-        child: Text(selected.code),
+        child: Text(
+          selected.code,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.clip,
+        ),
       ),
     );
   }
