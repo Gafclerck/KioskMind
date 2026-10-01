@@ -63,6 +63,15 @@ final class InMemoryProductCatalog implements ProductCatalogReader {
   Future<ProductSnapshot?> findById(String productId) async =>
       productById(productId);
 
+  @override
+  Future<List<ProductSnapshot>> readAllProducts() async {
+    final List<ProductSnapshot> all = _products.values.toList()
+      ..sort(
+        (ProductSnapshot a, ProductSnapshot b) => a.name.compareTo(b.name),
+      );
+    return all;
+  }
+
   /// The product whatever its archived flag, so a caller can tell an archived
   /// product from an unknown one.
   ProductSnapshot? productById(String productId) => _products[productId];
