@@ -44,17 +44,37 @@ class FakeAuthGateway implements AuthGateway {
   final SendPhoneCodeCall? onSendPhoneCode;
   final VerifyPhoneCredentialCall? onVerifyPhoneCredential;
 
+  final Map<String, String> phoneEmails = <String, String>{};
+
   int signInCalls = 0;
   int signUpCalls = 0;
   int sendResetCalls = 0;
   int sendPhoneCodeCalls = 0;
   int verifyPhoneCredentialCalls = 0;
+  int phoneInUseCalls = 0;
   String? lastSignInEmail;
   String? lastSignUpEmail;
   String? lastResetEmail;
   String? lastPhoneNumber;
   String? lastVerificationId;
   String? lastSmsCode;
+  String? lastCheckedPhone;
+  String? lastCheckedCountryCode;
+
+  void registerPhone(String fullPhone, String email) {
+    phoneEmails[fullPhone] = email;
+  }
+
+  @override
+  Future<bool> isPhoneInUse({
+    required String countryCode,
+    required String phone,
+  }) async {
+    phoneInUseCalls++;
+    lastCheckedCountryCode = countryCode;
+    lastCheckedPhone = phone;
+    return phoneEmails.containsKey('$countryCode$phone');
+  }
 
   @override
   Future<void> signInWithEmail({
@@ -77,9 +97,13 @@ class FakeAuthGateway implements AuthGateway {
     required String countryCode,
     required String email,
     required String password,
-  }) {
+  }) async {
+    if (await isPhoneInUse(countryCode: countryCode, phone: phone)) {
+      throw phoneAlreadyInUseException;
+    }
     signUpCalls++;
     lastSignUpEmail = email;
+    registerPhone('$countryCode$phone', email);
     final SignUpCall? call = onSignUp;
     if (call != null) {
       return call(
@@ -90,7 +114,6 @@ class FakeAuthGateway implements AuthGateway {
         password: password,
       );
     }
-    return Future<void>.value();
   }
 
   @override

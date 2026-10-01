@@ -147,6 +147,23 @@ void main() {
     expect(find.text('Cette adresse e-mail est déjà utilisée'), findsOneWidget);
   });
 
+  testWidgets('shows the phone-in-use toast and does not create the account', (
+    tester,
+  ) async {
+    final FakeAuthGateway gateway = FakeAuthGateway()
+      ..registerPhone('+2250700000000', 'other@example.com');
+    await pumpSignup(tester, gateway: gateway);
+
+    await fillValidForm(tester);
+    await tapSubmit(tester);
+
+    expect(gateway.signUpCalls, 0);
+    expect(
+      find.text('Ce numéro de téléphone est déjà associé à un autre compte.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('disables the button while submitting', (tester) async {
     final Completer<void> completer = Completer<void>();
     final FakeAuthGateway gateway = FakeAuthGateway(

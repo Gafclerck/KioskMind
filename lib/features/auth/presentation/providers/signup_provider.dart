@@ -30,6 +30,8 @@ class SignupState {
   final String? errorMessage;
   final bool success;
 
+  static const Object _unset = Object();
+
   SignupState copyWith({
     bool? obscurePassword,
     bool? obscureConfirmation,
@@ -40,7 +42,7 @@ class SignupState {
     String? phone,
     String? email,
     bool? isSubmitting,
-    String? errorMessage,
+    Object? errorMessage = _unset,
     bool? success,
   }) {
     return SignupState(
@@ -53,7 +55,9 @@ class SignupState {
       phone: phone ?? this.phone,
       email: email ?? this.email,
       isSubmitting: isSubmitting ?? this.isSubmitting,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
       success: success ?? this.success,
     );
   }

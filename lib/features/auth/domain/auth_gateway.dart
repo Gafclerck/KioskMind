@@ -14,6 +14,11 @@ abstract class AuthGateway {
 
   Future<void> sendPasswordResetEmail({required String email});
 
+  Future<bool> isPhoneInUse({
+    required String countryCode,
+    required String phone,
+  });
+
   void sendPhoneVerificationCode({
     required String phoneNumber,
     required void Function(String verificationId) onCodeSent,
@@ -34,3 +39,11 @@ class AuthException implements Exception {
   @override
   String toString() => 'AuthException: $message';
 }
+
+const AuthException phoneAlreadyInUseException = AuthException(
+  'Ce numéro de téléphone est déjà associé à un autre compte.',
+);
+
+const AuthException phoneNotFoundException = AuthException(
+  'Aucun compte n\'est associé à ce numéro de téléphone. Veuillez vous inscrire.',
+);

@@ -33,6 +33,16 @@ class FirebaseAuthGateway implements AuthGateway {
     required String password,
   }) async {
     try {
+      if (await isPhoneInUse(countryCode: countryCode, phone: phone)) {
+        throw phoneAlreadyInUseException;
+      }
+    } catch (error) {
+      if (error is AuthException) {
+        rethrow;
+      }
+      throw authErrorFrom(error);
+    }
+    try {
       final UserCredential credential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
       await _storeProfile(
@@ -45,6 +55,28 @@ class FirebaseAuthGateway implements AuthGateway {
     } catch (error) {
       throw authErrorFrom(error);
     }
+  }
+
+  @override
+  Future<bool> isPhoneInUse({
+    required String countryCode,
+    required String phone,
+  }) async {
+    final QuerySnapshot paired = await _firestore
+        .collection('users')
+        .where('countryCode', isEqualTo: countryCode)
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (paired.docs.isNotEmpty) {
+      return true;
+    }
+    final QuerySnapshot normalized = await _firestore
+        .collection('users')
+        .where('phone', isEqualTo: '$countryCode$phone')
+        .limit(1)
+        .get();
+    return normalized.docs.isNotEmpty;
   }
 
   @override

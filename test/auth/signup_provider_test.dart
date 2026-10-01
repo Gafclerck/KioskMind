@@ -128,6 +128,55 @@ void main() {
     expect(container.read(signupProvider).isSubmitting, isFalse);
   });
 
+  test('rejects signup when the phone number is already in use', () async {
+    final FakeAuthGateway gateway = FakeAuthGateway()
+      ..registerPhone('+2250700000000', 'other@example.com');
+    final ProviderContainer container = makeContainer(gateway);
+    addTearDown(container.dispose);
+
+    final SignupNotifier notifier = fillProfile(container);
+    await notifier.submit();
+
+    final SignupState state = container.read(signupProvider);
+    expect(
+      state.errorMessage,
+      'Ce numéro de téléphone est déjà associé à un autre compte.',
+    );
+    expect(state.success, isFalse);
+    expect(gateway.signUpCalls, 0);
+    expect(gateway.phoneInUseCalls, 1);
+  });
+
+  test('does not block signup for a different phone number', () async {
+    final FakeAuthGateway gateway = FakeAuthGateway()
+      ..registerPhone('+33607000000', 'other@example.com');
+    final ProviderContainer container = makeContainer(gateway);
+    addTearDown(container.dispose);
+
+    final SignupNotifier notifier = fillProfile(container);
+    await notifier.submit();
+
+    expect(gateway.signUpCalls, 1);
+    expect(container.read(signupProvider).success, isTrue);
+  });
+
+  test('clearSubmissionResult resets a phone-in-use error to null', () async {
+    final FakeAuthGateway gateway = FakeAuthGateway()
+      ..registerPhone('+2250700000000', 'other@example.com');
+    final ProviderContainer container = makeContainer(gateway);
+    addTearDown(container.dispose);
+
+    final SignupNotifier notifier = fillProfile(container);
+    await notifier.submit();
+    expect(container.read(signupProvider).errorMessage, isNotNull);
+
+    notifier.clearSubmissionResult();
+
+    final SignupState state = container.read(signupProvider);
+    expect(state.errorMessage, isNull);
+    expect(state.success, isFalse);
+  });
+
   test('clearSubmissionResult resets the outcome fields', () async {
     final ProviderContainer container = makeContainer(FakeAuthGateway());
     addTearDown(container.dispose);
