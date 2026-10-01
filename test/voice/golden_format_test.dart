@@ -345,7 +345,7 @@ void main() {
       expect(
         _validate(workspace, text, audio).errors.join('\n'),
         contains(
-          'Trop peu de cas exigent un appel de handler (0/269), '
+          'Trop peu de cas exigent un appel de handler (0/266), '
           'le jeu measure la clarification, pas le routage',
         ),
       );
