@@ -23,6 +23,50 @@ final productsProvider = StreamProvider<List<Product>>((ref) {
   return ref.watch(productRepositoryProvider).watchProducts();
 });
 
+/// Catégorie active dans les onglets de filtre. [null] signifie « Tous ».
+class ProductFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void select(String? category) => state = category;
+}
+
+final productFilterProvider = NotifierProvider<ProductFilterNotifier, String?>(
+  ProductFilterNotifier.new,
+);
+
+/// Recherche texte + catégorie, appliqués à la liste affichée.
+final productSearchProvider = NotifierProvider<ProductSearchNotifier, String>(
+  ProductSearchNotifier.new,
+);
+
+class ProductSearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void update(String query) => state = query;
+  void clear() => state = '';
+}
+
+/// Liste filtrée consommée par l'écran Mon Stock.
+///
+/// Séparée de [productsProvider] volontairement : le flux brut reste la source
+/// de vérité, la vue filtrée est recalculée à chaque frappe.
+final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
+  final products = ref.watch(productsProvider);
+  final category = ref.watch(productFilterProvider);
+  final query = ref.watch(productSearchProvider).trim().toLowerCase();
+
+  return products.whenData(
+    (list) => list.where((product) {
+      final matchesCategory = category == null || product.category == category;
+      final matchesQuery =
+          query.isEmpty || product.name.toLowerCase().contains(query);
+      return matchesCategory && matchesQuery;
+    }).toList(),
+  );
+});
+
 final createProductProvider = Provider<CreateProduct>((ref) {
   return CreateProduct(ref.watch(productRepositoryProvider));
 });

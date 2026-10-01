@@ -195,32 +195,49 @@ class _ProductFormState extends State<ProductForm> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                if (_isCreation) ...[
-                  Row(
-                    children: [
-                      const Expanded(child: Text('Quantité initiale')),
-                      IconButton(
-                        onPressed: _quantity > 0
-                            ? () => setState(() => _quantity--)
-                            : null,
-                        icon: const Icon(Icons.remove),
-                      ),
-                      Text('$_quantity'),
-                      IconButton(
-                        onPressed: () => setState(() => _quantity++),
-                        icon: const Icon(Icons.add),
-                      ),
-                    ],
+                Text(
+                  _isCreation ? 'Quantité initiale' : 'Quantité en rayon',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  _isCreation
+                      ? 'Actuellement en rayon'
+                      : 'Ajustement direct du niveau de stock',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _quantity > 0
+                          ? () => setState(() => _quantity--)
+                          : null,
+                      icon: const Icon(Icons.remove),
+                    ),
+                    SizedBox(
+                      width: 64,
+                      child: Text(
+                        '$_quantity',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _quantity++),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   key: const ValueKey<String>('product_form_alert_threshold'),
                   controller: _alertThreshold,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Seuil d'alerte critique",
                     helperText:
-                        'Alerter quand le stock est inférieur à ce nombre',
+                        'Alerter quand le stock est inférieur à ${_alertThreshold.text} ${_unit.toLowerCase()}',
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],

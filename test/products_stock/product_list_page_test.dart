@@ -6,6 +6,7 @@ import 'package:kiosk_mind/features/products_stock/domain/entities/product.dart'
 import 'package:kiosk_mind/features/products_stock/domain/repositories/product_repository.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/pages/add_product_page.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/pages/edit_product_page.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/pages/product_detail_page.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/pages/product_list_page.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/widgets/product_card.dart';
@@ -18,6 +19,39 @@ const _riz = Product(
   purchasePrice: 4200,
   salePrice: 5000,
   quantity: 10,
+  alertThreshold: 3,
+);
+
+const _lowStock = Product(
+  id: '3',
+  name: 'Sucre Roux',
+  category: 'Alimentaire',
+  unit: 'Paquets',
+  purchasePrice: 1000,
+  salePrice: 1200,
+  quantity: 2,
+  alertThreshold: 3,
+);
+
+const _atThreshold = Product(
+  id: '4',
+  name: 'Savon de Marseille',
+  category: 'Hygiène',
+  unit: 'Pièces',
+  purchasePrice: 400,
+  salePrice: 450,
+  quantity: 3,
+  alertThreshold: 3,
+);
+
+const _outOfStock = Product(
+  id: '5',
+  name: 'Huile de Palme',
+  category: 'Alimentaire',
+  unit: 'Bouteilles',
+  purchasePrice: 2000,
+  salePrice: 2500,
+  quantity: 0,
   alertThreshold: 3,
 );
 
@@ -89,7 +123,7 @@ void main() {
     expect(find.text('Nouveau Produit'), findsOneWidget);
   });
 
-  testWidgets('opens the edit page when tapping a product card', (
+  testWidgets('opens the detail page when tapping a product card', (
     tester,
   ) async {
     await tester.pumpWidget(_page(const [_riz]));
@@ -98,19 +132,37 @@ void main() {
     await tester.tap(find.text('test_Riz'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(EditProductPage), findsOneWidget);
-    expect(find.text('Modifier le Produit'), findsOneWidget);
-    expect(find.text('Enregistrer les modifications'), findsOneWidget);
+    expect(find.byType(ProductDetailPage), findsOneWidget);
+    expect(find.text('Fiche Produit'), findsOneWidget);
+    expect(find.text('Marge Net'), findsOneWidget);
+    expect(find.text('+800 FCFA'), findsOneWidget);
   });
 
-  testWidgets('keeps the quantity field hidden when editing', (tester) async {
+  testWidgets('opens the edit page from the detail page', (tester) async {
     await tester.pumpWidget(_page(const [_riz]));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('test_Riz'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Quantité initiale'), findsNothing);
+    await tester.tap(find.text('Modifier Fiche'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EditProductPage), findsOneWidget);
+  });
+
+  testWidgets('shows the stock quantity field again when editing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_page(const [_riz]));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('test_Riz'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Modifier Fiche'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quantité en rayon'), findsOneWidget);
   });
 
   testWidgets('updates the product through the edit page', (tester) async {
@@ -118,7 +170,7 @@ void main() {
     await tester.pumpWidget(_pageWithRepository(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('test_Riz'));
+    await tester.tap(find.byTooltip('Modifier la fiche'));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -135,14 +187,28 @@ void main() {
     expect(repository.updated.single.quantity, 10);
   });
 
+  testWidgets('saves a new quantity when editing', (tester) async {
+    final repository = _RecordingProductRepository();
+    await tester.pumpWidget(_pageWithRepository(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Modifier la fiche'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+    await tester.tap(find.text('Enregistrer les modifications'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updated.single.quantity, 11);
+  });
+
   testWidgets('deletes a product after confirmation', (tester) async {
     final repository = _RecordingProductRepository();
     await tester.pumpWidget(_pageWithRepository(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Supprimer'));
+    await tester.tap(find.byTooltip('Supprimer'));
     await tester.pumpAndSettle();
 
     expect(find.text('Supprimer ce produit ?'), findsOneWidget);
@@ -160,9 +226,7 @@ void main() {
     await tester.pumpWidget(_pageWithRepository(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Supprimer'));
+    await tester.tap(find.byTooltip('Supprimer'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Annuler'));
@@ -177,9 +241,7 @@ void main() {
     await tester.pumpWidget(_pageWithRepository(repository));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Actions'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Supprimer'));
+    await tester.tap(find.byTooltip('Supprimer'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Supprimer'));
     await tester.pumpAndSettle();
@@ -187,16 +249,100 @@ void main() {
     expect(find.text('Erreur de suppression'), findsOneWidget);
   });
 
-  testWidgets('offers the edit and delete actions on a card', (tester) async {
+  testWidgets('shows the quantity and detail actions on a card', (
+    tester,
+  ) async {
     await tester.pumpWidget(_page(const [_riz]));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProductCard), findsOneWidget);
+    expect(find.text('Modifier Qte'), findsOneWidget);
+    expect(find.text('Détails'), findsOneWidget);
+    expect(find.text('Seuil d\'alerte : 3 sacs'), findsOneWidget);
+    expect(find.text('10 sacs'), findsOneWidget);
+    expect(find.text('5,000 F / Sacs'), findsOneWidget);
+  });
 
-    await tester.tap(find.byTooltip('Actions'));
+  testWidgets('filters the list by category', (tester) async {
+    await tester.pumpWidget(
+      _page(const [
+        _riz,
+        Product(
+          id: '2',
+          name: 'Eau de Savon',
+          category: 'Hygiène',
+          unit: 'Bouteilles',
+          purchasePrice: 300,
+          salePrice: 500,
+          quantity: 4,
+          alertThreshold: 2,
+        ),
+      ]),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('Modifier'), findsOneWidget);
-    expect(find.text('Supprimer'), findsOneWidget);
+    expect(find.text('test_Riz'), findsOneWidget);
+    expect(find.text('Eau de Savon'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilterChip, 'Hygiène'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsNothing);
+    expect(find.text('Eau de Savon'), findsOneWidget);
+  });
+
+  testWidgets('filters the list by search query', (tester) async {
+    await tester.pumpWidget(_page(const [_riz]));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'riz');
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'inexistant');
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsNothing);
+    expect(find.text('Aucun résultat'), findsOneWidget);
+  });
+
+  testWidgets('clears the search query', (tester) async {
+    await tester.pumpWidget(_page(const [_riz]));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'zzz');
+    await tester.pumpAndSettle();
+    expect(find.text('Aucun résultat'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsOneWidget);
+  });
+
+  testWidgets('marks a product below its threshold as critical', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_page(const [_lowStock]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Niveau critique'), findsOneWidget);
+  });
+
+  testWidgets('marks an out of stock product', (tester) async {
+    await tester.pumpWidget(_page(const [_outOfStock]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rupture de Stock'), findsOneWidget);
+  });
+
+  testWidgets('marks a product at its threshold as a rupture warning', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_page(const [_atThreshold]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alerte Rupture'), findsOneWidget);
   });
 }
