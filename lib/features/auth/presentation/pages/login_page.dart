@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
-import '../controllers/login_controller.dart';
+import '../providers/login_provider.dart';
+import '../widgets/forgot_password_dialog.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -26,15 +28,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connexion bientôt disponible')),
-      );
+      ref.read(loginProvider.notifier).submit();
     }
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Réinitialisation bientôt disponible')),
+    showDialog<void>(
+      context: context,
+      builder: (_) => const ForgotPasswordDialog(),
     );
   }
 
@@ -46,9 +47,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final LoginState state = ref.watch(loginControllerProvider);
+    final LoginState state = ref.watch(loginProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+
+    ref.listen<LoginState>(loginProvider, (
+      LoginState? previous,
+      LoginState next,
+    ) {
+      final LoginNotifier notifier = ref.read(loginProvider.notifier);
+      if (next.successMessage != null &&
+          next.successMessage != previous?.successMessage) {
+        AppToast.show(
+          ref,
+          message: next.successMessage!,
+          type: AppToastType.success,
+        );
+        notifier.clearSubmissionResult();
+      } else if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        AppToast.show(
+          ref,
+          message: next.errorMessage!,
+          type: AppToastType.error,
+        );
+        notifier.clearSubmissionResult();
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
@@ -95,13 +120,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   validator: (String? value) => state.emailMode
                       ? validateEmail(value)
                       : validatePhoneNumber(value),
+                  onChanged: (String value) =>
+                      ref.read(loginProvider.notifier).setIdentifier(value),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => ref
-                        .read(loginControllerProvider.notifier)
-                        .toggleIdentifierMode(),
+                    onPressed: () =>
+                        ref.read(loginProvider.notifier).toggleIdentifierMode(),
                     child: Text(
                       state.emailMode
                           ? "Utiliser le téléphone"
@@ -118,7 +144,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(loginControllerProvider.notifier)
+                          .read(loginProvider.notifier)
                           .togglePasswordVisibility(),
                       icon: Icon(
                         state.obscurePassword
@@ -128,6 +154,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ),
                   validator: validatePassword,
+                  onChanged: (String value) =>
+                      ref.read(loginProvider.notifier).setPassword(value),
                   onFieldSubmitted: (_) => _submit(),
                 ),
                 Align(
@@ -139,11 +167,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: _submit,
+                  onPressed: state.isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Se connecter'),
+                  child: state.isSubmitting
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: scheme.onPrimary,
+                          ),
+                        )
+                      : const Text('Se connecter'),
                 ),
                 const SizedBox(height: 24),
                 Row(
