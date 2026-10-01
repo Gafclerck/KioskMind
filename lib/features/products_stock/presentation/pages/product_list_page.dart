@@ -3,9 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/product_providers.dart';
 import '../widgets/product_card.dart';
+import 'add_product_page.dart';
 
 class ProductListPage extends ConsumerWidget {
   const ProductListPage({super.key});
+
+  void _openAddProduct(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddProductPage()));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -13,6 +20,11 @@ class ProductListPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Mon Stock')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openAddProduct(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Ajouter'),
+      ),
       body: products.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _MessageView(
@@ -24,10 +36,12 @@ class ProductListPage extends ConsumerWidget {
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const _MessageView(
+            return _MessageView(
               title: 'Aucun produit',
               message:
                   'Ajoutez votre premier produit pour commencer à gérer votre stock.',
+              actionLabel: 'Ajouter un produit',
+              onAction: () => _openAddProduct(context),
             );
           }
           return ListView.builder(

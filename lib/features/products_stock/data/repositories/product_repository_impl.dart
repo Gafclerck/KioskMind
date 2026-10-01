@@ -17,10 +17,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<void> createProduct(Product product) {
-    return _products
-        .doc()
-        .set(ProductModel.toFirestore(product))
-        .timeout(const Duration(seconds: 2), onTimeout: () {});
+    return _products.doc().set(ProductModel.toFirestore(product));
   }
 
   @override

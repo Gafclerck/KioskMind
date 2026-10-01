@@ -25,6 +25,7 @@ class ProductForm extends StatefulWidget {
 class _ProductFormState extends State<ProductForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
+  late final TextEditingController _imageUrl;
   late final TextEditingController _purchasePrice;
   late final TextEditingController _salePrice;
   late final TextEditingController _alertThreshold;
@@ -39,6 +40,7 @@ class _ProductFormState extends State<ProductForm> {
     super.initState();
     final p = widget.initialProduct;
     _name = TextEditingController(text: p?.name ?? '');
+    _imageUrl = TextEditingController(text: p?.imageUrl ?? '');
     _purchasePrice = TextEditingController(
       text: p?.purchasePrice.toString() ?? '',
     );
@@ -54,6 +56,7 @@ class _ProductFormState extends State<ProductForm> {
   @override
   void dispose() {
     _name.dispose();
+    _imageUrl.dispose();
     _purchasePrice.dispose();
     _salePrice.dispose();
     _alertThreshold.dispose();
@@ -66,6 +69,16 @@ class _ProductFormState extends State<ProductForm> {
   String? _requiredNumber(String? value) =>
       int.tryParse(value?.trim() ?? '') == null ? 'Saisissez un nombre' : null;
 
+  String? _optionalImageUrl(String? value) {
+    final url = value?.trim() ?? '';
+    if (url.isEmpty) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      return 'URL invalide (ex: https://exemple.com/photo.jpg)';
+    }
+    return null;
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -73,7 +86,7 @@ class _ProductFormState extends State<ProductForm> {
       Product(
         id: widget.initialProduct?.id ?? '',
         name: _name.text.trim(),
-        imageUrl: widget.initialProduct?.imageUrl,
+        imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
         category: _category,
         unit: _unit,
         purchasePrice: int.parse(_purchasePrice.text.trim()),
@@ -95,12 +108,25 @@ class _ProductFormState extends State<ProductForm> {
               padding: const EdgeInsets.all(16),
               children: [
                 TextFormField(
+                  key: const ValueKey<String>('product_form_name'),
                   controller: _name,
                   decoration: const InputDecoration(
                     labelText: 'Nom du produit *',
                     hintText: 'Ex: Sac de Riz Royal 5kg',
                   ),
                   validator: _requiredText,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  key: const ValueKey<String>('product_form_image_url'),
+                  controller: _imageUrl,
+                  decoration: const InputDecoration(
+                    labelText: "Photo du produit (URL)",
+                    hintText: 'Optionnel - https://exemple.com/photo.jpg',
+                    prefixIcon: Icon(Icons.image_outlined),
+                  ),
+                  keyboardType: TextInputType.url,
+                  validator: _optionalImageUrl,
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -137,6 +163,9 @@ class _ProductFormState extends State<ProductForm> {
                   children: [
                     Expanded(
                       child: TextFormField(
+                        key: const ValueKey<String>(
+                          'product_form_purchase_price',
+                        ),
                         controller: _purchasePrice,
                         decoration: const InputDecoration(
                           labelText: "Prix d'achat (FCFA)",
@@ -151,6 +180,7 @@ class _ProductFormState extends State<ProductForm> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
+                        key: const ValueKey<String>('product_form_sale_price'),
                         controller: _salePrice,
                         decoration: const InputDecoration(
                           labelText: 'Prix de vente (FCFA)',
@@ -185,6 +215,7 @@ class _ProductFormState extends State<ProductForm> {
                   const SizedBox(height: 16),
                 ],
                 TextFormField(
+                  key: const ValueKey<String>('product_form_alert_threshold'),
                   controller: _alertThreshold,
                   decoration: const InputDecoration(
                     labelText: "Seuil d'alerte critique",
