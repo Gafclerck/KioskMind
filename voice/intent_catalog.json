@@ -12,6 +12,7 @@
         "j'ai vendu",
         "je vends",
         "vends",
+        "vendeur",
         "on a vendu",
         "ca part",
         "vente de",
@@ -121,10 +122,12 @@
       "triggers": [
         "stock de",
         "stock du",
+        "stock",
         "combien il reste",
         "combien reste",
         "il reste combien",
         "combien de",
+        "combien",
         "quel stock",
         "niveau de stock"
       ],
