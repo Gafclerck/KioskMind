@@ -52,6 +52,7 @@ class FakeAuthGateway implements AuthGateway {
   int sendPhoneCodeCalls = 0;
   int verifyPhoneCredentialCalls = 0;
   int phoneInUseCalls = 0;
+  int phoneSearchCalls = 0;
   String? lastSignInEmail;
   String? lastSignUpEmail;
   String? lastResetEmail;
@@ -60,6 +61,7 @@ class FakeAuthGateway implements AuthGateway {
   String? lastSmsCode;
   String? lastCheckedPhone;
   String? lastCheckedCountryCode;
+  String? lastPhoneSearchNumber;
 
   void registerPhone(String fullPhone, String email) {
     phoneEmails[fullPhone] = email;
@@ -74,6 +76,13 @@ class FakeAuthGateway implements AuthGateway {
     lastCheckedCountryCode = countryCode;
     lastCheckedPhone = phone;
     return phoneEmails.containsKey('$countryCode$phone');
+  }
+
+  @override
+  Future<String?> findEmailByPhone({required String phoneNumber}) async {
+    phoneSearchCalls++;
+    lastPhoneSearchNumber = phoneNumber;
+    return phoneEmails[phoneNumber];
   }
 
   @override

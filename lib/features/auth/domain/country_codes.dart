@@ -203,3 +203,24 @@ CountryCode? countryCodeByDialCode(String code) {
   }
   return null;
 }
+
+final List<CountryCode> _countryCodesByCodeLength =
+    List<CountryCode>.of(countryCodes)..sort((CountryCode a, CountryCode b) {
+      final int byLength = b.code.length.compareTo(a.code.length);
+      if (byLength != 0) {
+        return byLength;
+      }
+      return b.code.compareTo(a.code);
+    });
+
+({String countryCode, String phone})? splitPhoneNumber(String raw) {
+  for (final CountryCode country in _countryCodesByCodeLength) {
+    if (raw.startsWith(country.code) && raw.length > country.code.length) {
+      return (
+        countryCode: country.code,
+        phone: raw.substring(country.code.length),
+      );
+    }
+  }
+  return null;
+}

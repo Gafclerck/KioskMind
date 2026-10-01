@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../domain/auth_gateway.dart';
+import '../domain/country_codes.dart';
 import 'auth_errors.dart';
 
 class FirebaseAuthGateway implements AuthGateway {
@@ -77,6 +78,42 @@ class FirebaseAuthGateway implements AuthGateway {
         .limit(1)
         .get();
     return normalized.docs.isNotEmpty;
+  }
+
+  @override
+  Future<String?> findEmailByPhone({required String phoneNumber}) async {
+    final ({String countryCode, String phone})? split = splitPhoneNumber(
+      phoneNumber,
+    );
+    if (split != null) {
+      final QuerySnapshot paired = await _firestore
+          .collection('users')
+          .where('countryCode', isEqualTo: split.countryCode)
+          .where('phone', isEqualTo: split.phone)
+          .limit(1)
+          .get();
+      if (paired.docs.isNotEmpty) {
+        return _emailFrom(paired.docs.first);
+      }
+    }
+    final QuerySnapshot normalized = await _firestore
+        .collection('users')
+        .where('phone', isEqualTo: phoneNumber)
+        .limit(1)
+        .get();
+    if (normalized.docs.isNotEmpty) {
+      return _emailFrom(normalized.docs.first);
+    }
+    return null;
+  }
+
+  String _emailFrom(QueryDocumentSnapshot<Object?> snapshot) {
+    final Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+    final Object? email = data?['email'];
+    if (email is String && email.isNotEmpty) {
+      return email;
+    }
+    throw const AuthException('Adresse e-mail invalide');
   }
 
   @override

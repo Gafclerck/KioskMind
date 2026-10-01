@@ -19,6 +19,8 @@ abstract class AuthGateway {
     required String phone,
   });
 
+  Future<String?> findEmailByPhone({required String phoneNumber});
+
   void sendPhoneVerificationCode({
     required String phoneNumber,
     required void Function(String verificationId) onCodeSent,
