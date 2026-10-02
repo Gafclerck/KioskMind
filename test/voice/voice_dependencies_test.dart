@@ -6,17 +6,42 @@ import 'package:kiosk_mind/core/constants/voice_flags.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/catalog_fixture_loader.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/call_journal.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/clock/system_voice_clock.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/commands/session_command_ids.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_voice_handlers.dart';
+import 'package:kiosk_mind/core/usecase/result.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/dialog/dialog_manager.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_input.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_result.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_context.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/services/decision_policy.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
+
+import 'fake_clock.dart';
+import 'rule_parser_harness.dart' show fixtureProducts;
 
 /// The catalog the composition root would build, without loading the asset.
 InMemoryProductCatalog buildCatalogFromDisk() {
   return InMemoryProductCatalog(
     parseCatalogFixture(File(catalogFixtureAsset).readAsStringSync()),
+  );
+}
+
+/// The shipped product [id], for a proposal the test builds by hand.
+ProductSnapshot fixtureProduct(String id) {
+  return fixtureProducts().firstWhere(
+    (ProductSnapshot product) => product.id == id,
   );
 }
 
@@ -174,6 +199,121 @@ void main() {
         isNot(same(second.read(voiceCallJournalProvider))),
       );
     });
+  });
+
+  group('the session providers', () {
+    test('the clock is the device one, and replaceable', () {
+      final ProviderContainer container = buildContainer(
+        catalog: buildCatalogFromDisk(),
+      );
+
+      expect(container.read(voiceClockProvider), isA<SystemVoiceClock>());
+
+      final FakeClock frozen = FakeClock(DateTime(2026, 3, 1, 10));
+      final ProviderContainer timed = ProviderContainer(
+        overrides: <Override>[voiceClockProvider.overrideWithValue(frozen)],
+      );
+      addTearDown(timed.dispose);
+
+      expect(timed.read(voiceClockProvider).now(), DateTime(2026, 3, 1, 10));
+    });
+
+    test('the command ids come from one sequence per container', () {
+      final ProviderContainer container = buildContainer(
+        catalog: buildCatalogFromDisk(),
+      );
+      final CommandIdFactory ids = container.read(voiceCommandIdsProvider);
+
+      final String first = ids.next();
+      final String second = ids.next();
+
+      expect(first, isNot(second));
+      expect(first, startsWith('${SessionCommandIds.prefix}-'));
+      expect(container.read(voiceCommandIdsProvider), same(ids));
+    });
+
+    test('one dialog per container, so the session is one session', () {
+      final ProviderContainer container = buildContainer(
+        catalog: buildCatalogFromDisk(),
+      );
+
+      expect(
+        container.read(voiceDialogProvider),
+        same(container.read(voiceDialogProvider)),
+      );
+    });
+
+    test('the validator reads the tunables the config gives it', () {
+      final ProviderContainer container = buildContainer(
+        catalog: buildCatalogFromDisk(),
+      );
+
+      expect(
+        container.read(voiceCommandValidatorProvider),
+        isA<CommandValidator>(),
+      );
+    });
+
+    test('the policy is built from the bundled catalog', () async {
+      final ProviderContainer container = buildContainer(
+        catalog: buildCatalogFromDisk(),
+      );
+
+      final IntentCatalog intents = await container.read(
+        voiceIntentsProvider.future,
+      );
+      final DecisionPolicy policy = await container.read(
+        voiceDecisionPolicyProvider.future,
+      );
+
+      expect(intents.byId('record_sale'), isNotNull);
+      expect(
+        policy
+            .decide(
+              const CommandProposal.rules(
+                intentId: 'record_sale',
+                slots: <Slot>[],
+              ),
+            )
+            .outcome,
+        DecisionOutcome.executeWithUndo,
+      );
+    });
+
+    test(
+      'the executor and the undo share one dialog and one id sequence',
+      () async {
+        final ProviderContainer container = buildContainer(
+          catalog: buildCatalogFromDisk(),
+        );
+
+        final ExecuteCommand execute = await container.read(
+          voiceExecuteCommandProvider.future,
+        );
+        final UndoLastCommand undo = await container.read(
+          voiceUndoLastCommandProvider.future,
+        );
+        final DialogManager dialog = container.read(voiceDialogProvider);
+
+        await execute.run(
+          decision: const Decision(DecisionOutcome.executeWithUndo),
+          proposal: CommandProposal.rules(
+            intentId: 'record_sale',
+            slots: <Slot>[
+              Slot(
+                name: 'items',
+                value: <ItemMention>[
+                  ItemMention(product: fixtureProduct('p_sucre'), qty: 2),
+                ],
+              ),
+            ],
+          ),
+        );
+
+        expect(dialog.undoSaleId, isNotNull);
+        expect(await undo.run(), isA<Success<CancelLastSaleResult>>());
+      },
+    );
   });
 
   group('buildMockVoiceHandlers', () {
