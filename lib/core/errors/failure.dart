@@ -52,3 +52,13 @@ final class AlreadyCancelled extends Failure {
 
   final String saleId;
 }
+
+/// The merchant asked to undo, and the session holds no sale to undo.
+///
+/// Its own failure rather than a refusal from the policy: the words were
+/// understood, there was simply nothing left to cancel. The presentation can say
+/// so and offer the history, which is what the merchant expects, instead of
+/// repeating "I did not understand".
+final class NothingToUndo extends Failure {
+  const NothingToUndo() : super('NOTHING_TO_UNDO');
+}
