@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/intent_catalog_loader.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
 
 /// Checks the format and the internal consistency of the frozen test set.
@@ -21,10 +22,12 @@ const String textCasesPath = 'voice/golden/text_cases.json';
 const String audioCasesPath = 'voice/golden/audio_cases.json';
 const String catalogFixturePath = 'voice/golden/catalog_fixture.json';
 
-/// Outcomes the decision policy can produce, minus nothing: the golden set has
-/// to be able to say that a phrase was meant to be refused.
+/// The five outcomes of the decision policy, minus nothing: the golden set has
+/// to be able to say that a phrase was meant to be refused, to be questioned, to
+/// be confirmed, to be read, or to be read with an undo window.
 const Set<String> _outcomes = <String>{
   'EXECUTE',
+  'EXECUTE_WITH_UNDO',
   'ASK_CONFIRMATION',
   'ASK_CLARIFICATION',
   'REJECT',
@@ -124,9 +127,14 @@ GoldenReport validateGoldenSet({
 }) {
   final List<String> errors = <String>[];
   final CatalogView catalog = CatalogView.fromFile(File(catalogPath));
-  final Set<String> intents = parseIntentCatalog(
+  final IntentCatalog catalogOfIntents = parseIntentCatalog(
     File(intentsPath).readAsStringSync(),
-  ).ids.toSet();
+  );
+  final Map<String, IntentRisk> risks = <String, IntentRisk>{
+    for (final IntentDefinition intent in catalogOfIntents.intents)
+      intent.id: intent.risk,
+  };
+  final Set<String> intents = risks.keys.toSet();
   final Set<String> supported = kSupportedIntentIds;
 
   // The catalog and the ports must agree, or an expectation could name an
@@ -183,7 +191,7 @@ GoldenReport validateGoldenSet({
       entry['expected'],
       where: id,
       catalog: catalog,
-      intents: intents,
+      risks: risks,
       errors: errors,
     );
     if (callsHandler) {
@@ -343,7 +351,7 @@ bool _validateExpectation(
   Object? node, {
   required String where,
   required CatalogView catalog,
-  required Set<String> intents,
+  required Map<String, IntentRisk> risks,
   required List<String> errors,
 }) {
   if (node is! Map<String, Object?>) {
@@ -375,7 +383,7 @@ bool _validateExpectation(
         node,
         where: where,
         catalog: catalog,
-        intents: intents,
+        risks: risks,
         errors: errors,
       );
       _validateResolution(
@@ -400,7 +408,7 @@ bool _validateExpectation(
         then,
         where: '$where/then',
         catalog: catalog,
-        intents: intents,
+        risks: risks,
         errors: errors,
         nested: true,
       );
@@ -415,9 +423,36 @@ bool _validateExpectation(
         node,
         where: where,
         catalog: catalog,
-        intents: intents,
+        risks: risks,
         errors: errors,
       );
+  }
+}
+
+/// The issue a case expects has to match the risk of the intent it names.
+///
+/// PIPELINE section 7: `EXECUTE` is a read, `EXECUTE_WITH_UNDO` is a clear write
+/// with an undo window. The check lives here rather than in a comment so the
+/// frozen set cannot drift back to calling a sale a plain execution: the routing
+/// metric compares the issue the policy produces with the one the case states, and
+/// a mismatch would leave the undo axis untested.
+void _validateIssueMatchesRisk(
+  Map<String, Object?> node,
+  IntentRisk? risk,
+  String where,
+  List<String> errors,
+) {
+  final Object? outcome = node['outcome'];
+  if (risk == null || outcome == null) {
+    return;
+  }
+  if (risk.isWrite && outcome == 'EXECUTE') {
+    errors.add(
+      '$where: ecriture attendue en EXECUTE_WITH_UNDO, obtenu $outcome',
+    );
+  }
+  if (!risk.isWrite && outcome == 'EXECUTE_WITH_UNDO') {
+    errors.add('$where: lecture attendue en EXECUTE, obtenu $outcome');
   }
 }
 
@@ -425,13 +460,15 @@ bool _validateCall(
   Map<String, Object?> node, {
   required String where,
   required CatalogView catalog,
-  required Set<String> intents,
+  required Map<String, IntentRisk> risks,
   required List<String> errors,
   bool nested = false,
 }) {
   if (nested) {
     final Object? outcome = node['outcome'];
-    if (outcome != 'EXECUTE' && outcome != 'ASK_CONFIRMATION') {
+    if (outcome != 'EXECUTE' &&
+        outcome != 'EXECUTE_WITH_UNDO' &&
+        outcome != 'ASK_CONFIRMATION') {
       errors.add('$where: issue d appel attendue, obtenu $outcome');
       return false;
     }
@@ -440,10 +477,11 @@ bool _validateCall(
     }
   }
   final String intent = node['intent'] as String? ?? '';
-  if (!intents.contains(intent)) {
+  if (!risks.containsKey(intent)) {
     errors.add('$where: intent absent du catalogue: $intent');
     return false;
   }
+  _validateIssueMatchesRisk(node, risks[intent], where, errors);
   final Object? arguments = node['handlerArgs'];
   if (arguments is! Map<String, Object?>) {
     errors.add('$where: handlerArgs attendu en objet JSON');

@@ -161,15 +161,6 @@ final class RuleBasedParser {
       requiresQuantity: isWrite,
     );
     doubts.addAll(reading.doubts);
-    if (reading.mentionsFound == 0) {
-      doubts.add(
-        Doubt(
-          kind: reading.namedSomething
-              ? DoubtKind.unknownProduct
-              : DoubtKind.missingProduct,
-        ),
-      );
-    }
     if (reading.items.isEmpty) {
       return const <Slot>[];
     }
@@ -191,15 +182,6 @@ final class RuleBasedParser {
       requiresQuantity: false,
     );
     doubts.addAll(reading.doubts);
-    if (reading.mentionsFound == 0) {
-      doubts.add(
-        Doubt(
-          kind: reading.namedSomething
-              ? DoubtKind.unknownProduct
-              : DoubtKind.missingProduct,
-        ),
-      );
-    }
     if (reading.products.isEmpty) {
       return const <Slot>[];
     }

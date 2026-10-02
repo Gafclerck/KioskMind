@@ -1,5 +1,12 @@
 import 'product_snapshot.dart';
 
+/// Name of the slot holding the lines of a sale or a restock.
+///
+/// Named here rather than written in each place: the extractor fills it, the
+/// validator reads it, and the handler arguments are built from it, so a doubt
+/// about "the lines" has to point at one string.
+const String kItemsSlot = 'items';
+
 /// A value read from an utterance for one slot of an intent.
 ///
 /// A slot is either present with a value or absent. It never carries a guess:

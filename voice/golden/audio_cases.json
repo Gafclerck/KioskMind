@@ -11,7 +11,7 @@
       "noise": "silence",
       "groundTruthTranscript": "j'ai vendu deux sucre, trois laits et une eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -101,7 +101,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu un riz a sept cents le kilo et un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -128,7 +128,7 @@
       "noise": "rue",
       "groundTruthTranscript": "ça part un sucre et aussi un peu de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -155,7 +155,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu du sucre deux fois",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -178,7 +178,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu une cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -201,7 +201,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu deux sucre et un lait",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -228,7 +228,7 @@
       "noise": "silence",
       "groundTruthTranscript": "vendu deux cafe et un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -255,7 +255,7 @@
       "noise": "silence",
       "groundTruthTranscript": "vendu un beurre et une cassonade",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -282,7 +282,7 @@
       "noise": "silence",
       "groundTruthTranscript": "vendu deux paillette et un ciment",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -309,7 +309,7 @@
       "noise": "rue",
       "groundTruthTranscript": "reçu dix eau et cinq savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -336,7 +336,7 @@
       "noise": "rue",
       "groundTruthTranscript": "j'ai achete un riz parfume et un savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -363,7 +363,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -386,7 +386,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu six sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -409,7 +409,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu onze sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -432,7 +432,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu seize sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -513,7 +513,7 @@
       "noise": "silence",
       "groundTruthTranscript": "j'ai vendu un maggi a cent francs",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -536,7 +536,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu un savon a deux cent cinquante",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -617,7 +617,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "reçu du cafe a deux cent quarante",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -641,7 +641,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "reçu du savon a cent quatre-vingt-dix",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -665,7 +665,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "euh vendu deux sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -688,7 +688,7 @@
       "noise": "silence",
       "groundTruthTranscript": "vendu deux sucre euh voila",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -711,7 +711,7 @@
       "noise": "silence",
       "groundTruthTranscript": "vendu un cafe, je te raconterai apres",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -734,7 +734,7 @@
       "noise": "silence",
       "groundTruthTranscript": "euh euh euh vendu un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -757,7 +757,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu 2 sucres",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -780,7 +780,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu 2 sucres en powder",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -803,7 +803,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu 2 cafe molo",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -826,7 +826,7 @@
       "noise": "magasin",
       "groundTruthTranscript": "vendu 2 savon.",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -852,7 +852,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -913,7 +913,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -961,7 +961,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -991,7 +991,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu un lait",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1014,7 +1014,7 @@
       "noise": "rue",
       "groundTruthTranscript": "vendu un lait concentre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
