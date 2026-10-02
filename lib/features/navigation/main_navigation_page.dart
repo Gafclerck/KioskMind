@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../core/theme/app_colors.dart';
+import '../sales/presentation/pages/sales_dashboard_page.dart';
+import '../sales/presentation/pages/sales_history_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -12,22 +14,19 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    _PlaceholderPage(
-      title: 'Accueil',
-      icon: Icons.home_outlined,
-    ),
-    _PlaceholderPage(
+  final List<Widget> _pages = [
+    const SalesDashboardPage(),
+
+    const _PlaceholderPage(
       title: 'Stock',
-      icon: Icons.inventory_2_outlined,
+      icon: Icons.inventory_2_rounded,
     ),
-    _PlaceholderPage(
-      title: 'Ventes',
-      icon: Icons.receipt_long_outlined,
-    ),
-    _PlaceholderPage(
+
+    const SalesHistoryPage(),
+
+    const _PlaceholderPage(
       title: 'Profil',
-      icon: Icons.person_outline,
+      icon: Icons.person_rounded,
     ),
   ];
 
@@ -38,7 +37,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   void _onVoicePressed() {
-    // La logique vocale sera ajoutée par l'équipe Voice.
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Assistant vocal'),
@@ -50,85 +48,103 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
+
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: const _KioskMindBottomNavigation(),
+
+      bottomNavigationBar: _KioskMindBottomNavigation(
+        currentIndex: _currentIndex,
+        onItemSelected: _onNavigationSelected,
+      ),
+
       floatingActionButton: _VoiceButton(
         onPressed: _onVoicePressed,
       ),
+
       floatingActionButtonLocation:
           FloatingActionButtonLocation.centerDocked,
     );
   }
 }
 
+// ============================================================
+// BOTTOM NAVIGATION
+// ============================================================
+
 class _KioskMindBottomNavigation extends StatelessWidget {
-  const _KioskMindBottomNavigation();
+  final int currentIndex;
+  final ValueChanged<int> onItemSelected;
+
+  const _KioskMindBottomNavigation({
+    required this.currentIndex,
+    required this.onItemSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<
-        _MainNavigationPageState>();
-
-    final currentIndex = state?._currentIndex ?? 0;
-
     return SafeArea(
       minimum: const EdgeInsets.fromLTRB(13, 0, 13, 10),
       child: Container(
-        height: 58,
+        height: 68,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(34),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 18,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
         child: Row(
           children: [
+            // ACCUEIL
             Expanded(
               child: _NavigationItem(
                 icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
+                selectedIcon: Icons.home_rounded,
                 label: 'Accueil',
                 selected: currentIndex == 0,
-                onTap: () => state?._onNavigationSelected(0),
+                onTap: () => onItemSelected(0),
               ),
             ),
+
+            // STOCK
             Expanded(
               child: _NavigationItem(
                 icon: Icons.inventory_2_outlined,
-                selectedIcon: Icons.inventory_2,
+                selectedIcon: Icons.inventory_2_rounded,
                 label: 'Stock',
                 selected: currentIndex == 1,
-                onTap: () => state?._onNavigationSelected(1),
+                onTap: () => onItemSelected(1),
               ),
             ),
 
-            // Espace réservé au bouton vocal central.
-            const SizedBox(width: 58),
+            // ESPACE POUR LE BOUTON VOCAL
+            const SizedBox(width: 62),
 
+            // VENTES
             Expanded(
               child: _NavigationItem(
                 icon: Icons.receipt_long_outlined,
-                selectedIcon: Icons.receipt_long,
+                selectedIcon: Icons.receipt_long_rounded,
                 label: 'Ventes',
                 selected: currentIndex == 2,
-                onTap: () => state?._onNavigationSelected(2),
+                onTap: () => onItemSelected(2),
               ),
             ),
+
+            // PROFIL
             Expanded(
               child: _NavigationItem(
                 icon: Icons.person_outline,
-                selectedIcon: Icons.person,
+                selectedIcon: Icons.person_rounded,
                 label: 'Profil',
                 selected: currentIndex == 3,
-                onTap: () => state?._onNavigationSelected(3),
+                onTap: () => onItemSelected(3),
               ),
             ),
           ],
@@ -137,6 +153,10 @@ class _KioskMindBottomNavigation extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// ITEM NAVIGATION
+// ============================================================
 
 class _NavigationItem extends StatelessWidget {
   final IconData icon;
@@ -155,39 +175,67 @@ class _NavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inactiveColor =
+        Theme.of(context).colorScheme.onSurfaceVariant;
+
     final color = selected
         ? AppColors.primary
-        : Theme.of(context).colorScheme.onSurfaceVariant;
+        : inactiveColor;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: SizedBox(
-        height: 58,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              selected ? selectedIcon : icon,
-              size: 17,
-              color: color,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 8,
-                    color: color,
-                    fontWeight:
-                        selected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(28),
+        child: SizedBox(
+          height: 68,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: EdgeInsets.all(
+                  selected ? 5 : 2,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: 0.10)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  selected ? selectedIcon : icon,
+                  size: 22,
+                  color: color,
+                ),
+              ),
+
+              const SizedBox(height: 3),
+
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall!
+                    .copyWith(
+                      color: color,
+                      fontWeight: selected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                    ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// ============================================================
+// BOUTON VOCAL
+// ============================================================
 
 class _VoiceButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -199,16 +247,21 @@ class _VoiceButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 50,
-      height: 50,
+      width: 58,
+      height: 58,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.primary,
+        color: AppColors.secondary,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.16),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: AppColors.secondary.withValues(alpha: 0.30),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -220,9 +273,9 @@ class _VoiceButton extends StatelessWidget {
           customBorder: const CircleBorder(),
           child: const Center(
             child: Icon(
-              Icons.mic,
+              Icons.mic_rounded,
               color: Colors.white,
-              size: 21,
+              size: 27,
             ),
           ),
         ),
@@ -230,6 +283,10 @@ class _VoiceButton extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// PLACEHOLDER TEMPORAIRE
+// ============================================================
 
 class _PlaceholderPage extends StatelessWidget {
   final String title;
@@ -251,7 +308,9 @@ class _PlaceholderPage extends StatelessWidget {
             size: 48,
             color: AppColors.primary,
           ),
+
           const SizedBox(height: 16),
+
           Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall,
@@ -261,4 +320,3 @@ class _PlaceholderPage extends StatelessWidget {
     );
   }
 }
-
