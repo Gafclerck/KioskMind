@@ -1,6 +1,8 @@
 import '../entities/clarification_slot.dart';
+import '../entities/command_proposal.dart';
 import '../entities/decision_outcome.dart';
 import '../entities/doubt.dart';
+import '../entities/slot.dart';
 import '../entities/voice_config.dart';
 import '../ports/voice_clock.dart';
 
@@ -29,10 +31,16 @@ typedef PendingQuestion = ({ClarificationSlot? slot, DoubtKind reason});
 /// The session state machine.
 ///
 /// It holds what the merchant has already been asked and what has already run,
-/// and nothing else: no proposal, no handler, no widget. The policy decides, this
-/// remembers, the executor acts. Keeping the three apart is what lets the same
-/// decision be replayed in a test without a session and lets the same session be
-/// asserted without a policy.
+/// and the utterance a question is about, and nothing else: no handler, no widget,
+/// no decision of its own. The policy decides, this remembers, the executor acts.
+/// Keeping the three apart is what lets the same decision be replayed in a test
+/// without a session and lets the same session be asserted without a policy.
+///
+/// It keeps that utterance because an answer is spoken as a new utterance and must
+/// complete the previous one: "sucre" carries no quantity, and the two the merchant
+/// said before the question are what turn it into a line. Storing the proposal here
+/// rather than in the caller is what makes that the case in the app and not only in
+/// the tests that keep the whole dialogue in one call.
 ///
 /// Three invariants hold at every step, and each one exists because the merchant
 /// can always get out:
@@ -49,6 +57,7 @@ final class DialogManager {
   final VoiceClock clock;
 
   PendingQuestion? _pending;
+  CommandProposal? _awaiting;
   VoiceDialogState _state = VoiceDialogState.idle;
   DateTime? _lastActivity;
   DateTime? _askedAt;
@@ -82,6 +91,13 @@ final class DialogManager {
     }
     return _pending;
   }
+
+  /// The utterance the pending question was asked about.
+  ///
+  /// Null whenever no question stands, so a caller completing an answer never has
+  /// to check the two states separately: a question that timed out has no utterance
+  /// left to complete.
+  CommandProposal? get awaiting => pending == null ? null : _awaiting;
 
   /// Clarification turns already spent on this command. A confirmation does not
   /// count: the merchant is not being asked to name anything.
@@ -136,10 +152,12 @@ final class DialogManager {
   /// Records that the session is waiting for the merchant to say something.
   ///
   /// Past the turn limit this does not ask: it offers the manual screens instead,
-  /// which is the only exit a state is allowed to have. [hasItems] tells which
-  /// addressing the answer will use, so a stock question does not wait for a line
-  /// that does not exist.
-  void ask(Decision decision, {required bool hasItems}) {
+  /// which is the only exit a state is allowed to have. [proposal] is the utterance
+  /// the question is about, kept so the answer can complete it; which addressing
+  /// the question uses follows from that utterance rather than from a second fact
+  /// the caller would have to keep in step, so a stock question never waits for a
+  /// line that does not exist.
+  void ask(Decision decision, {required CommandProposal proposal}) {
     if (!decision.isQuestion) {
       return;
     }
@@ -153,12 +171,16 @@ final class DialogManager {
       _offerManualEntry();
       return;
     }
+    _awaiting = proposal;
     if (decision.outcome == DecisionOutcome.askConfirmation) {
       _ask(ClarificationSlot.confirmed, reason);
       return;
     }
     _turns += 1;
-    _ask(ClarificationSlot.forDoubt(reason, hasItems: hasItems), reason);
+    _ask(
+      ClarificationSlot.forDoubt(reason, hasItems: _hasItems(proposal)),
+      reason,
+    );
   }
 
   /// Opens the undo window on the sale a write just produced.
@@ -183,6 +205,7 @@ final class DialogManager {
   /// Closes the session and forgets it. The next utterance starts a new one.
   void reset() {
     _pending = null;
+    _awaiting = null;
     _state = VoiceDialogState.idle;
     _askedAt = null;
     _turns = 0;
@@ -202,9 +225,15 @@ final class DialogManager {
 
   void _resetPending() {
     _pending = null;
+    _awaiting = null;
     _askedAt = null;
     _state = VoiceDialogState.idle;
   }
+
+  /// Whether the utterance carries lines, which is what chooses the addressing of
+  /// a product question.
+  bool _hasItems(CommandProposal proposal) =>
+      proposal.valueOf<List<ItemMention>>(kItemsSlot) != null;
 
   /// Leaving voice for the screens is terminal for this command: the merchant
   /// keeps the microphone off, so a stray word must not reopen the dialogue.

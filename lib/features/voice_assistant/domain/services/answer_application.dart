@@ -40,17 +40,20 @@ final class AnswerApplication {
     required DoubtKind asked,
     required Object? value,
   }) {
-    if (_confirming.contains(asked)) {
-      return _settle(proposal, _confirming);
+    if (asked.answersByYesOrNo) {
+      // Only an explicit yes settles a confirmation. An answer that is not a yes,
+      // whatever its shape, leaves the doubt standing: recording a sale the
+      // merchant did not agree to is the one outcome the dialogue must not reach.
+      return value == true ? _settle(proposal, _confirming) : proposal;
     }
     final IntentDefinition? definition = intents.byId(proposal.intentId);
     if (definition == null) {
       return proposal;
     }
-    if (_isProductDoubt(asked)) {
+    if (asked.answersByProduct) {
       return _answerProduct(proposal, asked, value, definition);
     }
-    if (_isQuantityDoubt(asked)) {
+    if (asked.answersByQuantity) {
       return _answerQuantity(proposal, asked, value);
     }
     return proposal;
@@ -115,10 +118,17 @@ final class AnswerApplication {
   /// Sets the product the answer named, on the place the intent asks for.
   ///
   /// An utterance that named no product has no line at all, and naming one is what
-  /// the merchant is being asked for: the line is created with one unit, the same
-  /// reading the parser gives a bare product name inside an utterance. Which of the
-  /// two shapes applies is the intent's own statement, read from the catalog rather
-  /// than from a list written here.
+  /// the merchant is being asked for. Which of the two shapes applies is the
+  /// intent's own statement, read from the catalog rather than from a list written
+  /// here.
+  ///
+  /// A line the answer cannot complete stays incomplete: if the utterance said
+  /// nothing about the line at all, the question moves to the quantity rather than
+  /// the sale becoming a single unit invented on top of an invented product.
+  ///
+  /// Naming a product and no count is the other case and keeps the reading the
+  /// catalog states: one unit. The merchant said which product, and a partitive
+  /// without a number is the shop's ordinary way of selling one.
   CommandProposal _withProduct(
     CommandProposal proposal,
     ProductSnapshot product, {
@@ -135,14 +145,42 @@ final class AnswerApplication {
       kItemsSlot,
     );
     final PartialLine? said = _partialLineOf(proposal, asked);
-    return _withSlot(proposal, kItemsSlot, <ItemMention>[
-      ItemMention(
-        product: product,
-        qty: said?.qty ?? lines?.first.qty ?? 1,
-        spokenAmount: lines?.first.spokenAmount,
-      ),
-      ...lines?.skip(1) ?? const <ItemMention>[],
-    ]);
+    final double? qty = said?.qty ?? lines?.first.qty;
+    if (qty == null && asked == DoubtKind.missingProduct) {
+      return _withMissingQuantity(proposal, product, asked);
+    }
+    return _settle(
+      _withSlot(proposal, kItemsSlot, <ItemMention>[
+        ItemMention(
+          product: product,
+          qty: qty ?? 1,
+          spokenAmount: lines?.first.spokenAmount,
+        ),
+        ...lines?.skip(1) ?? const <ItemMention>[],
+      ]),
+      <DoubtKind>{asked},
+    );
+  }
+
+  /// Keeps the product the answer gave and asks how many, as the parser does.
+  CommandProposal _withMissingQuantity(
+    CommandProposal proposal,
+    ProductSnapshot product,
+    DoubtKind asked,
+  ) {
+    final CommandProposal settled = _settle(proposal, <DoubtKind>{asked});
+    return CommandProposal(
+      intentId: proposal.intentId,
+      slots: proposal.slots,
+      doubts: <Doubt>[
+        ...settled.doubts,
+        Doubt(
+          kind: DoubtKind.missingQuantity,
+          partial: (product: product, qty: null),
+        ),
+      ],
+      origin: proposal.origin,
+    );
   }
 
   /// What the merchant had already said about the line the doubt is about.
@@ -192,13 +230,4 @@ final class AnswerApplication {
       origin: proposal.origin,
     );
   }
-
-  static bool _isProductDoubt(DoubtKind doubt) =>
-      doubt == DoubtKind.ambiguousProduct ||
-      doubt == DoubtKind.unknownProduct ||
-      doubt == DoubtKind.missingProduct;
-
-  static bool _isQuantityDoubt(DoubtKind doubt) =>
-      doubt == DoubtKind.missingQuantity ||
-      doubt == DoubtKind.undeterminedQuantity;
 }

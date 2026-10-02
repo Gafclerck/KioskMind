@@ -52,6 +52,28 @@ enum DoubtKind {
   noOrderUseCase,
 }
 
+/// How each doubt can be answered.
+///
+/// A doubt is a fact about what was said, and what the merchant may say to fix it
+/// follows from the fact itself. Reading that here keeps the session, the dialogue
+/// and the answer reader from each carrying their own copy of the same table.
+extension DoubtKindAnswer on DoubtKind {
+  /// Naming a product settles it: the merchant says which one he meant.
+  bool get answersByProduct =>
+      this == DoubtKind.missingProduct ||
+      this == DoubtKind.unknownProduct ||
+      this == DoubtKind.ambiguousProduct;
+
+  /// Saying how many settles it, as long as the line already names a product.
+  bool get answersByQuantity =>
+      this == DoubtKind.missingQuantity ||
+      this == DoubtKind.undeterminedQuantity;
+
+  /// A yes settles it, and a no settles nothing.
+  bool get answersByYesOrNo =>
+      this == DoubtKind.amountMismatch || this == DoubtKind.implausibleQuantity;
+}
+
 /// What was understood of a line that is not complete.
 ///
 /// Both fields are null when nothing of the line was understood. A doubt carries

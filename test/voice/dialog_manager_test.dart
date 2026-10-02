@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/dialog/dialog_manager.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/clarification_slot.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
 
 import 'fake_clock.dart';
@@ -44,7 +46,10 @@ void main() {
 
     test('une session qui expire oublie le tour en cours', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       clock.elapse(const Duration(seconds: 31));
 
@@ -53,10 +58,56 @@ void main() {
     });
   });
 
+  group('ce qui est en attente de reponse', () {
+    test('l utterance posee est celle que la reponse doit completer', () {
+      final DialogManager manager = managerWith();
+      manager.ask(
+        _clarification(DoubtKind.missingQuantity),
+        proposal: _withLines(),
+      );
+
+      expect(manager.awaiting, isNotNull);
+      expect(manager.awaiting!.intentId, 'record_sale');
+    });
+
+    test('rien n est en attente quand aucune question n est posee', () {
+      expect(managerWith().awaiting, isNull);
+    });
+
+    test('une question qui expire ne laisse plus d utterance a completer', () {
+      final DialogManager manager = managerWith();
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
+
+      clock.elapse(const Duration(seconds: 11));
+
+      expect(manager.state, VoiceDialogState.idle);
+      expect(manager.awaiting, isNull);
+    });
+
+    test('offrir les ecrans manuels abandonne l utterance posee', () {
+      final DialogManager manager = managerWith();
+      for (int turn = 0; turn < 3; turn += 1) {
+        manager.ask(
+          _clarification(DoubtKind.missingProduct),
+          proposal: _withLines(),
+        );
+      }
+
+      expect(manager.awaitsManualEntry, isTrue);
+      expect(manager.awaiting, isNull);
+    });
+  });
+
   group('ce qui ne demande rien', () {
     test('une lecture rend la session disponible', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       manager.decide(_decision(DecisionOutcome.execute));
 
@@ -66,7 +117,10 @@ void main() {
 
     test('un refus rend la session disponible', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       manager.decide(_decision(DecisionOutcome.reject));
 
@@ -76,9 +130,15 @@ void main() {
 
     test('une confirmation remplace une clarification en cours', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingQuantity), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingQuantity),
+        proposal: _withLines(),
+      );
 
-      manager.ask(_confirmation(DoubtKind.implausibleQuantity), hasItems: true);
+      manager.ask(
+        _confirmation(DoubtKind.implausibleQuantity),
+        proposal: _withLines(),
+      );
 
       expect(manager.state, VoiceDialogState.waitingForConfirmation);
       expect(manager.turns, 1, reason: 'une confirmation n est pas un tour');
@@ -88,7 +148,10 @@ void main() {
   group('ce qui demande', () {
     test('une clarification dit sur quoi elle attend', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.ambiguousProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.ambiguousProduct),
+        proposal: _withLines(),
+      );
 
       expect(manager.state, VoiceDialogState.waitingForAnswer);
       expect(manager.pending!.slot, ClarificationSlot.itemProductName);
@@ -102,7 +165,7 @@ void main() {
       final DialogManager manager = managerWith();
       manager.ask(
         _decision(DecisionOutcome.askClarification, DoubtKind.missingProduct),
-        hasItems: false,
+        proposal: _withoutLines(),
       );
 
       expect(manager.pending!.slot, ClarificationSlot.productName);
@@ -110,14 +173,20 @@ void main() {
 
     test('une quantite manquante attend la quantite', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingQuantity), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingQuantity),
+        proposal: _withLines(),
+      );
 
       expect(manager.pending!.slot, ClarificationSlot.itemQty);
     });
 
     test('une confirmation attend un oui ou un non', () {
       final DialogManager manager = managerWith();
-      manager.ask(_confirmation(DoubtKind.implausibleQuantity), hasItems: true);
+      manager.ask(
+        _confirmation(DoubtKind.implausibleQuantity),
+        proposal: _withLines(),
+      );
 
       expect(manager.state, VoiceDialogState.waitingForConfirmation);
       expect(manager.pending!.slot, ClarificationSlot.confirmed);
@@ -129,12 +198,21 @@ void main() {
     test('deux clarifications suffisent, la troisieme non', () {
       final DialogManager manager = managerWith();
 
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
       expect(manager.state, VoiceDialogState.waitingForAnswer);
-      manager.ask(_clarification(DoubtKind.missingQuantity), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingQuantity),
+        proposal: _withLines(),
+      );
       expect(manager.state, VoiceDialogState.waitingForAnswer);
 
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       expect(manager.state, VoiceDialogState.idle);
       expect(manager.awaitsManualEntry, isTrue);
@@ -147,7 +225,10 @@ void main() {
       );
 
       for (int index = 0; index < 5; index++) {
-        manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+        manager.ask(
+          _clarification(DoubtKind.missingProduct),
+          proposal: _withLines(),
+        );
       }
 
       expect(manager.state, VoiceDialogState.waitingForAnswer);
@@ -158,9 +239,18 @@ void main() {
       // Le marchand passe aux ecrans: une phrase entendue a cote ne doit pas
       // ressusciter un dialogue deja abandonne.
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       manager.decide(_decision(DecisionOutcome.executeWithUndo));
 
@@ -171,9 +261,18 @@ void main() {
 
     test('reinitialiser rouvre une session', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       manager.reset();
 
@@ -186,7 +285,10 @@ void main() {
   group('expiration d une question', () {
     test('une question sans reponse propose la saisie manuelle', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       clock.elapse(const Duration(seconds: 9));
       expect(manager.state, VoiceDialogState.waitingForAnswer);
@@ -200,7 +302,10 @@ void main() {
 
     test('une reponse avant l echeance redonne la main', () {
       final DialogManager manager = managerWith();
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
       clock.elapse(const Duration(seconds: 9));
       manager.decide(_decision(DecisionOutcome.execute));
 
@@ -218,7 +323,10 @@ void main() {
           questionTimeout: Duration(seconds: 2),
         ),
       );
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       clock.elapse(const Duration(seconds: 3));
 
@@ -273,7 +381,10 @@ void main() {
       final DialogManager manager = managerWith();
       manager.decide(_decision(DecisionOutcome.executeWithUndo));
       manager.registerUndo('sale-1');
-      manager.ask(_clarification(DoubtKind.missingProduct), hasItems: true);
+      manager.ask(
+        _clarification(DoubtKind.missingProduct),
+        proposal: _withLines(),
+      );
 
       expect(manager.undoSaleId, isNull);
     });
@@ -331,3 +442,13 @@ Decision _clarification(DoubtKind reason) =>
 
 Decision _confirmation(DoubtKind reason) =>
     _decision(DecisionOutcome.askConfirmation, reason);
+
+/// A sale line, so a question about a product addresses the first one.
+CommandProposal _withLines() => CommandProposal.rules(
+  intentId: 'record_sale',
+  slots: const <Slot>[Slot(name: kItemsSlot, value: <ItemMention>[])],
+);
+
+/// A stock question, which carries no line at all.
+CommandProposal _withoutLines() =>
+    CommandProposal.rules(intentId: 'query_stock', slots: const <Slot>[]);
