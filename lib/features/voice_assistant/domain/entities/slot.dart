@@ -7,6 +7,13 @@ import 'product_snapshot.dart';
 /// about "the lines" has to point at one string.
 const String kItemsSlot = 'items';
 
+/// Name of the slot holding the product of a single-product intent.
+///
+/// Same reasoning as [kItemsSlot], and the same trap: the string is also the key of
+/// the handler arguments the frozen set compares, so a typo here is a silent
+/// disagreement between what was heard and what was recorded.
+const String kProductIdSlot = 'productId';
+
 /// A value read from an utterance for one slot of an intent.
 ///
 /// A slot is either present with a value or absent. It never carries a guess:
