@@ -9,6 +9,7 @@ import 'package:kiosk_mind/features/voice_assistant/data/extractors/line_extract
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/canonical_arguments.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/parsers/rule_based_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
@@ -17,12 +18,18 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/french_numbe
 import 'package:kiosk_mind/features/voice_assistant/domain/services/intent_detector.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normalizer.dart';
 
-/// Measures the rule parser (T1) against the frozen text set.
+import 'routing_cases.dart';
+import 'routing_harness.dart';
+
+/// Measures the pipeline against the frozen sets.
 ///
 /// Usage:
 ///   dart run tool/voice_eval.dart --level text            scores and lists misses
 ///   dart run tool/voice_eval.dart --level text --show 20  shows 20 misses
 ///   dart run tool/voice_eval.dart --level text --cases t001,t042
+///   dart run tool/voice_eval.dart --level routing         scores the whole pipeline
+///   dart run tool/voice_eval.dart --level routing --cases t001,t042
+///   dart run tool/voice_eval.dart --level routing --audio  adds the 44 recordings
 ///
 /// What "exact parsing" means here, stated once so the number cannot drift:
 ///
@@ -36,7 +43,12 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normali
 /// The outcome shown next to each miss is the one the 1a parser supports. The
 /// decision policy of 1b will replace it, which is why the confirmation cases
 /// already count as parsed when their intent and arguments match.
+///
+/// What "exact routing" means is written once, in [judge], and the two levels share
+/// the same harness, so this tool and `routing_test.dart` cannot report two
+/// different numbers for the same code.
 const String textCasesPath = 'voice/golden/text_cases.json';
+const String audioCasesPath = 'voice/golden/audio_cases.json';
 const String catalogFixturePath = 'voice/golden/catalog_fixture.json';
 const String intentCatalogPath = 'voice/intent_catalog.json';
 
@@ -56,7 +68,20 @@ const Set<DoubtKind> kRefusingDoubts = <DoubtKind>{
 void main(List<String> arguments) {
   final int show = _intOption(arguments, '--show') ?? 20;
   final List<String>? only = _casesOption(arguments);
+  final String level = _option(arguments, '--level') ?? 'text';
 
+  switch (level) {
+    case 'text':
+      _scoreText(show: show, only: only);
+    case 'routing':
+      _scoreRouting(show: show, only: only, audio: _flag(arguments, '--audio'));
+    default:
+      throw StateError('Niveau inconnu: $level (attendu: text ou routing)');
+  }
+}
+
+/// Scores the rule parser alone, as step 1a measured it.
+void _scoreText({required int show, required List<String>? only}) {
   final List<_Case> cases = _loadCases(textCasesPath);
   final List<_Case> selected = <_Case>[
     if (only == null)
@@ -98,6 +123,82 @@ void main(List<String> arguments) {
     stdout.writeln('  ${miss.testCase.id} "${miss.testCase.utterance}"');
     stdout.writeln('    attendu : ${miss.verdict.expected}');
     stdout.writeln('    obtenu  : ${miss.verdict.actual}');
+  }
+  if (misses.length > show) {
+    stdout.writeln('');
+    stdout.writeln('  ... ${misses.length - show} autres');
+  }
+  if (misses.isNotEmpty) {
+    exitCode = 1;
+  }
+}
+
+/// Scores the whole pipeline: parse, decide, execute, and record the call.
+///
+/// The 44 recordings are scored on what they say, not on what a recognizer made of
+/// them: measuring a real transcription is `voice_eval --transcripts`, added with
+/// the STT adapters. Here they add the utterances the audio set covers.
+Future<void> _scoreRouting({
+  required int show,
+  required List<String>? only,
+  required bool audio,
+}) async {
+  final List<FrozenCase> all = <FrozenCase>[
+    if (audio) ...loadFrozenCases(audioCasesPath),
+    ...loadFrozenCases(textCasesPath),
+  ];
+  final List<FrozenCase> selected = <FrozenCase>[
+    if (only == null)
+      for (final FrozenCase c in all) c
+    else
+      for (final FrozenCase c in all)
+        if (only.contains(c.id)) c,
+  ];
+
+  final RoutingHarness harness = RoutingHarness();
+  final List<String> misses = <String>[];
+  int asked = 0;
+  int refused = 0;
+  int calls = 0;
+  for (final FrozenCase testCase in selected) {
+    final Route route = await harness.run(
+      testCase.utterance,
+      answers: testCase.answers,
+      withSession: testCase.undoesASale,
+    );
+    final String first = route.firstOutcome;
+    if (first == DecisionOutcome.askClarification.code ||
+        first == DecisionOutcome.askConfirmation.code) {
+      asked += 1;
+    } else if (first == DecisionOutcome.reject.code) {
+      refused += 1;
+    }
+    if (route.call != null) {
+      calls += 1;
+    }
+    final RouteVerdict verdict = judge(testCase, route, harness.primedSaleId);
+    if (verdict.exact) {
+      continue;
+    }
+    misses.add(
+      '  ${testCase.id} "${testCase.utterance}"\n'
+      '    attendu : ${verdict.expected}\n'
+      '    obtenu  : ${verdict.actual}',
+    );
+  }
+
+  final int exact = selected.length - misses.length;
+  final double rate = selected.isEmpty ? 0 : exact / selected.length;
+  stdout.writeln(
+    'voice_eval niveau routage : $exact/${selected.length} exact '
+    '(${(rate * 100).toStringAsFixed(1)} %)',
+  );
+  stdout.writeln(
+    '  issues posees : $asked, refus : $refused, appels de use case : $calls',
+  );
+  for (final String miss in misses.take(show)) {
+    stdout.writeln('');
+    stdout.writeln(miss);
   }
   if (misses.length > show) {
     stdout.writeln('');
@@ -232,6 +333,17 @@ int? _intOption(List<String> arguments, String name) {
   }
   return null;
 }
+
+String? _option(List<String> arguments, String name) {
+  for (int index = 0; index < arguments.length - 1; index++) {
+    if (arguments[index] == name) {
+      return arguments[index + 1];
+    }
+  }
+  return null;
+}
+
+bool _flag(List<String> arguments, String name) => arguments.contains(name);
 
 List<String>? _casesOption(List<String> arguments) {
   for (int index = 0; index < arguments.length - 1; index++) {
