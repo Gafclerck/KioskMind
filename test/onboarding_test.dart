@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:kiosk_mind/features/onboarding/presentation/controllers/onboarding_controller.dart';
+import 'package:kiosk_mind/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:kiosk_mind/features/onboarding/presentation/pages/onboarding_page.dart';
 
 const Duration _autoAdvance = Duration(seconds: 5);
@@ -18,7 +18,7 @@ int currentIndex(WidgetTester tester) {
   final ProviderContainer container = ProviderScope.containerOf(
     tester.element(find.byType(OnboardingPage)),
   );
-  return container.read(onboardingControllerProvider).currentIndex;
+  return container.read(onboardingProvider).currentIndex;
 }
 
 void main() {

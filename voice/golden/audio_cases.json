@@ -1,0 +1,1079 @@
+{
+  "version": 1,
+  "currency": "XOF",
+  "catalog": "voice/golden/catalog_fixture.json",
+  "recordings": "voice/golden/audio/",
+  "cases": [
+    {
+      "id": "a001",
+      "file": "voice/golden/audio/hard_t243.wav",
+      "speaker": "homme_35",
+      "noise": "silence",
+      "groundTruthTranscript": "j'ai vendu deux sucre, trois laits et une eau",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait",
+              "qty": 3
+            },
+            {
+              "productId": "p_eau",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t243"
+    },
+    {
+      "id": "a002",
+      "file": "voice/golden/audio/hard_t246.wav",
+      "speaker": "femme_50",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu deux cent soixante quinze biere",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_biere",
+              "qty": 275
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t246"
+    },
+    {
+      "id": "a003",
+      "file": "voice/golden/audio/hard_t249.wav",
+      "speaker": "homme_65",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu le meme sucre que tout a l'heure",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "reference anaphorique non resolvable"
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t249"
+    },
+    {
+      "id": "a004",
+      "file": "voice/golden/audio/hard_t252.wav",
+      "speaker": "homme_35",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu deux de chaque",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit non nomme"
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t252"
+    },
+    {
+      "id": "a005",
+      "file": "voice/golden/audio/hard_t255.wav",
+      "speaker": "femme_50",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un riz a sept cents le kilo et un sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t255"
+    },
+    {
+      "id": "a006",
+      "file": "voice/golden/audio/hard_t258.wav",
+      "speaker": "homme_65",
+      "noise": "rue",
+      "groundTruthTranscript": "ça part un sucre et aussi un peu de riz",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            },
+            {
+              "productId": "p_riz",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t258"
+    },
+    {
+      "id": "a007",
+      "file": "voice/golden/audio/hard_t261.wav",
+      "speaker": "homme_35",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu du sucre deux fois",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t261"
+    },
+    {
+      "id": "a008",
+      "file": "voice/golden/audio/hard_t264.wav",
+      "speaker": "femme_50",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu une cafe",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "hard"
+      ],
+      "sourceTextCase": "t264"
+    },
+    {
+      "id": "a009",
+      "file": "voice/golden/audio/multi_items_t042.wav",
+      "speaker": "homme_65",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu deux sucre et un lait",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t042"
+    },
+    {
+      "id": "a010",
+      "file": "voice/golden/audio/multi_items_t046.wav",
+      "speaker": "homme_35",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu deux cafe et un the",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 2
+            },
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t046"
+    },
+    {
+      "id": "a011",
+      "file": "voice/golden/audio/multi_items_t050.wav",
+      "speaker": "femme_50",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu un beurre et une cassonade",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_beurre_arachide",
+              "qty": 1
+            },
+            {
+              "productId": "p_cassonade",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t050"
+    },
+    {
+      "id": "a012",
+      "file": "voice/golden/audio/multi_items_t054.wav",
+      "speaker": "homme_65",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu deux paillette et un ciment",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_paillette",
+              "qty": 2
+            },
+            {
+              "productId": "p_ciment",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t054"
+    },
+    {
+      "id": "a013",
+      "file": "voice/golden/audio/multi_items_t058.wav",
+      "speaker": "homme_35",
+      "noise": "rue",
+      "groundTruthTranscript": "reçu dix eau et cinq savon",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 10
+            },
+            {
+              "productId": "p_savon",
+              "qty": 5
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t058"
+    },
+    {
+      "id": "a014",
+      "file": "voice/golden/audio/multi_items_t062.wav",
+      "speaker": "femme_50",
+      "noise": "rue",
+      "groundTruthTranscript": "j'ai achete un riz parfume et un savon",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_riz",
+              "qty": 1
+            },
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "multi_items"
+      ],
+      "sourceTextCase": "t062"
+    },
+    {
+      "id": "a015",
+      "file": "voice/golden/audio/numbers_words_t067.wav",
+      "speaker": "homme_65",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t067"
+    },
+    {
+      "id": "a016",
+      "file": "voice/golden/audio/numbers_words_t072.wav",
+      "speaker": "homme_35",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu six sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 6
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t072"
+    },
+    {
+      "id": "a017",
+      "file": "voice/golden/audio/numbers_words_t077.wav",
+      "speaker": "femme_50",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu onze sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 11
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t077"
+    },
+    {
+      "id": "a018",
+      "file": "voice/golden/audio/numbers_words_t082.wav",
+      "speaker": "homme_65",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu seize sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 16
+            }
+          ]
+        }
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t082"
+    },
+    {
+      "id": "a019",
+      "file": "voice/golden/audio/numbers_words_t087.wav",
+      "speaker": "homme_35",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu soixante-dix-sept eau",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_eau",
+              "qty": 77
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t087"
+    },
+    {
+      "id": "a020",
+      "file": "voice/golden/audio/numbers_words_t092.wav",
+      "speaker": "femme_50",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu quatre-vingt-dix-sept sucre",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 97
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "numbers_words"
+      ],
+      "sourceTextCase": "t092"
+    },
+    {
+      "id": "a021",
+      "file": "voice/golden/audio/price_t117.wav",
+      "speaker": "homme_65",
+      "noise": "silence",
+      "groundTruthTranscript": "j'ai vendu un maggi a cent francs",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t117"
+    },
+    {
+      "id": "a022",
+      "file": "voice/golden/audio/price_t120.wav",
+      "speaker": "homme_35",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un savon a deux cent cinquante",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t120"
+    },
+    {
+      "id": "a023",
+      "file": "voice/golden/audio/price_t123.wav",
+      "speaker": "femme_50",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un maggi a cent cinquante",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_maggi",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t123"
+    },
+    {
+      "id": "a024",
+      "file": "voice/golden/audio/price_t126.wav",
+      "speaker": "homme_65",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un savon a quatre cents",
+      "expected": {
+        "outcome": "ASK_CONFIRMATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "confirmed",
+            "value": true
+          }
+        ]
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t126"
+    },
+    {
+      "id": "a025",
+      "file": "voice/golden/audio/price_t129.wav",
+      "speaker": "homme_35",
+      "noise": "magasin",
+      "groundTruthTranscript": "reçu du cafe a deux cent quarante",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1,
+              "unitCost": 240
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t129"
+    },
+    {
+      "id": "a026",
+      "file": "voice/golden/audio/price_t132.wav",
+      "speaker": "femme_50",
+      "noise": "magasin",
+      "groundTruthTranscript": "reçu du savon a cent quatre-vingt-dix",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_restock",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 1,
+              "unitCost": 190
+            }
+          ]
+        }
+      },
+      "tags": [
+        "price"
+      ],
+      "sourceTextCase": "t132"
+    },
+    {
+      "id": "a027",
+      "file": "voice/golden/audio/noise_t213.wav",
+      "speaker": "homme_65",
+      "noise": "magasin",
+      "groundTruthTranscript": "euh vendu deux sucre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "sourceTextCase": "t213"
+    },
+    {
+      "id": "a028",
+      "file": "voice/golden/audio/noise_t215.wav",
+      "speaker": "homme_35",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu deux sucre euh voila",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "sourceTextCase": "t215"
+    },
+    {
+      "id": "a029",
+      "file": "voice/golden/audio/noise_t217.wav",
+      "speaker": "femme_50",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu un cafe, je te raconterai apres",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "sourceTextCase": "t217"
+    },
+    {
+      "id": "a030",
+      "file": "voice/golden/audio/noise_t219.wav",
+      "speaker": "homme_65",
+      "noise": "silence",
+      "groundTruthTranscript": "euh euh euh vendu un the",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_thé",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "noise"
+      ],
+      "sourceTextCase": "t219"
+    },
+    {
+      "id": "a031",
+      "file": "voice/golden/audio/accent_t223.wav",
+      "speaker": "homme_35",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu 2 sucres",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "sourceTextCase": "t223"
+    },
+    {
+      "id": "a032",
+      "file": "voice/golden/audio/accent_t228.wav",
+      "speaker": "femme_50",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu 2 sucres en powder",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "sourceTextCase": "t228"
+    },
+    {
+      "id": "a033",
+      "file": "voice/golden/audio/accent_t233.wav",
+      "speaker": "homme_65",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu 2 cafe molo",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_café",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "sourceTextCase": "t233"
+    },
+    {
+      "id": "a034",
+      "file": "voice/golden/audio/accent_t238.wav",
+      "speaker": "homme_35",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu 2 savon.",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_savon",
+              "qty": 2
+            }
+          ]
+        }
+      },
+      "tags": [
+        "accent"
+      ],
+      "sourceTextCase": "t238"
+    },
+    {
+      "id": "a035",
+      "file": "voice/golden/audio/missing_slot_t170.wav",
+      "speaker": "femme_50",
+      "noise": "magasin",
+      "groundTruthTranscript": "vendu du sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE_WITH_UNDO",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_sucre",
+                "qty": 2
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 2
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "sourceTextCase": "t170"
+    },
+    {
+      "id": "a036",
+      "file": "voice/golden/audio/missing_slot_t175.wav",
+      "speaker": "homme_65",
+      "noise": "magasin",
+      "groundTruthTranscript": "stock",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit manquant",
+        "then": {
+          "outcome": "EXECUTE",
+          "intent": "query_stock",
+          "handlerArgs": {
+            "productId": "p_sucre"
+          }
+        },
+        "resolution": [
+          {
+            "slot": "productName",
+            "value": "sucre"
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "sourceTextCase": "t175"
+    },
+    {
+      "id": "a037",
+      "file": "voice/golden/audio/missing_slot_t180.wav",
+      "speaker": "homme_35",
+      "noise": "silence",
+      "groundTruthTranscript": "j'ai reçu du riz",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "quantite manquante",
+        "then": {
+          "outcome": "EXECUTE_WITH_UNDO",
+          "intent": "record_restock",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_riz",
+                "qty": 25
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].qty",
+            "value": 25
+          }
+        ]
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "sourceTextCase": "t180"
+    },
+    {
+      "id": "a038",
+      "file": "voice/golden/audio/missing_slot_t185.wav",
+      "speaker": "femme_50",
+      "noise": "silence",
+      "groundTruthTranscript": "reçu une marchandise",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit inconnu"
+      },
+      "tags": [
+        "missing_slot"
+      ],
+      "sourceTextCase": "t185"
+    },
+    {
+      "id": "a039",
+      "file": "voice/golden/audio/ambiguous_product_t137.wav",
+      "speaker": "homme_65",
+      "noise": "silence",
+      "groundTruthTranscript": "vendu de l'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "reason": "produit ambigu: p_huile et p_huile_palme",
+        "then": {
+          "outcome": "EXECUTE_WITH_UNDO",
+          "intent": "record_sale",
+          "handlerArgs": {
+            "items": [
+              {
+                "productId": "p_huile_palme",
+                "qty": 1
+              }
+            ]
+          }
+        },
+        "resolution": [
+          {
+            "slot": "items[0].productName",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "sourceTextCase": "t137"
+    },
+    {
+      "id": "a040",
+      "file": "voice/golden/audio/ambiguous_product_t148.wav",
+      "speaker": "homme_35",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un lait",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "sourceTextCase": "t148"
+    },
+    {
+      "id": "a041",
+      "file": "voice/golden/audio/ambiguous_product_t159.wav",
+      "speaker": "femme_50",
+      "noise": "rue",
+      "groundTruthTranscript": "vendu un lait concentre",
+      "expected": {
+        "outcome": "EXECUTE_WITH_UNDO",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 1
+            }
+          ]
+        }
+      },
+      "tags": [
+        "ambiguous_product"
+      ],
+      "sourceTextCase": "t159"
+    },
+    {
+      "id": "a042",
+      "file": "voice/golden/audio/out_of_domain_t191.wav",
+      "speaker": "homme_65",
+      "noise": "rue",
+      "groundTruthTranscript": "quel temps fait-il",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "meteo"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "sourceTextCase": "t191"
+    },
+    {
+      "id": "a043",
+      "file": "voice/golden/audio/out_of_domain_t198.wav",
+      "speaker": "homme_35",
+      "noise": "magasin",
+      "groundTruthTranscript": "envoie un message a mon fournisseur",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "messagerie"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "sourceTextCase": "t198"
+    },
+    {
+      "id": "a044",
+      "file": "voice/golden/audio/out_of_domain_t205.wav",
+      "speaker": "femme_50",
+      "noise": "magasin",
+      "groundTruthTranscript": "calcule la racine de quatre-vingt-dix-sept",
+      "expected": {
+        "outcome": "REJECT",
+        "reason": "calcul"
+      },
+      "tags": [
+        "out_of_domain"
+      ],
+      "sourceTextCase": "t205"
+    }
+  ]
+}

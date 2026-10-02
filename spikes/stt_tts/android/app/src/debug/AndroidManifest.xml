@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+
+         Ce manifeste rend la mesure NON recevable: la reconnaissance a pu passer par
+         le reseau. Le spike se mesure donc en "flutter run --release", qui
+         n'embarque pas ce fichier. L'ecran affiche la permission lue au runtime,
+         pour que cette condition soit verifiee et non supposee.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>
