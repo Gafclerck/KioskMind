@@ -210,6 +210,28 @@ void main() {
       );
     });
 
+    test('une vente attendue en EXECUTE', () {
+      // PIPELINE section 7: `EXECUTE` est une lecture. Dire d'une vente qu'elle
+      // s'execute sans annulation laisserait l'axe d'annulation hors test.
+      _executionFor(text, 'record_sale', 'EXECUTE_WITH_UNDO')['outcome'] =
+          'EXECUTE';
+
+      expect(
+        _validate(workspace, text, audio).errors.join('\n'),
+        contains('ecriture attendue en EXECUTE_WITH_UNDO'),
+      );
+    });
+
+    test('une lecture attendue en EXECUTE_WITH_UNDO', () {
+      _executionFor(text, 'query_stock', 'EXECUTE')['outcome'] =
+          'EXECUTE_WITH_UNDO';
+
+      expect(
+        _validate(workspace, text, audio).errors.join('\n'),
+        contains('lecture attendue en EXECUTE'),
+      );
+    });
+
     test('un refus qui ne dit pas pourquoi', () {
       _cases(text).first['expected'] = <String, Object?>{'outcome': 'REJECT'};
 
@@ -395,6 +417,26 @@ Map<String, Object?> _firstLineOf(Map<String, Object?> testCase) {
   final List<Object?> items =
       _argumentsOf(_expectedOf(testCase))['items']! as List<Object?>;
   return items.first! as Map<String, Object?>;
+}
+
+/// La premiere attente qui execute un intent donne. Les deux erreurs de
+/// coherence ne peuvent porter que sur une attente qui appelle un handler,
+/// puisque c'est la seule forme ou l'issue nomme un intent.
+Map<String, Object?> _executionFor(
+  Map<String, Object?> root,
+  String intent,
+  String outcome,
+) {
+  return _cases(root)
+      .map(
+        (Map<String, Object?> entry) =>
+            entry['expected']! as Map<String, Object?>,
+      )
+      .firstWhere(
+        (Map<String, Object?> expected) =>
+            expected['intent'] == intent && expected['outcome'] == outcome,
+        orElse: () => fail('aucun cas $intent en $outcome dans le jeu fige'),
+      );
 }
 
 Map<String, Object?> _firstClarification(Map<String, Object?> root) {

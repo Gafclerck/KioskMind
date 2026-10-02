@@ -7,7 +7,7 @@
       "id": "t001",
       "utterance": "vendu deux savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -27,7 +27,7 @@
       "id": "t002",
       "utterance": "j'ai vendu trois maggi",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -47,7 +47,7 @@
       "id": "t003",
       "utterance": "je vends un savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -67,7 +67,7 @@
       "id": "t004",
       "utterance": "vendu une biere",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -87,7 +87,7 @@
       "id": "t005",
       "utterance": "ça part deux eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -107,7 +107,7 @@
       "id": "t006",
       "utterance": "vendu un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -127,7 +127,7 @@
       "id": "t007",
       "utterance": "on a vendu un cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -147,7 +147,7 @@
       "id": "t008",
       "utterance": "vendu cinq allumettes",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -167,7 +167,7 @@
       "id": "t009",
       "utterance": "je viens de vendre deux cassonade",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -187,7 +187,7 @@
       "id": "t010",
       "utterance": "vendu un beurre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -207,7 +207,7 @@
       "id": "t011",
       "utterance": "ça part deux conserve",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -227,7 +227,7 @@
       "id": "t012",
       "utterance": "vendu un paquet de pates",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -247,7 +247,7 @@
       "id": "t013",
       "utterance": "vendu deux sachets de sel",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -267,7 +267,7 @@
       "id": "t014",
       "utterance": "j'ai vendu un savon de menage",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -287,7 +287,7 @@
       "id": "t015",
       "utterance": "vendu un magis",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -307,7 +307,7 @@
       "id": "t016",
       "utterance": "ça part une bouteille d'eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -327,7 +327,7 @@
       "id": "t017",
       "utterance": "vendu un cafe moulu",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -347,7 +347,7 @@
       "id": "t018",
       "utterance": "je vends un the vert",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -367,7 +367,7 @@
       "id": "t019",
       "utterance": "vendu deux savons",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -387,7 +387,7 @@
       "id": "t020",
       "utterance": "vendu une conserve de tomate",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -557,7 +557,7 @@
       "id": "t031",
       "utterance": "reçu dix cartons de lait en poudre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -577,7 +577,7 @@
       "id": "t032",
       "utterance": "j'ai reçu vingt kilos de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -597,7 +597,7 @@
       "id": "t033",
       "utterance": "reçu cinq sachets de sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -617,7 +617,7 @@
       "id": "t034",
       "utterance": "on a reçu douze biere",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -637,7 +637,7 @@
       "id": "t035",
       "utterance": "j'ai achete six kilos de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -657,7 +657,7 @@
       "id": "t036",
       "utterance": "reçu trois bidons d'huile de palme",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -677,7 +677,7 @@
       "id": "t037",
       "utterance": "approvisionnement de dix unites d'eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -697,7 +697,7 @@
       "id": "t038",
       "utterance": "entree de stock: deux cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -717,7 +717,7 @@
       "id": "t039",
       "utterance": "annule la derniere vente",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "cancel_last_sale",
         "handlerArgs": {
           "saleId": "$lastSaleId"
@@ -732,7 +732,7 @@
       "id": "t040",
       "utterance": "annule",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "cancel_last_sale",
         "handlerArgs": {
           "saleId": "$lastSaleId"
@@ -747,7 +747,7 @@
       "id": "t041",
       "utterance": "je me trompe, annule la vente",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "cancel_last_sale",
         "handlerArgs": {
           "saleId": "$lastSaleId"
@@ -762,7 +762,7 @@
       "id": "t042",
       "utterance": "vendu deux sucre et un lait",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -786,7 +786,7 @@
       "id": "t043",
       "utterance": "j'ai vendu trois maggi et deux savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -810,7 +810,7 @@
       "id": "t044",
       "utterance": "ça part un riz et un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -834,7 +834,7 @@
       "id": "t045",
       "utterance": "vendu une biere et une eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -858,7 +858,7 @@
       "id": "t046",
       "utterance": "vendu deux cafe et un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -882,7 +882,7 @@
       "id": "t047",
       "utterance": "j'ai vendu un sucre, un sel et un riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -910,7 +910,7 @@
       "id": "t048",
       "utterance": "vendu quatre pates et deux conserve",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -934,7 +934,7 @@
       "id": "t049",
       "utterance": "on a vendu deux allumettes et un cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -958,7 +958,7 @@
       "id": "t050",
       "utterance": "vendu un beurre et une cassonade",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -982,7 +982,7 @@
       "id": "t051",
       "utterance": "j'ai vendu un sucre et un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1006,7 +1006,7 @@
       "id": "t052",
       "utterance": "vendu cinq eau et cinq eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1030,7 +1030,7 @@
       "id": "t053",
       "utterance": "ça part un savon, un the et un cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1058,7 +1058,7 @@
       "id": "t054",
       "utterance": "vendu deux paillette et un ciment",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1082,7 +1082,7 @@
       "id": "t055",
       "utterance": "j'ai vendu deux sucres en poudre et un lait en poudre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1106,7 +1106,7 @@
       "id": "t056",
       "utterance": "reçu un sucre et un sel",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1130,7 +1130,7 @@
       "id": "t057",
       "utterance": "j'ai reçu deux riz et trois pates",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1154,7 +1154,7 @@
       "id": "t058",
       "utterance": "reçu dix eau et cinq savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1178,7 +1178,7 @@
       "id": "t059",
       "utterance": "approvisionnement d'un cafe et d'un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1202,7 +1202,7 @@
       "id": "t060",
       "utterance": "on a reçu dix sucres en poudre et cinq laits en poudre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1226,7 +1226,7 @@
       "id": "t061",
       "utterance": "reçu trois biere et deux allumettes",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1250,7 +1250,7 @@
       "id": "t062",
       "utterance": "j'ai achete un riz parfume et un savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -1274,7 +1274,7 @@
       "id": "t063",
       "utterance": "vendu un sucre, deux laits et trois rizes",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1302,7 +1302,7 @@
       "id": "t064",
       "utterance": "ça part une eau, un sel et un cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1330,7 +1330,7 @@
       "id": "t065",
       "utterance": "vendu deux pates et un savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1354,7 +1354,7 @@
       "id": "t066",
       "utterance": "j'ai vendu un maggi, un bouillon et un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1382,7 +1382,7 @@
       "id": "t067",
       "utterance": "vendu un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1402,7 +1402,7 @@
       "id": "t068",
       "utterance": "vendu deux sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1422,7 +1422,7 @@
       "id": "t069",
       "utterance": "vendu trois sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1442,7 +1442,7 @@
       "id": "t070",
       "utterance": "vendu quatre sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1462,7 +1462,7 @@
       "id": "t071",
       "utterance": "vendu cinq sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1482,7 +1482,7 @@
       "id": "t072",
       "utterance": "vendu six sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1502,7 +1502,7 @@
       "id": "t073",
       "utterance": "vendu sept sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1522,7 +1522,7 @@
       "id": "t074",
       "utterance": "vendu huit sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1542,7 +1542,7 @@
       "id": "t075",
       "utterance": "vendu neuf sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1562,7 +1562,7 @@
       "id": "t076",
       "utterance": "vendu dix sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1582,7 +1582,7 @@
       "id": "t077",
       "utterance": "vendu onze sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1602,7 +1602,7 @@
       "id": "t078",
       "utterance": "vendu douze sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1622,7 +1622,7 @@
       "id": "t079",
       "utterance": "vendu treize sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1642,7 +1642,7 @@
       "id": "t080",
       "utterance": "vendu quatorze sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1662,7 +1662,7 @@
       "id": "t081",
       "utterance": "vendu quinze sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1682,7 +1682,7 @@
       "id": "t082",
       "utterance": "vendu seize sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1702,7 +1702,7 @@
       "id": "t083",
       "utterance": "vendu vingt sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -1956,7 +1956,7 @@
       "id": "t093",
       "utterance": "ça part dix-sept savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2054,7 +2054,7 @@
       "id": "t097",
       "utterance": "vendu 2 sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2074,7 +2074,7 @@
       "id": "t098",
       "utterance": "vendu 3 maggi",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2094,7 +2094,7 @@
       "id": "t099",
       "utterance": "vendu 1 savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2114,7 +2114,7 @@
       "id": "t100",
       "utterance": "vendu 12 biere",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2160,7 +2160,7 @@
       "id": "t102",
       "utterance": "j'ai vendu 7 cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2180,7 +2180,7 @@
       "id": "t103",
       "utterance": "ça part 2 riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2200,7 +2200,7 @@
       "id": "t104",
       "utterance": "vendu 1.the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2272,7 +2272,7 @@
       "id": "t107",
       "utterance": "vendu 5.allumettes",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2318,7 +2318,7 @@
       "id": "t109",
       "utterance": "vendu 2.5 kilos de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2428,7 +2428,7 @@
       "id": "t114",
       "utterance": "vendu 2 riz et 3cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2452,7 +2452,7 @@
       "id": "t115",
       "utterance": "j'ai vendu 4,5 kilos de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2472,7 +2472,7 @@
       "id": "t116",
       "utterance": "vendu 2 sachets de savon et 3 de maggi",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2496,7 +2496,7 @@
       "id": "t117",
       "utterance": "j'ai vendu un maggi a cent francs",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2516,7 +2516,7 @@
       "id": "t118",
       "utterance": "vendu deux sucre a cent francs",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2536,7 +2536,7 @@
       "id": "t119",
       "utterance": "vendu un cafe a trois cents",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2556,7 +2556,7 @@
       "id": "t120",
       "utterance": "vendu un savon a deux cent cinquante",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2576,7 +2576,7 @@
       "id": "t121",
       "utterance": "vendu un riz a sept cents",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2596,7 +2596,7 @@
       "id": "t122",
       "utterance": "vendu un sucre a cent vingt",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2720,7 +2720,7 @@
       "id": "t127",
       "utterance": "reçu du riz a cinq cent soixante",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2741,7 +2741,7 @@
       "id": "t128",
       "utterance": "reçu du sucre a soixante-quinze",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2762,7 +2762,7 @@
       "id": "t129",
       "utterance": "reçu du cafe a deux cent quarante",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2783,7 +2783,7 @@
       "id": "t130",
       "utterance": "reçu du lait en poudre a quatre mille",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2831,7 +2831,7 @@
       "id": "t132",
       "utterance": "reçu du savon a cent quatre-vingt-dix",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2852,7 +2852,7 @@
       "id": "t133",
       "utterance": "reçu du ciment a quatre mille huit cents",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -2926,7 +2926,7 @@
       "id": "t136",
       "utterance": "vendu un eau a cent francs",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -2949,7 +2949,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -2979,7 +2979,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3009,7 +3009,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3039,7 +3039,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -3094,7 +3094,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit ambigu: p_huile et p_huile_palme",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3146,7 +3146,7 @@
       "id": "t145",
       "utterance": "vendu deux sucres",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3166,7 +3166,7 @@
       "id": "t146",
       "utterance": "vendu un kilo de sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3201,7 +3201,7 @@
       "id": "t148",
       "utterance": "vendu un lait",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3221,7 +3221,7 @@
       "id": "t149",
       "utterance": "vendu deux laits",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3256,7 +3256,7 @@
       "id": "t152",
       "utterance": "vendu deux kilos de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3306,7 +3306,7 @@
       "id": "t155",
       "utterance": "vendu un litre d'huile de palme",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3326,7 +3326,7 @@
       "id": "t156",
       "utterance": "vendu un litre d'huile vegetale",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3346,7 +3346,7 @@
       "id": "t157",
       "utterance": "vendu un litre d'huile de table",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3366,7 +3366,7 @@
       "id": "t158",
       "utterance": "vendu une cassonade",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3386,7 +3386,7 @@
       "id": "t159",
       "utterance": "vendu un lait concentre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3406,7 +3406,7 @@
       "id": "t160",
       "utterance": "vendu un lait en poudre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3426,7 +3426,7 @@
       "id": "t161",
       "utterance": "vendu un riz parfume",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3446,7 +3446,7 @@
       "id": "t162",
       "utterance": "vendu une paillette",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3466,7 +3466,7 @@
       "id": "t163",
       "utterance": "vendu un riz paillette",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3486,7 +3486,7 @@
       "id": "t164",
       "utterance": "vendu un moulu",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3506,7 +3506,7 @@
       "id": "t165",
       "utterance": "vendu un beurre d'arachide",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -3526,7 +3526,7 @@
       "id": "t166",
       "utterance": "reçu dix laits en poudre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_restock",
         "handlerArgs": {
           "items": [
@@ -3579,7 +3579,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3609,7 +3609,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3639,7 +3639,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3669,7 +3669,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3699,7 +3699,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit et quantite manquants",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -3833,7 +3833,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -3863,7 +3863,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "quantite manquante",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -3893,7 +3893,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit et quantite manquants",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -3999,7 +3999,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit manquant, l unite ne suffit pas",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_sale",
           "handlerArgs": {
             "items": [
@@ -4029,7 +4029,7 @@
         "outcome": "ASK_CLARIFICATION",
         "reason": "produit manquant",
         "then": {
-          "outcome": "EXECUTE",
+          "outcome": "EXECUTE_WITH_UNDO",
           "intent": "record_restock",
           "handlerArgs": {
             "items": [
@@ -4345,7 +4345,7 @@
       "id": "t213",
       "utterance": "euh vendu deux sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4365,7 +4365,7 @@
       "id": "t214",
       "utterance": "bonjour, vendu un savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4385,7 +4385,7 @@
       "id": "t215",
       "utterance": "vendu deux sucre euh voila",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4405,7 +4405,7 @@
       "id": "t216",
       "utterance": "alors hein, ça part un riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4425,7 +4425,7 @@
       "id": "t217",
       "utterance": "vendu un cafe, je te raconterai apres",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4460,7 +4460,7 @@
       "id": "t219",
       "utterance": "euh euh euh vendu un the",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4480,7 +4480,7 @@
       "id": "t220",
       "utterance": "vendu deux maggi voila voila",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4500,7 +4500,7 @@
       "id": "t221",
       "utterance": "du coup j'ai vendu un sel",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4520,7 +4520,7 @@
       "id": "t222",
       "utterance": "en fait, vendu une eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4540,7 +4540,7 @@
       "id": "t223",
       "utterance": "vendu 2 sucres",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4560,7 +4560,7 @@
       "id": "t224",
       "utterance": "Vendu 2 savon",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4580,7 +4580,7 @@
       "id": "t225",
       "utterance": "vendu 2 BiÈre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4600,7 +4600,7 @@
       "id": "t226",
       "utterance": "vendu 2 saché de sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4620,7 +4620,7 @@
       "id": "t227",
       "utterance": "vendu 2 sachett de sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4640,7 +4640,7 @@
       "id": "t228",
       "utterance": "vendu 2 sucres en powder",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4660,7 +4660,7 @@
       "id": "t229",
       "utterance": "vendu 2 maggi",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4680,7 +4680,7 @@
       "id": "t230",
       "utterance": "vendu 2 magi",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4700,7 +4700,7 @@
       "id": "t231",
       "utterance": "vendu 2 savon de menage",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4720,7 +4720,7 @@
       "id": "t232",
       "utterance": "vendu 2 the vert",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4740,7 +4740,7 @@
       "id": "t233",
       "utterance": "vendu 2 cafe molo",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4760,7 +4760,7 @@
       "id": "t234",
       "utterance": "vendu 2 pate",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4780,7 +4780,7 @@
       "id": "t235",
       "utterance": "vendu 2PACK de pate",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4800,7 +4800,7 @@
       "id": "t236",
       "utterance": "vendu 2 allumette",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4820,7 +4820,7 @@
       "id": "t237",
       "utterance": "vendu 2 conssrv",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4840,7 +4840,7 @@
       "id": "t238",
       "utterance": "vendu 2 savon.",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4860,7 +4860,7 @@
       "id": "t239",
       "utterance": "vendu 2 savon?",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4880,7 +4880,7 @@
       "id": "t240",
       "utterance": "vendu 2 allumettes!",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4900,7 +4900,7 @@
       "id": "t241",
       "utterance": "  vendu 2 savon  ",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4920,7 +4920,7 @@
       "id": "t242",
       "utterance": "VENDU 2 SAVON",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4940,7 +4940,7 @@
       "id": "t243",
       "utterance": "j'ai vendu deux sucre, trois laits et une eau",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -4968,7 +4968,7 @@
       "id": "t244",
       "utterance": "vendu un riz, attends, non, deux riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5154,7 +5154,7 @@
       "id": "t255",
       "utterance": "vendu un riz a sept cents le kilo et un sucre",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5178,7 +5178,7 @@
       "id": "t256",
       "utterance": "j'ai vendu un sucre pas un riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5198,7 +5198,7 @@
       "id": "t257",
       "utterance": "vendu un sucre, enfin non, un riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5218,7 +5218,7 @@
       "id": "t258",
       "utterance": "ça part un sucre et aussi un peu de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5266,7 +5266,7 @@
       "id": "t261",
       "utterance": "vendu du sucre deux fois",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5301,7 +5301,7 @@
       "id": "t263",
       "utterance": "vendu un demi sac de riz",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
@@ -5321,7 +5321,7 @@
       "id": "t264",
       "utterance": "vendu une cafe",
       "expected": {
-        "outcome": "EXECUTE",
+        "outcome": "EXECUTE_WITH_UNDO",
         "intent": "record_sale",
         "handlerArgs": {
           "items": [
