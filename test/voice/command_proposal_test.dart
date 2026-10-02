@@ -126,8 +126,8 @@ void main() {
     test('les defauts sont les seuils documentes', () {
       const VoiceConfig config = VoiceConfig();
 
-      expect(config.maxQuantity, kDefaultMaxQuantity);
-      expect(config.relativeQuantityTolerance, kDefaultRelativeTolerance);
+      expect(config.unusualQuantityThreshold, kDefaultUnusualQuantity);
+      expect(config.shopQuantityCeiling, kDefaultShopQuantityCeiling);
       expect(config.priceToleranceRatio, kDefaultPriceTolerance);
       expect(config.fuzzyThreshold, kDefaultFuzzyThreshold);
       expect(config.ambiguityMargin, kDefaultAmbiguityMargin);
@@ -140,7 +140,10 @@ void main() {
       final VoiceConfig loosened = config.copyWith(fuzzyThreshold: 0.6);
 
       expect(loosened.fuzzyThreshold, 0.6);
-      expect(loosened.maxQuantity, config.maxQuantity);
+      expect(
+        loosened.unusualQuantityThreshold,
+        config.unusualQuantityThreshold,
+      );
       expect(loosened.ambiguityMargin, config.ambiguityMargin);
     });
 
@@ -149,7 +152,8 @@ void main() {
 
       final VoiceConfig copy = config.copyWith();
 
-      expect(copy.maxQuantity, config.maxQuantity);
+      expect(copy.shopQuantityCeiling, config.shopQuantityCeiling);
+      expect(copy.unusualQuantityThreshold, config.unusualQuantityThreshold);
       expect(copy.fuzzyThreshold, config.fuzzyThreshold);
       expect(copy.underSpecifiedNames, config.underSpecifiedNames);
     });
