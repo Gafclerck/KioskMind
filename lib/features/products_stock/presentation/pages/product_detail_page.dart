@@ -1,31 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/product.dart';
+import '../../domain/entities/stock_movement.dart';
+import '../providers/product_providers.dart';
 import '../widgets/formatters.dart';
 import '../widgets/product_card.dart';
+import 'record_stock_movement_page.dart';
 
-/// Fiche produit détaillée : marge, niveau de stock et actions.
+/// Fiche produit détaillée : marge, niveau de stock, historique et actions.
 ///
 /// Le design prévoit aussi une carte « Prédiction IA KioskMind » et un graphe des
-/// ventes sur 7 jours. Ces deux blocs dépendent respectively de l'historique des
-/// ventes (UC7/UC8) et d'un modèle de prédiction, ils sont donc absents ici.
-class ProductDetailPage extends StatelessWidget {
+/// ventes sur 7 jours. La prédiction dépend d'un modèle qui n'existe pas encore,
+/// elle est donc absente ici.
+class ProductDetailPage extends ConsumerWidget {
   const ProductDetailPage({
     super.key,
     required this.product,
     required this.onEdit,
-    required this.onRestock,
+    required this.onRecordMovement,
   });
 
   final Product product;
   final VoidCallback onEdit;
-  final VoidCallback onRestock;
+  final void Function(StockMovementDirection direction) onRecordMovement;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final unit = formatUnit(product.quantity, product.unit);
+    final movements = ref.watch(stockMovementsProvider(product.id));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Fiche Produit')),
@@ -127,6 +132,40 @@ class ProductDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          Text(
+            'Mouvements de stock',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          movements.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (_, _) => const ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text("Impossible de charger l'historique."),
+            ),
+            data: (list) {
+              if (list.isEmpty) {
+                return const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Aucun mouvement enregistré.'),
+                );
+              }
+              return Column(
+                children: [
+                  for (final movement in list.take(5))
+                    _MovementTile(movement: movement, unit: product.unit),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
@@ -139,16 +178,85 @@ class ProductDetailPage extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: onRestock,
+                  onPressed: () =>
+                      onRecordMovement(StockMovementDirection.inbound),
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('Réapprovisionner'),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  onRecordMovement(StockMovementDirection.outbound),
+              icon: Icon(Icons.remove_shopping_cart, color: scheme.error),
+              label: Text(
+                'Sortie manuelle',
+                style: TextStyle(color: scheme.error),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+class _MovementTile extends StatelessWidget {
+  const _MovementTile({required this.movement, required this.unit});
+
+  final StockMovement movement;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isInbound = movement.type.isInbound;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        isInbound ? Icons.arrow_downward : Icons.arrow_upward,
+        color: isInbound ? scheme.primary : scheme.error,
+      ),
+      title: Text(_reasonLabel(movement.reason)),
+      subtitle: Text(
+        movement.note == null
+            ? _formatDate(movement.createdAt)
+            : '${movement.note} - ${_formatDate(movement.createdAt)}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Text(
+        '${movement.impactLabel} ${formatUnit(movement.quantity, unit)}',
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: isInbound ? scheme.primary : scheme.error,
+        ),
+      ),
+    );
+  }
+
+  static String _reasonLabel(StockMovementReason reason) => switch (reason) {
+    StockMovementReason.purchase => 'Achat fournisseur',
+    StockMovementReason.sale => 'Vente',
+    StockMovementReason.loss => 'Perte',
+    StockMovementReason.breakage => 'Casse',
+    StockMovementReason.donation => 'Don',
+    StockMovementReason.manualAdjustment => 'Ajustement manuel',
+  };
+
+  static String _formatDate(DateTime date) {
+    final local = date.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month $hour:$minute';
   }
 }
 

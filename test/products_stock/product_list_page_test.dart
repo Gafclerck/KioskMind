@@ -284,6 +284,10 @@ void main() {
     expect(find.text('test_Riz'), findsOneWidget);
     expect(find.text('Eau de Savon'), findsOneWidget);
 
+    // La rangée de filtres déborde sur mobile étroit : rendre le chip visible
+    // avant de le taper, sinon le tap tombe dans le vide.
+    await tester.ensureVisible(find.widgetWithText(FilterChip, 'Hygiène'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilterChip, 'Hygiène'));
     await tester.pumpAndSettle();
 
@@ -334,7 +338,31 @@ void main() {
     await tester.pumpWidget(_page(const [_outOfStock]));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rupture de Stock'), findsOneWidget);
+    // Le chip de filtre porte le même libellé : on cible le badge de la carte.
+    expect(
+      find.descendant(
+        of: find.byType(StockAlertBadge),
+        matching: find.text('Rupture de Stock'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('filters the list on out of stock products', (tester) async {
+    await tester.pumpWidget(_page(const [_riz, _outOfStock]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsOneWidget);
+    expect(find.text('Huile de Palme'), findsOneWidget);
+
+    await tester.tap(
+      find.widgetWithText(FilterChip, 'Rupture de Stock'),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('test_Riz'), findsNothing);
+    expect(find.text('Huile de Palme'), findsOneWidget);
   });
 
   testWidgets('marks a product at its threshold as a rupture warning', (

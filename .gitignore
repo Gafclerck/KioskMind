@@ -45,5 +45,8 @@ app.*.map.json
 /android/app/release
 
 # Local-only files, not shared with the team
-/docs/ARCHITECTURE.md
+/docs/
 /AGENTS.md
+
+# Maquettes de référence, jamais versionnées
+*.zip

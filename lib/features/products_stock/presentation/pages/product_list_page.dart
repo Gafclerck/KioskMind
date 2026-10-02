@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/constants/product_options.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/stock_movement.dart';
 import '../providers/product_providers.dart';
 import '../widgets/feedback_dialogs.dart';
 import '../widgets/product_card.dart';
 import 'add_product_page.dart';
 import 'edit_product_page.dart';
 import 'product_detail_page.dart';
+import 'record_stock_movement_page.dart';
 
 class ProductListPage extends ConsumerWidget {
   const ProductListPage({super.key});
@@ -33,11 +35,33 @@ class ProductListPage extends ConsumerWidget {
         builder: (_) => ProductDetailPage(
           product: product,
           onEdit: () => _openEditProduct(context, product),
-          onRestock: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Réapprovisionnement à venir')),
-          ),
+          onRecordMovement: (direction) =>
+              _openMovement(context, product, direction),
         ),
       ),
+    );
+  }
+
+  /// UC7 et UC8 : renvoie la quantité modifiée pour rafraîchir la carte.
+  Future<void> _openMovement(
+    BuildContext context,
+    Product product,
+    StockMovementDirection direction,
+  ) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => RecordStockMovementPage(
+          product: product,
+          initialDirection: direction,
+        ),
+      ),
+    );
+    if (updated != true || !context.mounted) return;
+
+    await showSuccessDialog(
+      context,
+      title: 'Stock mis à jour',
+      message: 'Le niveau de ${product.name} a été recalculé.',
     );
   }
 
@@ -69,8 +93,9 @@ class ProductListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final products = ref.watch(filteredProductsProvider);
+    final products = ref.watch(alertedProductsProvider);
     final activeCategory = ref.watch(productFilterProvider);
+    final activeAlert = ref.watch(stockAlertFilterProvider);
     final query = ref.watch(productSearchProvider);
     final hasProducts =
         ref.watch(productsProvider).valueOrNull?.isNotEmpty ?? false;
@@ -110,9 +135,20 @@ class ProductListPage extends ConsumerWidget {
               children: [
                 _CategoryChip(
                   label: 'Tous',
-                  isSelected: activeCategory == null,
-                  onSelected: () =>
-                      ref.read(productFilterProvider.notifier).select(null),
+                  isSelected: activeCategory == null && activeAlert == null,
+                  onSelected: () {
+                    ref.read(productFilterProvider.notifier).select(null);
+                    ref.read(stockAlertFilterProvider.notifier).select(null);
+                  },
+                ),
+                _CategoryChip(
+                  label: 'Rupture de Stock',
+                  isSelected: activeAlert != null,
+                  onSelected: () => ref
+                      .read(stockAlertFilterProvider.notifier)
+                      .select(
+                        activeAlert == null ? StockAlertLevel.outOfStock : null,
+                      ),
                 ),
                 for (final category in productCategories)
                   _CategoryChip(
