@@ -62,7 +62,7 @@ final class ItemMention {
   Map<String, Object?> toArguments(String intentId) {
     final bool carriesAmount = intentId == 'record_restock';
     return <String, Object?>{
-      'productId': product.id,
+      kProductIdSlot: product.id,
       'qty': qty,
       if (carriesAmount && spokenAmount != null) 'unitCost': spokenAmount,
     };

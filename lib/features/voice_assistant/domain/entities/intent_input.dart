@@ -1,3 +1,5 @@
+import 'slot.dart';
+
 /// Base class of every intent input.
 ///
 /// [toArguments] projects the input onto the comparable argument map kept in the
@@ -48,7 +50,7 @@ final class SaleIntentLine {
   final double? spokenUnitPrice;
 
   Map<String, Object?> toArguments() {
-    return <String, Object?>{'productId': productId, 'qty': qty};
+    return <String, Object?>{kProductIdSlot: productId, 'qty': qty};
   }
 }
 
@@ -88,7 +90,7 @@ final class RestockIntentLine {
 
   Map<String, Object?> toArguments() {
     return <String, Object?>{
-      'productId': productId,
+      kProductIdSlot: productId,
       'qty': qty,
       if (spokenUnitCost != null) 'unitCost': spokenUnitCost,
     };
@@ -103,7 +105,7 @@ final class QueryStockInput extends IntentInput {
 
   @override
   Map<String, Object?> toArguments() {
-    return <String, Object?>{'productId': productId};
+    return <String, Object?>{kProductIdSlot: productId};
   }
 }
 
