@@ -17,7 +17,8 @@ import '../ports/spoken_product_resolver.dart';
 ///
 /// - the answer fills the doubt it was asked about, and leaves every other doubt
 ///   standing, so a refusal never turns into an execution by naming its product;
-/// - what the merchant already said about the line is kept, never overwritten;
+/// - the line it completes is added to the ones already there, and every one of them
+///   is kept as it was spoken;
 /// - an answer the proposal cannot receive settles nothing. The doubt stays and the
 ///   merchant is asked again, which fails a test case rather than executing on a slot
 ///   nobody filled.
@@ -40,6 +41,12 @@ final class AnswerApplication {
     required DoubtKind asked,
     required Object? value,
   }) {
+    if (!_asks(proposal, asked)) {
+      // The session asked a question this proposal does not carry, so there is no
+      // line for the answer to complete. Reading one anyway would take the first
+      // line of the utterance for the one that was asked about.
+      return proposal;
+    }
     if (asked.answersByYesOrNo) {
       // Only an explicit yes settles a confirmation. An answer that is not a yes,
       // whatever its shape, leaves the doubt standing: recording a sale the
@@ -80,28 +87,39 @@ final class AnswerApplication {
     DoubtKind asked,
     Object? value,
   ) {
-    final List<ItemMention>? lines = proposal.valueOf<List<ItemMention>>(
-      kItemsSlot,
-    );
     if (value is! num) {
       return proposal;
     }
-    final PartialLine? said = _partialLineOf(proposal, asked);
-    final ProductSnapshot? product = said?.product ?? lines?.first.product;
+    final ProductSnapshot? product = _partialLineOf(proposal, asked)?.product;
     if (product == null) {
       return proposal;
     }
     return _settle(
-      _withSlot(proposal, kItemsSlot, <ItemMention>[
-        ItemMention(
-          product: product,
-          qty: value.toDouble(),
-          spokenAmount: lines?.first.spokenAmount,
-        ),
-        ...lines?.skip(1) ?? const <ItemMention>[],
-      ]),
+      _addedLine(proposal, product, qty: value.toDouble()),
       <DoubtKind>{asked},
     );
+  }
+
+  /// [proposal] with one more line, the one the answer completed.
+  ///
+  /// The line a doubt is about is not in the list yet: the parser leaves a
+  /// doubtful line out rather than record half of it. So an answer adds a line and
+  /// keeps every line already there. Reading the first line instead of the doubtful
+  /// one dropped an article the merchant had named and gave another one its count,
+  /// which is a sale that is wrong and says nothing about it.
+  CommandProposal _addedLine(
+    CommandProposal proposal,
+    ProductSnapshot product, {
+    required double qty,
+    double? spokenAmount,
+  }) {
+    final List<ItemMention> lines =
+        proposal.valueOf<List<ItemMention>>(kItemsSlot) ??
+        const <ItemMention>[];
+    return _withSlot(proposal, kItemsSlot, <ItemMention>[
+      ...lines,
+      ItemMention(product: product, qty: qty, spokenAmount: spokenAmount),
+    ]);
   }
 
   /// The product the answer names, whichever shape the answer takes.
@@ -141,25 +159,11 @@ final class AnswerApplication {
     if (!lineBased) {
       return _withSlot(proposal, kProductIdSlot, product.id);
     }
-    final List<ItemMention>? lines = proposal.valueOf<List<ItemMention>>(
-      kItemsSlot,
-    );
     final PartialLine? said = _partialLineOf(proposal, asked);
-    final double? qty = said?.qty ?? lines?.first.qty;
-    if (qty == null && asked == DoubtKind.missingProduct) {
+    if (said?.qty == null && asked == DoubtKind.missingProduct) {
       return _withMissingQuantity(proposal, product, asked);
     }
-    return _settle(
-      _withSlot(proposal, kItemsSlot, <ItemMention>[
-        ItemMention(
-          product: product,
-          qty: qty ?? 1,
-          spokenAmount: lines?.first.spokenAmount,
-        ),
-        ...lines?.skip(1) ?? const <ItemMention>[],
-      ]),
-      <DoubtKind>{asked},
-    );
+    return _addedLine(proposal, product, qty: said?.qty ?? 1);
   }
 
   /// Keeps the product the answer gave and asks how many, as the parser does.
@@ -181,6 +185,11 @@ final class AnswerApplication {
       ],
       origin: proposal.origin,
     );
+  }
+
+  /// Whether the question the session asked is one this proposal carries.
+  bool _asks(CommandProposal proposal, DoubtKind asked) {
+    return proposal.doubts.any((Doubt doubt) => doubt.kind == asked);
   }
 
   /// What the merchant had already said about the line the doubt is about.
