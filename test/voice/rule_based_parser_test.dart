@@ -57,15 +57,17 @@ void main() {
       expect(doubtsOf('annule tout'), <DoubtKind>[DoubtKind.unboundedScope]);
     });
 
-    test('"tout a l heure" ne porte pas sur tout', () {
+    test('"tout a l\'heure" ne porte pas sur tout', () {
       // C'est un renvoi au passe: le vendeur s'est corrige, la vente reste
       // inexecutee parce que le mot "meme" la rend ambigue, pas "tout".
+      // L'apostrophe compte: c'est elle qui fait un seul jeton de "l'heure", et
+      // donc ce que la table doit reconnaitre.
       expect(
-        doubtsOf('vendu le meme sucre que tout a l heure'),
+        doubtsOf("vendu le meme sucre que tout a l'heure"),
         contains(DoubtKind.anaphora),
       );
       expect(
-        doubtsOf('vendu le meme sucre que tout a l heure'),
+        doubtsOf("vendu le meme sucre que tout a l'heure"),
         isNot(contains(DoubtKind.unboundedScope)),
       );
     });
@@ -143,6 +145,78 @@ void main() {
       expect(doubtsOf('vendu deux sachets'), <DoubtKind>[
         DoubtKind.missingProduct,
       ]);
+    });
+  });
+
+  group('ce que le doute garde de la ligne', () {
+    /// What the doubt of that kind kept of the line it is about.
+    PartialLine partialOf(String raw, DoubtKind kind) {
+      final CommandProposal proposal = parse(raw);
+      for (final Doubt doubt in proposal.doubts) {
+        if (doubt.kind == kind) {
+          return doubt.partial ?? (product: null, qty: null);
+        }
+      }
+      fail('aucun doute ${kind.name} pour "$raw"');
+    }
+
+    test('un produit sans compte est garde quand le compte manque', () {
+      final PartialLine partial = partialOf(
+        'vendu du sucre',
+        DoubtKind.missingQuantity,
+      );
+
+      expect(partial.product?.id, 'p_sucre');
+      expect(partial.qty, isNull);
+    });
+
+    test('un compte sans produit est garde quand le produit manque', () {
+      final PartialLine partial = partialOf(
+        'vendu deux sachets',
+        DoubtKind.missingProduct,
+      );
+
+      expect(partial.product, isNull);
+      expect(partial.qty, 2);
+    });
+
+    test('un compte garde quand le produit est ambigu', () {
+      final PartialLine partial = partialOf(
+        'vendu deux huiles',
+        DoubtKind.ambiguousProduct,
+      );
+
+      expect(partial.product, isNull);
+      expect(partial.qty, 2);
+    });
+
+    test('un produit archive garde le compte qu il portait', () {
+      final PartialLine partial = partialOf(
+        'vendu deux lait en boite',
+        DoubtKind.archivedProduct,
+      );
+
+      expect(partial.product, isNull);
+      expect(partial.qty, 2);
+    });
+
+    test('rien n est invente quand rien n a ete dit', () {
+      final PartialLine partial = partialOf(
+        'approvisionnement',
+        DoubtKind.missingProduct,
+      );
+
+      expect(partial.product, isNull);
+      expect(partial.qty, isNull);
+    });
+
+    test('une question ne garde pas de compte, elle n en demande pas', () {
+      final PartialLine partial = partialOf(
+        'combien il reste',
+        DoubtKind.missingProduct,
+      );
+
+      expect(partial.qty, isNull);
     });
   });
 

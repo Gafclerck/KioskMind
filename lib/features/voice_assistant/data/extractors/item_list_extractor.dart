@@ -12,8 +12,6 @@ final class ItemListReading {
     required this.items,
     required this.products,
     required this.doubts,
-    required this.mentionsFound,
-    this.namedSomething = false,
   });
 
   /// One entry per product the merchant named and did not take back, with a
@@ -25,13 +23,6 @@ final class ItemListReading {
   final List<ProductSnapshot> products;
 
   final List<Doubt> doubts;
-
-  /// How many product names were found, usable or not. Zero means the utterance
-  /// named none, which is not the same as naming one that cannot be resolved.
-  final int mentionsFound;
-
-  /// Whether a word stood where a product was expected, as in "vendu un truc".
-  final bool namedSomething;
 }
 
 /// Finds the products of a command and reads the quantity and amount of each.
@@ -49,6 +40,10 @@ final class ItemListExtractor {
   ///
   /// [requiresQuantity] is false for a question: "combien de riz" has no count
   /// and is still complete, while "vendu du riz" without a count is not.
+  ///
+  /// Every doubt about a line carries what the merchant did say about it, so that
+  /// the answer to the question completes the line. The reading never invents a
+  /// count: a line the merchant left half said stays half said.
   ItemListReading read(
     List<String> tokens, {
     required int from,
@@ -60,16 +55,16 @@ final class ItemListExtractor {
     final List<ProductSnapshot> products = <ProductSnapshot>[];
 
     for (final _Mention mention in mentions) {
-      final Doubt? doubt = _doubtOf(mention.resolution);
+      final LineReading reading = lines.read(tokens, mention.start);
+      final double? quantity = _quantityOf(reading);
+      final Doubt? doubt = _doubtOf(mention.resolution, quantity);
       if (doubt != null) {
         doubts.add(doubt);
         continue;
       }
       final ProductSnapshot product = mention.resolution.product!;
       products.add(product);
-      final LineReading reading = lines.read(tokens, mention.start);
-      final double? quantity = _quantityOf(reading);
-      doubts.addAll(_lineDoubts(reading, requiresQuantity, quantity));
+      doubts.addAll(_lineDoubts(reading, requiresQuantity, quantity, product));
       if (quantity != null) {
         items.add(
           ItemMention(
@@ -80,12 +75,29 @@ final class ItemListExtractor {
         );
       }
     }
-    return ItemListReading(
-      items: items,
-      products: products,
-      doubts: doubts,
-      mentionsFound: mentions.length,
-      namedSomething: _namesSomething(tokens, from, mentions),
+    if (mentions.isEmpty) {
+      doubts.add(_noProductDoubt(tokens, from, requiresQuantity));
+    }
+    return ItemListReading(items: items, products: products, doubts: doubts);
+  }
+
+  /// The doubt an utterance that named no product raises.
+  ///
+  /// "vendu un truc" named something the catalog does not hold, "vendu du sucre"
+  /// named nothing at all: the difference is what the merchant is told. The count
+  /// is read as if the missing name stood at the end of the utterance, which is
+  /// where the reader looks back from, so "vendu deux sachets" keeps its two.
+  Doubt _noProductDoubt(List<String> tokens, int from, bool requiresQuantity) {
+    return Doubt(
+      kind: _namesSomething(tokens, from, const <_Mention>[])
+          ? DoubtKind.unknownProduct
+          : DoubtKind.missingProduct,
+      partial: (
+        product: null,
+        qty: requiresQuantity
+            ? lines.read(tokens, tokens.length).quantity
+            : null,
+      ),
     );
   }
 
@@ -154,7 +166,10 @@ final class ItemListExtractor {
   }
 
   /// The doubt a product name raises, or null when it names a usable product.
-  Doubt? _doubtOf(ProductResolution resolution) {
+  ///
+  /// A name that cannot be used still leaves the line it was part of standing: the
+  /// count spoken with it is kept so the answer keeps the count too.
+  Doubt? _doubtOf(ProductResolution resolution, double? quantity) {
     switch (resolution.status) {
       case ResolutionStatus.resolved:
         return null;
@@ -162,26 +177,41 @@ final class ItemListExtractor {
         return Doubt(
           kind: DoubtKind.ambiguousProduct,
           candidates: resolution.products,
+          partial: (product: null, qty: quantity),
         );
       case ResolutionStatus.archived:
-        return const Doubt(kind: DoubtKind.archivedProduct);
+        return Doubt(
+          kind: DoubtKind.archivedProduct,
+          partial: (product: null, qty: quantity),
+        );
       case ResolutionStatus.unknown:
-        return const Doubt(kind: DoubtKind.unknownProduct);
+        return Doubt(
+          kind: DoubtKind.unknownProduct,
+          partial: (product: null, qty: quantity),
+        );
     }
   }
 
   /// What one line is missing, if anything.
   ///
   /// Asked of the count the line really carries, not of what was spoken, so a
-  /// unit implied by an announced amount is not reported as missing.
+  /// unit implied by an announced amount is not reported as missing. The product is
+  /// carried along: it is the half of the line that was said, and asking the count
+  /// must not throw it away.
   List<Doubt> _lineDoubts(
     LineReading reading,
     bool requiresQuantity,
     double? quantity,
+    ProductSnapshot product,
   ) {
     if (quantity == null) {
       return requiresQuantity
-          ? const <Doubt>[Doubt(kind: DoubtKind.missingQuantity)]
+          ? <Doubt>[
+              Doubt(
+                kind: DoubtKind.missingQuantity,
+                partial: (product: product, qty: null),
+              ),
+            ]
           : const <Doubt>[];
     }
     if (quantity <= 0) {
