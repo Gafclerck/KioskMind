@@ -3,6 +3,7 @@ import 'package:kiosk_mind/core/errors/failure.dart';
 import 'package:kiosk_mind/core/usecase/result.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/call_journal.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/commands/voice_bindings.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/journaling_intent_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_cancel_last_sale_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_voice_handlers.dart';
@@ -18,6 +19,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_context
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_registry.dart';
 
 import 'fake_clock.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
@@ -136,15 +138,14 @@ void main() {
       expect(shop.journal.calls, isEmpty);
     });
 
-    test('un intent sans handler branche est une erreur franche', () async {
-      // Un intent du catalogue sans port ne doit pas disparaitre dans un silence:
-      // le catalogue le refuse au chargement, donc ici c'est un câblage casse.
+    test('un intent sans liaison enregistree est une erreur franche', () async {
+      // Un intent sans port ne doit pas disparaitre dans un silence. Le catalogue le
+      // refuse au chargement, donc ici c'est un cablage casse, et il doit se voir.
       final ExecuteCommand executor = ExecuteCommand(
-        handlers: const VoiceHandlers(),
+        registry: IntentRegistry(const <IntentBinding>[]),
         dialog: shop.dialog,
         clock: shop.clock,
         ids: _SequentialIds(),
-        undo: shop.undoer,
       );
 
       await expectLater(
@@ -506,11 +507,15 @@ final class _Shop {
     ids: _SequentialIds(prefix: 'undo-'),
   );
   late final ExecuteCommand runner = ExecuteCommand(
-    handlers: handlers,
+    registry: registry,
     dialog: dialog,
     clock: clock,
     ids: commandIds ?? _SequentialIds(),
-    undo: undoer,
+  );
+
+  /// The bindings the composition root builds, and only those.
+  late final IntentRegistry registry = IntentRegistry(
+    buildVoiceBindings(handlers: handlers, undo: undoer),
   );
 
   /// Undoes the last write, the way the undo banner does.

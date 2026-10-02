@@ -247,13 +247,13 @@ void main() {
       );
     });
 
-    test('the validator reads the tunables the config gives it', () {
+    test('the validator reads the tunables the config gives it', () async {
       final ProviderContainer container = buildContainer(
         catalog: buildCatalogFromDisk(),
       );
 
       expect(
-        container.read(voiceCommandValidatorProvider),
+        await container.read(voiceCommandValidatorProvider.future),
         isA<CommandValidator>(),
       );
     });

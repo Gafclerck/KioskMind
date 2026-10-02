@@ -1,5 +1,6 @@
 import '../entities/command_proposal.dart';
 import '../entities/doubt.dart';
+import '../entities/intent_definition.dart';
 import '../entities/slot.dart';
 import '../entities/voice_config.dart';
 
@@ -16,9 +17,12 @@ import '../entities/voice_config.dart';
 /// know which number was meant. It also never returns the parser's own doubts, so
 /// the caller keeps both and can tell where each came from.
 final class CommandValidator {
-  const CommandValidator({required this.config});
+  const CommandValidator({required this.config, required this.intents});
 
   final VoiceConfig config;
+
+  /// Which price an announced amount is compared against, per intent.
+  final IntentCatalog intents;
 
   /// The doubts [proposal] raises on its own, in proposal order.
   List<Doubt> validate(CommandProposal proposal) {
@@ -56,10 +60,10 @@ final class CommandValidator {
 
   /// The price doubt of one line, when an amount was spoken.
   ///
-  /// The reference is the price the intent would apply: the sale price on a sale,
-  /// the purchase price on a restock. Comparing a restock to the sale price
-  /// would doubt every correct restock, and comparing a sale to the purchase price
-  /// would doubt the normal case, so the intent decides which price counts.
+  /// The reference is the price the intent declares: the sale price on a sale,
+  /// the purchase price on a restock. Comparing a restock to the sale price would
+  /// doubt every correct restock, and comparing a sale to the purchase price would
+  /// doubt the normal case, so the catalog says which price counts.
   Doubt? _amountDoubt(ItemMention line, String intentId) {
     final double? spoken = line.spokenAmount;
     final double? reference = _referencePrice(line, intentId);
@@ -73,11 +77,16 @@ final class CommandValidator {
     return const Doubt(kind: DoubtKind.amountMismatch, slotName: kItemsSlot);
   }
 
+  /// The price the catalog declares for this intent, or null when it takes none.
   double? _referencePrice(ItemMention line, String intentId) {
-    return switch (intentId) {
-      'record_sale' => line.product.price,
-      'record_restock' => line.product.purchasePrice,
-      _ => null,
+    final IntentDefinition? intent = intents.byId(intentId);
+    if (intent == null) {
+      return null;
+    }
+    return switch (intent.referencePrice) {
+      ReferencePrice.salePrice => line.product.price,
+      ReferencePrice.purchasePrice => line.product.purchasePrice,
+      ReferencePrice.none => null,
     };
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
+
+import 'rule_parser_harness.dart';
 
 /// The checks that need the catalog: what the merchant said has to be plausible
 /// against what the shop sells.
@@ -14,6 +17,10 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/command_vali
 /// it.
 void main() {
   const VoiceConfig config = VoiceConfig();
+
+  // The validator reads the catalog: which price an announced amount is compared
+  // against is declared per intent, not decided by a list of names in the code.
+  final IntentCatalog intents = RuleParserHarness().intents;
 
   final ProductSnapshot sucre = _product(
     id: 'p_sucre',
@@ -51,6 +58,7 @@ void main() {
   }) {
     return CommandValidator(
       config: withConfig ?? config,
+      intents: intents,
     ).validate(proposalFor(intent, items)).map((Doubt d) => d.kind).toList();
   }
 
@@ -167,6 +175,7 @@ void main() {
     test('le doute porte sur le slot des lignes', () {
       final List<Doubt> doubts = CommandValidator(
         config: config,
+        intents: intents,
       ).validate(proposalFor('record_sale', <ItemMention>[line(sucre, 30)]));
 
       expect(doubts.single.slotName, 'items');
@@ -228,6 +237,7 @@ void main() {
       expect(
         CommandValidator(
           config: config,
+          intents: intents,
         ).validate(proposalFor('query_stock', const <ItemMention>[])),
         isEmpty,
       );
@@ -235,7 +245,7 @@ void main() {
 
     test('une proposition sans slot articles ne leve rien', () {
       expect(
-        CommandValidator(config: config).validate(
+        CommandValidator(config: config, intents: intents).validate(
           const CommandProposal(
             intentId: 'record_sale',
             slots: <Slot>[],
@@ -262,6 +272,7 @@ void main() {
       expect(
         CommandValidator(
           config: config,
+          intents: intents,
         ).validate(refused).map((Doubt d) => d.kind),
         <DoubtKind>[DoubtKind.implausibleQuantity],
         reason: 'le validateur ne rend que ses propres doutes',

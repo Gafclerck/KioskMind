@@ -6,6 +6,7 @@
       "id": "record_sale",
       "handler": "record_sale",
       "risk": "WRITE_REVERSIBLE",
+      "referencePrice": "sale_price",
       "description": "Enregistrer une vente. A utiliser quand le commerçant indique ce qu'il vient de vendre. Toutes les lignes de la phrase forment une seule vente.",
       "triggers": [
         "vendu",
@@ -63,6 +64,7 @@
       "id": "record_restock",
       "handler": "record_restock",
       "risk": "WRITE_REVERSIBLE",
+      "referencePrice": "purchase_price",
       "description": "Enregistrer un approvisionnement, c'est-à-dire une entrée de stock. A utiliser quand le commerçant annonce une réception ou un achat, jamais une vente.",
       "triggers": [
         "recu",

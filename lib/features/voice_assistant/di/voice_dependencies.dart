@@ -15,6 +15,7 @@ import '../data/catalog/intent_catalog_loader.dart';
 import '../data/catalog/product_resolver.dart';
 import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
+import '../data/commands/voice_bindings.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
@@ -28,6 +29,7 @@ import '../domain/entities/voice_config.dart';
 import '../domain/ports/command_id_factory.dart';
 import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
+import '../domain/ports/intent_registry.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
 import '../domain/services/answer_application.dart';
@@ -131,10 +133,35 @@ final Provider<DialogManager> voiceDialogProvider = Provider<DialogManager>(
 );
 
 /// What the module doubts on its own: a quantity or a price the catalog contradicts.
-final Provider<CommandValidator> voiceCommandValidatorProvider =
-    Provider<CommandValidator>(
-      (Ref ref) => CommandValidator(config: ref.watch(voiceConfigProvider)),
+///
+/// Reads the catalog rather than a list of intent names: which price an announced
+/// amount is compared against is declared per intent, so a new command needs no
+/// change here.
+final FutureProvider<CommandValidator> voiceCommandValidatorProvider =
+    FutureProvider<CommandValidator>(
+      (Ref ref) async => CommandValidator(
+        config: ref.watch(voiceConfigProvider),
+        intents: await ref.watch(voiceIntentsProvider.future),
+      ),
     );
+
+/// Every command the module can run, indexed by intent.
+///
+/// The registry and the catalog must agree, and it is checked here because this is
+/// the only place that knows both: a command described but unbound would be
+/// understood and then refused as a wiring error, and a command bound but
+/// undescribed would be reachable without the parser or the test set knowing it.
+final FutureProvider<IntentRegistry> voiceIntentRegistryProvider =
+    FutureProvider<IntentRegistry>((Ref ref) async {
+      final IntentRegistry registry = IntentRegistry(
+        buildVoiceBindings(
+          handlers: await ref.watch(voiceHandlersProvider.future),
+          undo: await ref.watch(voiceUndoLastCommandProvider.future),
+        ),
+      );
+      registry.assertCovers(await ref.watch(voiceIntentsProvider.future));
+      return registry;
+    });
 
 /// The one place where what was heard becomes what happens.
 final FutureProvider<DecisionPolicy> voiceDecisionPolicyProvider =
@@ -161,11 +188,10 @@ final FutureProvider<UndoLastCommand> voiceUndoLastCommandProvider =
 final FutureProvider<ExecuteCommand> voiceExecuteCommandProvider =
     FutureProvider<ExecuteCommand>(
       (Ref ref) async => ExecuteCommand(
-        handlers: await ref.watch(voiceHandlersProvider.future),
+        registry: await ref.watch(voiceIntentRegistryProvider.future),
         dialog: ref.watch(voiceDialogProvider),
         clock: ref.watch(voiceClockProvider),
         ids: ref.watch(voiceCommandIdsProvider),
-        undo: await ref.watch(voiceUndoLastCommandProvider.future),
       ),
     );
 
@@ -250,7 +276,7 @@ final FutureProvider<HandleUtterance> voiceHandleUtteranceProvider =
     FutureProvider<HandleUtterance>(
       (Ref ref) async => HandleUtterance(
         parser: await ref.watch(voiceRuleBasedParserProvider.future),
-        validator: ref.watch(voiceCommandValidatorProvider),
+        validator: await ref.watch(voiceCommandValidatorProvider.future),
         policy: await ref.watch(voiceDecisionPolicyProvider.future),
         executor: await ref.watch(voiceExecuteCommandProvider.future),
         dialog: ref.watch(voiceDialogProvider),

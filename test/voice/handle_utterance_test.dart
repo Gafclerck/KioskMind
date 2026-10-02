@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/catalog_fixture_loader.dart'
     show parseCatalogFixture;
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/commands/voice_bindings.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/extractors/product_name_resolver.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_voice_handlers.dart';
@@ -13,6 +14,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_registry.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_application.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_reading.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
@@ -273,21 +275,26 @@ final class _Session {
       catalog: catalog,
       journal: journal,
     );
+    final UndoLastCommand undo = UndoLastCommand(
+      handlers: handlers,
+      dialog: dialog,
+      clock: clock,
+      ids: _SequentialIds(prefix: 'undo-'),
+    );
     turn = HandleUtterance(
       parser: harness.parser,
-      validator: CommandValidator(config: harness.config),
+      validator: CommandValidator(
+        config: harness.config,
+        intents: harness.intents,
+      ),
       policy: DecisionPolicy(catalog: harness.intents),
       executor: ExecuteCommand(
-        handlers: handlers,
+        registry: IntentRegistry(
+          buildVoiceBindings(handlers: handlers, undo: undo),
+        ),
         dialog: dialog,
         clock: clock,
         ids: _SequentialIds(),
-        undo: UndoLastCommand(
-          handlers: handlers,
-          dialog: dialog,
-          clock: clock,
-          ids: _SequentialIds(prefix: 'undo-'),
-        ),
       ),
       dialog: dialog,
       answers: AnswerApplication(

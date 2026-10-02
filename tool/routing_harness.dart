@@ -4,6 +4,7 @@ import 'package:kiosk_mind/features/voice_assistant/data/catalog/catalog_fixture
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/intent_catalog_loader.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/product_resolver.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/commands/voice_bindings.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/extractors/item_list_extractor.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/extractors/product_name_resolver.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/extractors/line_extractor.dart';
@@ -18,6 +19,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snap
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_registry.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/voice_clock.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_application.dart';
@@ -77,7 +79,7 @@ final class RoutingHarness {
     dialog = DialogManager(config: config, clock: clock);
     handlers = buildMockVoiceHandlers(catalog: catalog, journal: journal);
     policy = DecisionPolicy(catalog: intents);
-    validator = CommandValidator(config: config);
+    validator = CommandValidator(config: config, intents: intents);
     answers = AnswerApplication(
       intents: intents,
       resolver: ProductNameResolver(resolver: resolver, normalizer: normalizer),
@@ -89,11 +91,12 @@ final class RoutingHarness {
       ids: _CountingIds(),
     );
     executor = ExecuteCommand(
-      handlers: handlers,
+      registry: IntentRegistry(
+        buildVoiceBindings(handlers: handlers, undo: undoer),
+      ),
       dialog: dialog,
       clock: clock,
       ids: _CountingIds(),
-      undo: undoer,
     );
     turn = HandleUtterance(
       parser: parser,

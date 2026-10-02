@@ -3,16 +3,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/intent_catalog_loader.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/extractors/item_list_extractor.dart';
-import 'package:kiosk_mind/features/voice_assistant/data/extractors/line_extractor.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/parsers/rule_based_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/services/french_number_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/intent_detector.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normalizer.dart';
 
 import 'rule_parser_harness.dart';
 
@@ -27,9 +23,9 @@ void main() {
     // "peremption du sucre" ne porte aucune quantite. La commande est declaree en
     // lecture, donc l'absence de quantite n'est pas un doute: le parseur le sait en
     // regardant le risque declare, pas en comptant les commandes qu'il connait.
-    final CommandProposal proposal = _parserWith(_checkExpiry()).parse(
-      'peremption du sucre',
-    );
+    final CommandProposal proposal = _parserWith(
+      _checkExpiry(),
+    ).parse('peremption du sucre');
 
     expect(proposal.intentId, 'check_expiry');
     expect(proposal.doubts, isEmpty);
@@ -48,9 +44,9 @@ void main() {
   test('une commande declaree en ecriture exige une quantite', () {
     // La meme phrase, une commande qui declare une liste de lignes et le risque
     // d'ecriture: sans quantite, la ligne est douteuse et rien ne s execute.
-    final CommandProposal proposal = _parserWith(_countLines()).parse(
-      'comptage du sucre',
-    );
+    final CommandProposal proposal = _parserWith(
+      _countLines(),
+    ).parse('comptage du sucre');
 
     expect(proposal.intentId, 'count_lines');
     expect(proposal.hasDoubt(DoubtKind.missingQuantity), isTrue);
