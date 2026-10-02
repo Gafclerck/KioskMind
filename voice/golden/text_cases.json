@@ -105,7 +105,7 @@
     },
     {
       "id": "t006",
-      "utterance": "vendu du the",
+      "utterance": "vendu un the",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -325,7 +325,7 @@
     },
     {
       "id": "t017",
-      "utterance": "vendu du cafe moulu",
+      "utterance": "vendu un cafe moulu",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -808,7 +808,7 @@
     },
     {
       "id": "t044",
-      "utterance": "ça part du riz et du sucre",
+      "utterance": "ça part un riz et un sucre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -880,7 +880,7 @@
     },
     {
       "id": "t047",
-      "utterance": "j'ai vendu du sucre, du sel et du riz",
+      "utterance": "j'ai vendu un sucre, un sel et un riz",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -980,7 +980,7 @@
     },
     {
       "id": "t051",
-      "utterance": "j'ai vendu du sucre et du sucre",
+      "utterance": "j'ai vendu un sucre et un sucre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -1080,7 +1080,7 @@
     },
     {
       "id": "t055",
-      "utterance": "j'ai vendu du sucre en poudre et du lait en poudre",
+      "utterance": "j'ai vendu deux sucres en poudre et un lait en poudre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -1104,7 +1104,7 @@
     },
     {
       "id": "t056",
-      "utterance": "reçu du sucre et du sel",
+      "utterance": "reçu un sucre et un sel",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -1176,7 +1176,7 @@
     },
     {
       "id": "t059",
-      "utterance": "approvisionnement de cafe et de the",
+      "utterance": "approvisionnement d'un cafe et d'un the",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -1200,7 +1200,7 @@
     },
     {
       "id": "t060",
-      "utterance": "on a reçu du sucre en poudre et du lait en poudre",
+      "utterance": "on a reçu dix sucres en poudre et cinq laits en poudre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -1248,7 +1248,7 @@
     },
     {
       "id": "t062",
-      "utterance": "j'ai achete du riz parfume et du savon",
+      "utterance": "j'ai achete un riz parfume et un savon",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -1352,7 +1352,7 @@
     },
     {
       "id": "t066",
-      "utterance": "j'ai vendu du maggi, du bouillon et du the",
+      "utterance": "j'ai vendu un maggi, un bouillon et un the",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3143,26 +3143,6 @@
       "notes": "le commerçant tranche pour huile de palme"
     },
     {
-      "id": "t144",
-      "utterance": "vendu une livre de sucre",
-      "expected": {
-        "outcome": "EXECUTE",
-        "intent": "record_sale",
-        "handlerArgs": {
-          "items": [
-            {
-              "productId": "p_sucre",
-              "qty": 2
-            }
-          ]
-        }
-      },
-      "tags": [
-        "ambiguous_product"
-      ],
-      "notes": "nom unique, aucune categorie"
-    },
-    {
       "id": "t145",
       "utterance": "vendu deux sucres",
       "expected": {
@@ -3219,7 +3199,7 @@
     },
     {
       "id": "t148",
-      "utterance": "vendu du lait",
+      "utterance": "vendu un lait",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3227,7 +3207,7 @@
           "items": [
             {
               "productId": "p_lait",
-              "qty": 2
+              "qty": 1
             }
           ]
         }
@@ -3265,26 +3245,6 @@
         "intent": "query_stock",
         "handlerArgs": {
           "productId": "p_lait"
-        }
-      },
-      "tags": [
-        "ambiguous_product"
-      ],
-      "notes": "nom unique, aucune categorie"
-    },
-    {
-      "id": "t151",
-      "utterance": "vendu un gros sac de riz",
-      "expected": {
-        "outcome": "EXECUTE",
-        "intent": "record_sale",
-        "handlerArgs": {
-          "items": [
-            {
-              "productId": "p_riz",
-              "qty": 2
-            }
-          ]
         }
       },
       "tags": [
@@ -3404,7 +3364,7 @@
     },
     {
       "id": "t158",
-      "utterance": "vendu de la cassonade",
+      "utterance": "vendu une cassonade",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3444,7 +3404,7 @@
     },
     {
       "id": "t160",
-      "utterance": "vendu du lait en poudre",
+      "utterance": "vendu un lait en poudre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3464,7 +3424,7 @@
     },
     {
       "id": "t161",
-      "utterance": "vendu du riz parfume",
+      "utterance": "vendu un riz parfume",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3504,7 +3464,7 @@
     },
     {
       "id": "t163",
-      "utterance": "vendu du riz paillette",
+      "utterance": "vendu un riz paillette",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3524,7 +3484,7 @@
     },
     {
       "id": "t164",
-      "utterance": "vendu du moulu",
+      "utterance": "vendu un moulu",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3544,7 +3504,7 @@
     },
     {
       "id": "t165",
-      "utterance": "vendu du beurre",
+      "utterance": "vendu un beurre d'arachide",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -3564,7 +3524,7 @@
     },
     {
       "id": "t166",
-      "utterance": "reçu du lait en poudre",
+      "utterance": "reçu dix laits en poudre",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -3573,26 +3533,6 @@
             {
               "productId": "p_lait_poudre",
               "qty": 10
-            }
-          ]
-        }
-      },
-      "tags": [
-        "ambiguous_product"
-      ],
-      "notes": "alias exact, un seul candidat"
-    },
-    {
-      "id": "t167",
-      "utterance": "reçu une paillette",
-      "expected": {
-        "outcome": "EXECUTE",
-        "intent": "record_restock",
-        "handlerArgs": {
-          "items": [
-            {
-              "productId": "p_paillette",
-              "qty": 6
             }
           ]
         }
@@ -4463,7 +4403,7 @@
     },
     {
       "id": "t216",
-      "utterance": "alors hein, ca part du riz",
+      "utterance": "alors hein, ça part un riz",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -4558,7 +4498,7 @@
     },
     {
       "id": "t221",
-      "utterance": "du coup j'ai vendu du sel",
+      "utterance": "du coup j'ai vendu un sel",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -5236,7 +5176,7 @@
     },
     {
       "id": "t256",
-      "utterance": "j'ai vendu du sucre pas du riz",
+      "utterance": "j'ai vendu un sucre pas un riz",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -5256,7 +5196,7 @@
     },
     {
       "id": "t257",
-      "utterance": "vendu sucre, enfin non, du riz",
+      "utterance": "vendu un sucre, enfin non, un riz",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",

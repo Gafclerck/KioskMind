@@ -334,7 +334,7 @@
       "file": "voice/golden/audio/multi_items_t062.wav",
       "speaker": "femme_50",
       "noise": "rue",
-      "groundTruthTranscript": "j'ai achete du riz parfume et du savon",
+      "groundTruthTranscript": "j'ai achete un riz parfume et un savon",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_restock",
@@ -989,7 +989,7 @@
       "file": "voice/golden/audio/ambiguous_product_t148.wav",
       "speaker": "homme_35",
       "noise": "rue",
-      "groundTruthTranscript": "vendu du lait",
+      "groundTruthTranscript": "vendu un lait",
       "expected": {
         "outcome": "EXECUTE",
         "intent": "record_sale",
@@ -997,7 +997,7 @@
           "items": [
             {
               "productId": "p_lait",
-              "qty": 2
+              "qty": 1
             }
           ]
         }

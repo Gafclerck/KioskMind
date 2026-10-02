@@ -40,12 +40,6 @@ app.*.symbols
 app.*.map.json
 
 # Android Studio will place build artifacts here
-/spikes/**/build/
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# Local-only files, not shared with the team
-/docs/ARCHITECTURE.md
-/docs/voice/
-/AGENTS.md
