@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/core/constants/voice_flags.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/catalog_fixture_loader.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/catalog/product_resolver.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/parsers/rule_based_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/clock/system_voice_clock.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/commands/session_command_ids.dart';
@@ -24,7 +26,9 @@ import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_jo
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/decision_policy.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normalizer.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 
@@ -312,6 +316,90 @@ void main() {
 
         expect(dialog.undoSaleId, isNotNull);
         expect(await undo.run(), isA<Success<CancelLastSaleResult>>());
+      },
+    );
+
+    test('wires the whole turn, from the words to the handler', () async {
+      final InMemoryProductCatalog catalog = buildCatalogFromDisk();
+      final ProviderContainer container = buildContainer(catalog: catalog);
+
+      final HandleUtterance turn = await container.read(
+        voiceHandleUtteranceProvider.future,
+      );
+
+      final VoiceTurn sale = await turn.run('vendu deux sucres');
+
+      expect(sale.decision.outcome, DecisionOutcome.executeWithUndo);
+      expect(
+        container.read(voiceCallJournalProvider).calls.single.intentId,
+        'record_sale',
+      );
+    });
+
+    test(
+      'wires the turn so an answer completes the utterance it follows',
+      () async {
+        final ProviderContainer container = buildContainer(
+          catalog: buildCatalogFromDisk(),
+        );
+
+        final HandleUtterance turn = await container.read(
+          voiceHandleUtteranceProvider.future,
+        );
+
+        await turn.run('vendu deux');
+        await turn.run('sucre');
+
+        expect(
+          container.read(voiceCallJournalProvider).calls.single.handlerArgs,
+          <String, Object?>{
+            'items': <Object?>[
+              <String, Object?>{'productId': 'p_sucre', 'qty': 2},
+            ],
+          },
+        );
+      },
+    );
+
+    test(
+      'gives the turn one dialog, so the session is the container one',
+      () async {
+        final ProviderContainer container = buildContainer(
+          catalog: buildCatalogFromDisk(),
+        );
+
+        final HandleUtterance turn = await container.read(
+          voiceHandleUtteranceProvider.future,
+        );
+        await turn.run('vendu deux');
+
+        expect(container.read(voiceDialogProvider).pending, isNotNull);
+      },
+    );
+
+    test(
+      'the parser chain reads the bundled catalog and the tunables',
+      () async {
+        final ProviderContainer container = buildContainer(
+          catalog: buildCatalogFromDisk(),
+        );
+
+        final RuleBasedParser parser = await container.read(
+          voiceRuleBasedParserProvider.future,
+        );
+        final ProductResolver resolver = await container.read(
+          voiceProductResolverProvider.future,
+        );
+        final TextNormalizer normalizer = container.read(
+          voiceNormalizerProvider,
+        );
+
+        expect(parser.normalizer, same(normalizer));
+        expect(
+          resolver.matchAt(<String>['sucre'], 0)?.resolution.product?.id,
+          'p_sucre',
+        );
+        expect(container.read(voiceNormalizerProvider), same(normalizer));
       },
     );
   });

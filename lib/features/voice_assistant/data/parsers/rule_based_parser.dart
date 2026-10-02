@@ -3,6 +3,7 @@ import '../../domain/entities/doubt.dart';
 import '../../domain/entities/slot.dart';
 import '../../domain/entities/voice_config.dart';
 import '../../domain/entities/voice_lexicon.dart';
+import '../../domain/ports/intent_parser.dart';
 import '../../domain/services/intent_detector.dart';
 import '../../domain/services/text_normalizer.dart';
 import '../extractors/item_list_extractor.dart';
@@ -19,7 +20,7 @@ import '../extractors/item_list_extractor.dart';
 /// A spoken word never becomes an identifier. Products are resolved by the
 /// resolver against the catalog, so a name that fits nothing is a doubt to raise,
 /// not a line to repair.
-final class RuleBasedParser {
+final class RuleBasedParser implements IntentParser {
   const RuleBasedParser({
     required this.normalizer,
     required this.detector,
@@ -39,6 +40,7 @@ final class RuleBasedParser {
   };
 
   /// Reads [raw] into a proposal.
+  @override
   CommandProposal parse(String raw) =>
       parseNormalized(normalizer.normalize(raw));
 
@@ -185,7 +187,7 @@ final class RuleBasedParser {
     if (reading.products.isEmpty) {
       return const <Slot>[];
     }
-    return <Slot>[Slot(name: 'productId', value: reading.products.first.id)];
+    return <Slot>[Slot(name: kProductIdSlot, value: reading.products.first.id)];
   }
 
   /// A cancellation names no slot: the sale is the last one of the session.

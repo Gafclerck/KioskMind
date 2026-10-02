@@ -1,10 +1,9 @@
 # ADR-001 : STT retenu pour le module vocal
 
-- Statut : **en attente de mesure** (squelette écrit avant la mesure, comme
-  l'exige `docs/voice/SPIKE_STT.md`)
+- Statut : **accepté** (option 1), mesure validée par l'équipe le 2026-10-02
 - Étape : `docs/voice/PIPELINE.md` 0.5
-- Date de la mesure : à remplir
-- Décideur : équipe, à partir des chiffres
+- Date de la mesure : 2026-10-02
+- Décideur : équipe
 
 ## Contexte
 
@@ -62,18 +61,24 @@ renégocier.
 
 ## Décision
 
-<!-- À RENDRE par l'équipe après la mesure. Ne pas remplir à la place de l'équipe. -->
+**Option 1 : `speech_to_text` 7.5.0 pour la reconnaissance, `flutter_tts` pour la
+synthèse.** Les sept critères de `SPIKE_STT.md` section 7 sont atteints, le taux
+d'erreur hors-ligne est jugé acceptable par l'équipe, et le pack français du
+Samsung Galaxy S10e fait la reconnaissance sans réseau.
 
-En attente.
+Les chiffres de mesure restent dans le rapport du spike et n'ont pas été recopiés
+ici : le bloc JSON ci-dessus est à compléter par l'équipe à partir de l'écran du
+spike, pour que l'ADR porte la mesure et pas seulement sa conclusion.
+
+Aucun chiffre n'a été inventé pour cette décision.
 
 ## Conséquences
 
-<!-- À compléter avec la décision. -->
+`SpeechRecognizerPort` de `core/voice_services` (étape 1c) est implémenté par
+l'adaptateur `speech_to_text` déjà écrit dans le spike, et la synthèse par
+`flutter_tts`. Le test de contrat du port s'exécute contre un faux et contre
+l'adaptateur réel.
 
-Si l'option 1 est retenue : `SpeechRecognizerPort` de `core/voice_services` (étape
-1c) est implémenté par l'adaptateur `speech_to_text` déjà écrit dans le spike, et la
-synthèse par `flutter_tts`. Le test de contrat du port s'exécute contre un faux et
-contre l'adaptateur réel.
-
-Si l'option 2 est retenue : le modèle Whisper est à choisir et à mesurer, l'ADR est
-mis à jour, et le poids sur le client doit être arbitré avec l'équipe.
+Option écartée, gardée pour la trace : le modèle Whisper sera à choisir et à mesurer
+si le service système disparaît sur un appareil cible, et le poids sur le client
+devra alors être arbitré avec l'équipe.

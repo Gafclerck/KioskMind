@@ -74,6 +74,30 @@ const Set<String> kPriceQuestionWords = <String>{'prix', 'coute', 'coutent'};
 /// never to the rest of the sentence.
 const Set<String> kCorrectionWords = <String>{'non', 'pas'};
 
+/// Words that accept what the module just read back.
+///
+/// A confirmation is answered by a yes or a no, so this is the whole vocabulary
+/// of agreement. "Non" is absent on purpose: refusing is not an answer that
+/// settles anything, it leaves the doubt standing so the merchant is asked again.
+const Set<String> kAffirmativeWords = <String>{'oui', 'ouais', 'ok', 'exact'};
+
+/// Articles opening a product name, dropped before resolving an answer.
+///
+/// A merchant answering "le sucre" means the product, not the article. Dropping
+/// them only at the start keeps "pas de sucre" from resolving to a sale of sugar.
+const Set<String> kLeadingArticles = <String>{
+  'le',
+  'la',
+  'les',
+  'un',
+  'une',
+  'du',
+  'de',
+  'des',
+  'd',
+  'l',
+};
+
 /// Words that point at something already said, which one utterance cannot
 /// resolve: "le meme", "celle-la", "comme hier".
 const Set<String> kAnaphoraWords = <String>{

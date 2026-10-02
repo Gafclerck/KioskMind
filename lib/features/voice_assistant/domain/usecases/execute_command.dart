@@ -146,7 +146,7 @@ final class ExecuteCommand {
     CommandSource source,
   ) {
     final QueryStockHandler? handler = handlers.queryStock;
-    final String? productId = proposal.valueOf<String>('productId');
+    final String? productId = proposal.valueOf<String>(kProductIdSlot);
     if (handler == null) {
       return Future<CommandExecution>.error(
         StateError('Handler non branche: query_stock'),

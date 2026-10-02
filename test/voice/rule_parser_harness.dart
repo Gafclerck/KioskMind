@@ -24,6 +24,7 @@ class RuleParserHarness {
     final IntentCatalog catalog = parseIntentCatalog(
       File(intentCatalogAsset).readAsStringSync(),
     );
+    intents = catalog;
     detector = IntentDetector(catalog: catalog, normalizer: normalizer);
     resolver = ProductResolver(
       products: parseCatalogFixture(
@@ -43,6 +44,10 @@ class RuleParserHarness {
 
   final VoiceConfig config;
   final TextNormalizer normalizer;
+
+  /// The catalog the parser was built from, for the services that read the intent
+  /// definitions the same way the parser does.
+  late final IntentCatalog intents;
 
   late final IntentDetector detector;
   late final ProductResolver resolver;
