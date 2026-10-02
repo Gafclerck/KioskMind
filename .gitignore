@@ -49,3 +49,6 @@ app.*.map.json
 /docs/ARCHITECTURE.md
 /docs/voice/
 /AGENTS.md
+
+# Localisations generees par flutter gen-l10n (ADR-002)
+/lib/core/localization/generated/
