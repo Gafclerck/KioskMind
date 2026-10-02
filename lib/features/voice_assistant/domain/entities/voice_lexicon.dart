@@ -42,16 +42,17 @@ const Set<String> kUnboundedWords = <String>{'tout', 'tous', 'toute', 'toutes'};
 /// What follows "tout" when the words point back at a moment already said
 /// instead of at everything: "que tout a l'heure".
 ///
-/// The token is "heure" and not "lheure": the normaliser keeps the bare "l'" as
-/// the word "l", so the phrase arrives as two tokens. "heure" occurs nowhere else
-/// in the shop's vocabulary, which is what makes it a reliable marker.
-const String kPastReferenceTail = 'heure';
+/// The token is "lheure" and not "heure": the normaliser keeps the bare "l'" and
+/// joins it to the next word, so the phrase arrives as one token. Measured on the
+/// frozen set, not guessed. "lheure" occurs nowhere else in the shop's
+/// vocabulary, which is what makes it a reliable marker.
+const String kPastReferenceTail = 'lheure';
 
 /// How many tokens may separate "tout" from that tail.
 ///
-/// Three, not one: the elision leaves "a l'heure" as three tokens, so a reach of
-/// one would read "vendu tout a l'heure" as a command on the whole shop.
-const int kPastReferenceReach = 3;
+/// Two positions, which is what "a l'heure" needs and no more: a reach of three
+/// would also read "tout a l' heure" as the whole shop.
+const int kPastReferenceReach = 2;
 
 /// An order is a real thing a merchant says, and no use case handles it.
 ///
