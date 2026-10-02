@@ -49,3 +49,6 @@ app.*.map.json
 /docs/ARCHITECTURE.md
 /docs/voice/
 /AGENTS.md
+
+# Maquettes de référence, jamais versionnées
+*.zip

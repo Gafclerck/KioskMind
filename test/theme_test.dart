@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kiosk_mind/features/products_stock/domain/entities/product.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
 
 import 'package:kiosk_mind/app.dart';
 import 'package:kiosk_mind/core/theme/app_colors.dart';
@@ -158,8 +161,14 @@ void main() {
     testWidgets('exposes both themes and follows the system mode', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const KioskMindApp());
-
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            productsProvider.overrideWith((ref) => Stream.value(<Product>[])),
+          ],
+          child: const KioskMindApp(),
+        ),
+      );
       final MaterialApp app = tester.widget<MaterialApp>(
         find.byType(MaterialApp),
       );
