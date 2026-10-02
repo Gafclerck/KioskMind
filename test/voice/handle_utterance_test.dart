@@ -12,6 +12,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_out
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_application.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_reading.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
@@ -19,6 +20,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/decision_pol
 import 'package:kiosk_mind/features/voice_assistant/domain/services/french_number_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 
 import 'fake_clock.dart';
 import 'rule_parser_harness.dart';
@@ -267,15 +269,25 @@ final class _Session {
       parseCatalogFixture(File(catalogFixtureAsset).readAsStringSync()),
     );
     dialog = DialogManager(config: harness.config, clock: clock);
+    final VoiceHandlers handlers = buildMockVoiceHandlers(
+      catalog: catalog,
+      journal: journal,
+    );
     turn = HandleUtterance(
       parser: harness.parser,
       validator: CommandValidator(config: harness.config),
       policy: DecisionPolicy(catalog: harness.intents),
       executor: ExecuteCommand(
-        handlers: buildMockVoiceHandlers(catalog: catalog, journal: journal),
+        handlers: handlers,
         dialog: dialog,
         clock: clock,
         ids: _SequentialIds(),
+        undo: UndoLastCommand(
+          handlers: handlers,
+          dialog: dialog,
+          clock: clock,
+          ids: _SequentialIds(prefix: 'undo-'),
+        ),
       ),
       dialog: dialog,
       answers: AnswerApplication(
@@ -310,8 +322,14 @@ final class _Session {
 }
 
 final class _SequentialIds implements CommandIdFactory {
+  _SequentialIds({this.prefix = 'cmd-'});
+
+  /// Keeps the two paths apart: a cancellation is a command of its own, and its
+  /// identifier must not be read as the identifier of the sale it targets.
+  final String prefix;
+
   int _next = 1;
 
   @override
-  String next() => 'cmd-${_next++}';
+  String next() => '$prefix${_next++}';
 }

@@ -10,6 +10,7 @@ import '../ports/command_context.dart';
 import '../ports/command_id_factory.dart';
 import '../ports/intent_handler.dart';
 import '../ports/voice_clock.dart';
+import 'undo_last_command.dart';
 
 /// What running one command produced.
 ///
@@ -71,19 +72,26 @@ final class HeldCommand extends CommandExecution {
 /// it through an [IntentHandler] port: it never sees Firestore, a document or a
 /// feature. Its whole job is to turn a proposal into the one typed input its
 /// intent declares, with the command context the contract asks for, and to
-/// register the undo window when a write happened.
+/// register the undo window when a sale succeeded.
+///
+/// A cancellation is the exception: it is a use case in its own right, so it is run
+/// through [UndoLastCommand] rather than rebuilt here.
 final class ExecuteCommand {
   const ExecuteCommand({
     required this.handlers,
     required this.dialog,
     required this.clock,
     required this.ids,
+    required this.undo,
   });
 
   final VoiceHandlers handlers;
   final DialogManager dialog;
   final VoiceClock clock;
   final CommandIdFactory ids;
+
+  /// How a cancellation is run, shared with the undo button.
+  final UndoLastCommand undo;
 
   Future<CommandExecution> run({
     required Decision decision,
@@ -98,7 +106,7 @@ final class ExecuteCommand {
       'record_sale' => _runSale(proposal, source),
       'record_restock' => _runRestock(proposal, source),
       'query_stock' => _runQuery(proposal, source),
-      'cancel_last_sale' => _runCancel(proposal, source),
+      'cancel_last_sale' => _runCancel(source),
       _ => Future<CommandExecution>.error(
         StateError('Intent sans handler branche: $intentId'),
       ),
@@ -170,37 +178,35 @@ final class ExecuteCommand {
   ///
   /// The intent has no slot of its own: the identifier comes from the undo window,
   /// so an utterance can only ever target the sale just made (contract A12).
-  Future<CommandExecution> _runCancel(
-    CommandProposal proposal,
-    CommandSource source,
-  ) {
-    final CancelLastSaleHandler? handler = handlers.cancelLastSale;
-    if (handler == null) {
-      return Future<CommandExecution>.error(
-        StateError('Handler non branche: cancel_last_sale'),
-      );
-    }
-    final String? saleId = dialog.takeUndoable();
-    if (saleId == null) {
-      return Future<CommandExecution>.value(
-        ExecutedCommand(Failed<CancelLastSaleResult>(const NothingToUndo())),
-      );
-    }
-    return _dispatch(
-      handler.execute(_context(source), CancelLastSaleInput(saleId: saleId)),
-    );
+  ///
+  /// It goes through [UndoLastCommand], the same use case the undo button calls, so
+  /// both ways of cancelling behave alike. Doing it here instead made the two paths
+  /// disagree on failure: a cancellation the shop refused gave the window back when
+  /// the button was used and took it for good when the word was spoken, so the
+  /// merchant lost the only way to try again.
+  Future<CommandExecution> _runCancel(CommandSource source) {
+    return undo
+        .run(source: source)
+        .then<CommandExecution>(
+          ExecutedCommand.new,
+          onError: (Object error, StackTrace stack) =>
+              Future<CommandExecution>.error(error, stack),
+        );
   }
 
-  /// Registers the undo window a successful write opens.
-  ///
-  /// Only a sale: a restock has nothing to take back through the cancellation
-  /// handler, which knows about sales and about nothing else.
-  /// Registers the undo window a successful sale opens.
+  /// Awaits the call and opens the undo window if it was a sale that went through.
   ///
   /// Only a sale: the cancellation handler knows about sales and about nothing
   /// else, so a restock has no way back and does not pretend to have one.
   Future<CommandExecution> _dispatch<T>(Future<Result<T>> call) async {
     final Result<T> result = await call;
+    _registerUndoWindow(result);
+    // Every result type is already an Object, so this only lifts the generic
+    // argument; the record itself is untouched.
+    return ExecutedCommand(result as Result<Object>);
+  }
+
+  void _registerUndoWindow<T>(Result<T> result) {
     final Object? value = switch (result) {
       Success<T>(:final T value) => value,
       Failed<T>() => null,
@@ -208,9 +214,6 @@ final class ExecuteCommand {
     if (value is RecordSaleResult) {
       dialog.registerUndo(value.saleId);
     }
-    // Every result type is already an Object, so this only lifts the generic
-    // argument; the record itself is untouched.
-    return ExecutedCommand(result as Result<Object>);
   }
 
   CommandContext _context(CommandSource source) {

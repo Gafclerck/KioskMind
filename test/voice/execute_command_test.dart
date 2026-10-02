@@ -144,6 +144,7 @@ void main() {
         dialog: shop.dialog,
         clock: shop.clock,
         ids: _SequentialIds(),
+        undo: shop.undoer,
       );
 
       await expectLater(
@@ -486,26 +487,30 @@ final class _Shop {
     recordSale: _working.recordSale,
     recordRestock: _working.recordRestock,
     queryStock: _working.queryStock,
-    cancelLastSale: JournalingIntentHandler<
-      CancelLastSaleInput,
-      CancelLastSaleResult
-    >(cancelFails ? const _RefusingCancelHandler() : MockCancelLastSaleHandler(catalog), journal),
+    cancelLastSale:
+        JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
+          cancelFails
+              ? const _RefusingCancelHandler()
+              : MockCancelLastSaleHandler(catalog),
+          journal,
+        ),
   );
   late final DialogManager dialog = DialogManager(
     config: const VoiceConfig(),
     clock: clock,
-  );
-  late final ExecuteCommand runner = ExecuteCommand(
-    handlers: handlers,
-    dialog: dialog,
-    clock: clock,
-    ids: commandIds ?? _SequentialIds(),
   );
   late final UndoLastCommand undoer = UndoLastCommand(
     handlers: handlers,
     dialog: dialog,
     clock: clock,
     ids: _SequentialIds(prefix: 'undo-'),
+  );
+  late final ExecuteCommand runner = ExecuteCommand(
+    handlers: handlers,
+    dialog: dialog,
+    clock: clock,
+    ids: commandIds ?? _SequentialIds(),
+    undo: undoer,
   );
 
   /// Undoes the last write, the way the undo banner does.

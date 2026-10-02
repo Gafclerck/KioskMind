@@ -143,6 +143,20 @@ final FutureProvider<DecisionPolicy> voiceDecisionPolicyProvider =
           DecisionPolicy(catalog: await ref.watch(voiceIntentsProvider.future)),
     );
 
+/// Taking back the last write of the session.
+///
+/// One instance, read by the executor and by the undo banner, so a cancellation
+/// spoken and a cancellation clicked cannot behave differently.
+final FutureProvider<UndoLastCommand> voiceUndoLastCommandProvider =
+    FutureProvider<UndoLastCommand>(
+      (Ref ref) async => UndoLastCommand(
+        handlers: await ref.watch(voiceHandlersProvider.future),
+        dialog: ref.watch(voiceDialogProvider),
+        clock: ref.watch(voiceClockProvider),
+        ids: ref.watch(voiceCommandIdsProvider),
+      ),
+    );
+
 /// The only path from a decision to a business use case.
 final FutureProvider<ExecuteCommand> voiceExecuteCommandProvider =
     FutureProvider<ExecuteCommand>(
@@ -151,17 +165,7 @@ final FutureProvider<ExecuteCommand> voiceExecuteCommandProvider =
         dialog: ref.watch(voiceDialogProvider),
         clock: ref.watch(voiceClockProvider),
         ids: ref.watch(voiceCommandIdsProvider),
-      ),
-    );
-
-/// Taking back the last write of the session.
-final FutureProvider<UndoLastCommand> voiceUndoLastCommandProvider =
-    FutureProvider<UndoLastCommand>(
-      (Ref ref) async => UndoLastCommand(
-        handlers: await ref.watch(voiceHandlersProvider.future),
-        dialog: ref.watch(voiceDialogProvider),
-        clock: ref.watch(voiceClockProvider),
-        ids: ref.watch(voiceCommandIdsProvider),
+        undo: await ref.watch(voiceUndoLastCommandProvider.future),
       ),
     );
 

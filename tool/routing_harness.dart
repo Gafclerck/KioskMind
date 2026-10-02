@@ -29,6 +29,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/intent_detec
 import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normalizer.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 
 import 'routing_cases.dart';
 
@@ -81,11 +82,18 @@ final class RoutingHarness {
       intents: intents,
       resolver: ProductNameResolver(resolver: resolver, normalizer: normalizer),
     );
+    undoer = UndoLastCommand(
+      handlers: handlers,
+      dialog: dialog,
+      clock: clock,
+      ids: _CountingIds(),
+    );
     executor = ExecuteCommand(
       handlers: handlers,
       dialog: dialog,
       clock: clock,
       ids: _CountingIds(),
+      undo: undoer,
     );
     turn = HandleUtterance(
       parser: parser,
@@ -122,6 +130,7 @@ final class RoutingHarness {
 
   /// The domain service that completes a line from an answer, shared with the app.
   late final AnswerApplication answers;
+  late final UndoLastCommand undoer;
   late final ExecuteCommand executor;
 
   /// The turn itself, shared with the app: the harness calls it and reads the
