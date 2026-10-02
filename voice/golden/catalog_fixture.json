@@ -245,7 +245,7 @@
     {
       "id": "p_vieux_lait",
       "name": "Lait en boîte (ancien format)",
-      "aliases": ["lait en boite", "lait metal", "lait Concentre"],
+      "aliases": ["lait en boite", "lait metal", "lait Concentre", "vieux lait"],
       "unit": "PIECE",
       "price": 175,
       "purchasePrice": 130,
