@@ -48,6 +48,7 @@ app.*.map.json
 # Local-only files, not shared with the team
 /docs/ARCHITECTURE.md
 /docs/voice/
+/docs/local/
 /AGENTS.md
 
 # Localisations generees par flutter gen-l10n (ADR-002)

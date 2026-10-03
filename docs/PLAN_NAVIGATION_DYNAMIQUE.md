@@ -602,3 +602,36 @@ test/
 | **ShellRoute pour les onglets** | Chaque onglet a une URL propre, le bouton back Android fonctionne correctement, deep-links possibles. |
 | **L'onboarding ne navigue plus lui-même** | Il écrit un flag et laisse le router décider de la suite selon l'état auth. |
 | **Initialisation SharedPreferences avant `runApp`** | Évite un flash de redirect au premier frame — le GoRouter a déjà la valeur dès son premier build. |
+| **Router dans `lib/routing/` (Application Layer)** | Respecte strictement l'invariant d'architecture Clean (`test/voice/layering_test.dart`) interdisant à `core/` d'importer des features. |
+
+---
+
+## 9. Réalisation finale & Validation
+
+Toutes les étapes ont été implémentées et validées sans aucune régression :
+
+1. **Commit 1 (`4234c54`)** : `feat: connect voice session sheet to navigation dock and add accessibility`
+   - Correction syntaxique du bouton micro dans `MainNavigationPage`.
+   - Correction du cycle de vie Riverpod dans `VoiceSessionSheet` (`initState` au lieu de `ref.read` dans `dispose`).
+   - Rétablissement de l'IndexedStack paresseux (`_activatedIndices`) pour isoler les onglets dans les tests.
+
+2. **Commit 2 (`99d0e89`)** : `feat: implement dynamic routing and persistent conditional onboarding`
+   - Intégration de `shared_preferences` et de l'abstraction `AppPreferences`.
+   - Création de `AuthStateNotifier` avec fallback sécurisé sans crash Firebase.
+   - Création de `lib/routing/app_router.dart` et `app_routes.dart` (Application Layer) avec redirections dynamiques :
+     - Onboarding non vu → `/onboarding` (une seule fois dans la vie de l'app).
+     - Onboarding vu + Non connecté → `/login`.
+     - Onboarding vu + Connecté → `/dashboard`.
+   - Migration de `lib/app.dart` vers `MaterialApp.router`.
+
+3. **Commit 3 (`8167867`)** : `feat: connect stock list and sale creation to dashboard and router`
+   - Intégration de `ProductListPage` dans l'onglet Stock de la barre de navigation.
+   - Ajout des routes `/sales/new` (`CreateSalePage`) et `/products/new` (`AddProductPage`).
+   - Connexion des actions rapides du tableau de bord (`_QuickActions`).
+   - Couverture complète dans `test/routing/app_router_test.dart`.
+
+4. **Résultat des tests** :
+   - **863/863 tests passés avec succès** (`flutter test`).
+   - `flutter analyze` : 0 avertissement, 0 erreur.
+   - Zéro régression.
+
