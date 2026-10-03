@@ -6,7 +6,7 @@ class RecordSale {
 
   RecordSale(this.repository);
 
-  Future<void> call(Sale sale) async {
-    await repository.recordSale(sale);
+  Future<Sale> call(Sale sale) async {
+    return repository.recordSale(sale);
   }
 }

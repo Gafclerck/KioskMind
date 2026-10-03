@@ -8,6 +8,7 @@ import '../../data/repositories/daily_stats_repository_impl.dart';
 import '../../data/repositories/sales_repository_impl.dart';
 import '../../domain/repositories/daily_stats_repository.dart';
 import '../../domain/repositories/sales_repository.dart';
+import '../../domain/usecases/cancel_sale.dart';
 import '../../domain/usecases/get_sales_dashboard.dart';
 import '../../domain/usecases/get_sales_history.dart';
 import '../../domain/usecases/record_sale.dart';
@@ -20,30 +21,29 @@ final salesRemoteDataSourceProvider = Provider<SalesRemoteDataSource>((ref) {
 });
 
 final salesRepositoryProvider = Provider<SalesRepository>((ref) {
-  return SalesRepositoryImpl(
-    ref.watch(salesRemoteDataSourceProvider),
-  );
+  return SalesRepositoryImpl(ref.watch(salesRemoteDataSourceProvider));
 });
 
 final getSalesHistoryProvider = Provider<GetSalesHistory>((ref) {
-  return GetSalesHistory(
-    ref.watch(salesRepositoryProvider),
-  );
+  return GetSalesHistory(ref.watch(salesRepositoryProvider));
 });
 
 final recordSaleProvider = Provider<RecordSale>((ref) {
-  return RecordSale(
-    ref.watch(salesRepositoryProvider),
-  );
+  return RecordSale(ref.watch(salesRepositoryProvider));
 });
 
-final dailyStatsRemoteDataSourceProvider =
-    Provider<DailyStatsRemoteDataSource>((ref) {
-  return DailyStatsRemoteDataSourceImpl(
-    firestore: FirebaseFirestore.instance,
-    auth: FirebaseAuth.instance,
-  );
+final cancelSaleProvider = Provider<CancelSale>((ref) {
+  return CancelSale(ref.watch(salesRepositoryProvider));
 });
+
+final dailyStatsRemoteDataSourceProvider = Provider<DailyStatsRemoteDataSource>(
+  (ref) {
+    return DailyStatsRemoteDataSourceImpl(
+      firestore: FirebaseFirestore.instance,
+      auth: FirebaseAuth.instance,
+    );
+  },
+);
 
 final dailyStatsRepositoryProvider = Provider<DailyStatsRepository>((ref) {
   return DailyStatsRepositoryImpl(
@@ -52,7 +52,5 @@ final dailyStatsRepositoryProvider = Provider<DailyStatsRepository>((ref) {
 });
 
 final getSalesDashboardProvider = Provider<GetSalesDashboard>((ref) {
-  return GetSalesDashboard(
-    ref.watch(dailyStatsRepositoryProvider),
-  );
+  return GetSalesDashboard(ref.watch(dailyStatsRepositoryProvider));
 });

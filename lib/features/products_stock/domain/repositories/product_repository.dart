@@ -8,4 +8,8 @@ abstract interface class ProductRepository {
   Future<void> deleteProduct(String productId);
 
   Stream<List<Product>> watchProducts();
+
+  Future<List<Product>> getProducts();
+
+  Future<Product?> getProductById(String productId);
 }

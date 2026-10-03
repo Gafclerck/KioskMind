@@ -26,12 +26,21 @@ class StockMovementRepositoryImpl implements StockMovementRepository {
   @override
   Future<void> recordMovement(StockMovement movement) {
     final productRef = _products.doc(movement.productId);
-    final movementRef = _movements.doc();
+    final movementRef = movement.id.isNotEmpty
+        ? _movements.doc(movement.id)
+        : _movements.doc();
 
     // Transaction Firestore : le mouvement et la quantité du produit sont
     // écrits ensemble. Sans cela un incident entre les deux écritures laisse
     // le stock incohérent avec l'historique.
     return _firestore.runTransaction<void>((transaction) async {
+      if (movement.id.isNotEmpty) {
+        final existingMovement = await transaction.get(movementRef);
+        if (existingMovement.exists) {
+          // Déjà enregistré (idempotence en cas de rejeu)
+          return;
+        }
+      }
       final productSnapshot = await transaction.get(productRef);
       final data = productSnapshot.data();
       if (data == null) {

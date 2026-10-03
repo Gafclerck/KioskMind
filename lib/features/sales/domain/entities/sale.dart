@@ -1,4 +1,5 @@
 class Sale {
+  final String? id;
   final DateTime dateTime;
   final DateTime createdAt;
   final double total;
@@ -8,6 +9,7 @@ class Sale {
   final DateTime? cancelledAt;
 
   Sale({
+    this.id,
     required this.dateTime,
     required this.createdAt,
     required this.total,

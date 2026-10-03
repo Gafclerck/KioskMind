@@ -78,6 +78,13 @@ class _RecordingProductRepository implements ProductRepository {
 
   @override
   Stream<List<Product>> watchProducts() => Stream.value(const [_riz]);
+
+  @override
+  Future<List<Product>> getProducts() async => const [_riz];
+
+  @override
+  Future<Product?> getProductById(String productId) async =>
+      productId == _riz.id ? _riz : null;
 }
 
 Widget _page(List<Product> products) => ProviderScope(

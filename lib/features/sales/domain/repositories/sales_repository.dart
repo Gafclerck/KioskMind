@@ -1,7 +1,9 @@
 import '../entities/sale.dart';
 
 abstract class SalesRepository {
-  Future<void> recordSale(Sale sale);
+  Future<Sale> recordSale(Sale sale);
+
+  Future<Sale> cancelSale(String saleId);
 
   Future<List<Sale>> getSalesHistory();
 
