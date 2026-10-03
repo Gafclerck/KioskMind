@@ -17,10 +17,13 @@ import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
 import '../data/extractors/item_list_extractor.dart';
+import '../../../features/sales/presentation/providers/sales_provider.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
 import '../data/handlers/call_journal.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
+import '../data/handlers/real/real_cancel_last_sale_handler.dart';
+import '../data/handlers/real/real_record_sale_handler.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
@@ -74,6 +77,26 @@ final FutureProvider<InMemoryProductCatalog> voiceMockCatalogProvider =
       final String source = await rootBundle.loadString(catalogFixtureAsset);
       return InMemoryProductCatalog(parseCatalogFixture(source));
     });
+
+/// The real sale handler, calling the sales usecase.
+final FutureProvider<RecordSaleHandler> voiceRealRecordSaleHandlerProvider =
+    FutureProvider<RecordSaleHandler>((Ref ref) async {
+      return RealRecordSaleHandler(
+        recordSale: ref.watch(recordSaleProvider),
+        catalogReader: await ref.watch(voiceMockCatalogProvider.future),
+      );
+    });
+
+/// The real cancel sale handler, calling the sales usecase.
+final FutureProvider<CancelLastSaleHandler>
+voiceRealCancelLastSaleHandlerProvider = FutureProvider<CancelLastSaleHandler>((
+  Ref ref,
+) async {
+  return RealCancelLastSaleHandler(
+    cancelSale: ref.watch(cancelSaleProvider),
+    catalogReader: await ref.watch(voiceMockCatalogProvider.future),
+  );
+});
 
 /// The handlers the executor will call.
 ///
