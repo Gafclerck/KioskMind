@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/localization/generated/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../sales/presentation/pages/sales_dashboard_page.dart';
 import '../sales/presentation/pages/sales_history_page.dart';
+import '../voice_assistant/presentation/widgets/voice_session_sheet.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -17,17 +19,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const SalesDashboardPage(),
 
-    const _PlaceholderPage(
-      title: 'Stock',
-      icon: Icons.inventory_2_rounded,
-    ),
+    const _PlaceholderPage(title: 'Stock', icon: Icons.inventory_2_rounded),
 
     const SalesHistoryPage(),
 
-    const _PlaceholderPage(
-      title: 'Profil',
-      icon: Icons.person_rounded,
-    ),
+    const _PlaceholderPage(title: 'Profil', icon: Icons.person_rounded),
   ];
 
   void _onNavigationSelected(int index) {
@@ -37,11 +33,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   void _onVoicePressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Assistant vocal'),
-      ),
-    );
+    openVoiceSession(context);
   }
 
   @override
@@ -49,22 +41,16 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     return Scaffold(
       extendBody: true,
 
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
 
       bottomNavigationBar: _KioskMindBottomNavigation(
         currentIndex: _currentIndex,
         onItemSelected: _onNavigationSelected,
       ),
 
-      floatingActionButton: _VoiceButton(
-        onPressed: _onVoicePressed,
-      ),
+      floatingActionButton: _VoiceButton(onPressed: _onVoicePressed),
 
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
@@ -175,12 +161,9 @@ class _NavigationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inactiveColor =
-        Theme.of(context).colorScheme.onSurfaceVariant;
+    final inactiveColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    final color = selected
-        ? AppColors.primary
-        : inactiveColor;
+    final color = selected ? AppColors.primary : inactiveColor;
 
     return Material(
       color: Colors.transparent,
@@ -194,9 +177,7 @@ class _NavigationItem extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: EdgeInsets.all(
-                  selected ? 5 : 2,
-                ),
+                padding: EdgeInsets.all(selected ? 5 : 2),
                 decoration: BoxDecoration(
                   color: selected
                       ? AppColors.primary.withValues(alpha: 0.10)
@@ -214,15 +195,10 @@ class _NavigationItem extends StatelessWidget {
 
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 180),
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall!
-                    .copyWith(
-                      color: color,
-                      fontWeight: selected
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                    ),
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
                 child: Text(label),
               ),
             ],
@@ -240,42 +216,44 @@ class _NavigationItem extends StatelessWidget {
 class _VoiceButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _VoiceButton({
-    required this.onPressed,
-  });
+  const _VoiceButton({required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 58,
-      height: 58,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.secondary,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.30),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+    final String label = AppLocalizations.of(context).voicePanelLabel;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.secondary,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.secondary.withValues(alpha: 0.30),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: const Center(
-            child: Icon(
-              Icons.mic_rounded,
-              color: Colors.white,
-              size: 27,
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onPressed,
+              customBorder: const CircleBorder(),
+              child: const Center(
+                child: Icon(Icons.mic_rounded, color: Colors.white, size: 27),
+              ),
             ),
           ),
         ),
@@ -292,10 +270,7 @@ class _PlaceholderPage extends StatelessWidget {
   final String title;
   final IconData icon;
 
-  const _PlaceholderPage({
-    required this.title,
-    required this.icon,
-  });
+  const _PlaceholderPage({required this.title, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -303,18 +278,11 @@ class _PlaceholderPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 48,
-            color: AppColors.primary,
-          ),
+          Icon(icon, size: 48, color: AppColors.primary),
 
           const SizedBox(height: 16),
 
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(title, style: Theme.of(context).textTheme.headlineSmall),
         ],
       ),
     );
