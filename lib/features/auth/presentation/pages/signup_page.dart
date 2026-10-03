@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/app_toast.dart';
 import '../../domain/auth_validators.dart';
-import '../../domain/country_codes.dart';
-import '../controllers/signup_controller.dart';
+import '../providers/signup_provider.dart';
+import '../widgets/country_code_picker.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -16,6 +17,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmationController = TextEditingController();
 
@@ -23,6 +25,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   void dispose() {
     _fullNameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmationController.dispose();
     super.dispose();
@@ -30,9 +33,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Inscription bientôt disponible')),
-      );
+      ref.read(signupProvider.notifier).submit();
     }
   }
 
@@ -40,26 +41,47 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     Navigator.of(context).maybePop();
   }
 
-  void _googleSignUp() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Google bientôt disponible')));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final SignupState state = ref.watch(signupControllerProvider);
+    final SignupState state = ref.watch(signupProvider);
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+
+    ref.listen<SignupState>(signupProvider, (
+      SignupState? previous,
+      SignupState next,
+    ) {
+      final SignupNotifier notifier = ref.read(signupProvider.notifier);
+      if (next.success && !(previous?.success ?? false)) {
+        AppToast.show(
+          ref,
+          message: 'Compte créé avec succès',
+          type: AppToastType.success,
+        );
+        notifier.clearSubmissionResult();
+        Navigator.of(context).maybePop();
+      } else if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        AppToast.show(
+          ref,
+          message: next.errorMessage!,
+          type: AppToastType.error,
+        );
+        notifier.clearSubmissionResult();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Créer un compte')),
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
@@ -68,7 +90,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _fullNameController,
                   textInputAction: TextInputAction.next,
@@ -77,36 +99,14 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   validator: validateFullName,
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setFullName(value),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 128,
-                      child: DropdownButtonFormField<String>(
-                        key: const ValueKey<String>('country_code'),
-                        initialValue: state.countryCode,
-                        items: countryCodes
-                            .map(
-                              (CountryCode country) => DropdownMenuItem<String>(
-                                value: country.code,
-                                child: Text(country.code),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (String? value) {
-                          if (value != null) {
-                            ref
-                                .read(signupControllerProvider.notifier)
-                                .selectCountryCode(value);
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Indicatif',
-                        ),
-                      ),
-                    ),
+                    SizedBox(width: 160, child: const CountryCodePicker()),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextFormField(
@@ -118,11 +118,26 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           hintText: '07 00 00 00 00',
                         ),
                         validator: validatePhoneNumber,
+                        onChanged: (String value) =>
+                            ref.read(signupProvider.notifier).setPhone(value),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Adresse e-mail',
+                    prefixIcon: Icon(Icons.mail_outline),
+                  ),
+                  validator: validateEmail,
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setEmail(value),
+                ),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: state.obscurePassword,
@@ -132,7 +147,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(signupControllerProvider.notifier)
+                          .read(signupProvider.notifier)
                           .togglePasswordVisibility(),
                       icon: Icon(
                         state.obscurePassword
@@ -142,11 +157,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     ),
                   ),
                   validator: validatePassword,
-                  onChanged: (String value) => ref
-                      .read(signupControllerProvider.notifier)
-                      .setPassword(value),
+                  onChanged: (String value) =>
+                      ref.read(signupProvider.notifier).setPassword(value),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _confirmationController,
                   obscureText: state.obscureConfirmation,
@@ -156,7 +170,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       onPressed: () => ref
-                          .read(signupControllerProvider.notifier)
+                          .read(signupProvider.notifier)
                           .toggleConfirmationVisibility(),
                       icon: Icon(
                         state.obscureConfirmation
@@ -182,7 +196,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                           onChanged: (bool? value) {
                             field.didChange(value ?? false);
                             ref
-                                .read(signupControllerProvider.notifier)
+                                .read(signupProvider.notifier)
                                 .setAcceptedTerms(value ?? false);
                           },
                           controlAffinity: ListTileControlAffinity.leading,
@@ -225,26 +239,27 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 FilledButton(
-                  onPressed: _submit,
+                  onPressed: state.isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Créer mon compte'),
+                  child: state.isSubmitting
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: scheme.onPrimary,
+                          ),
+                        )
+                      : const Text('Créer mon compte'),
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _googleSignUp,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  icon: const Icon(Icons.g_mobiledata_outlined, size: 28),
-                  label: const Text("S'inscrire avec Google"),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text('Déjà un compte ?', style: theme.textTheme.bodyMedium),
                     TextButton(

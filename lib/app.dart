@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_toast.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 
 class KioskMindApp extends StatelessWidget {
@@ -22,6 +23,9 @@ class KioskMindApp extends StatelessWidget {
         // its French strings there and nothing else has to be declared.
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (BuildContext context, Widget? child) {
+          return AppToastHost(child: child ?? const SizedBox.shrink());
+        },
         home: const OnboardingPage(),
       ),
     );

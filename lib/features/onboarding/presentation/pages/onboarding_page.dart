@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/pages/login_page.dart';
-import '../controllers/onboarding_controller.dart';
+import '../providers/onboarding_provider.dart';
 import '../widgets/dots_indicator.dart';
 import '../widgets/onboarding_slide.dart';
 
@@ -36,7 +36,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _autoAdvance() {
-    final OnboardingState state = ref.read(onboardingControllerProvider);
+    final OnboardingState state = ref.read(onboardingProvider);
     if (state.isLast) {
       return;
     }
@@ -52,7 +52,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _goNext() {
-    final int index = ref.read(onboardingControllerProvider).currentIndex + 1;
+    final int index = ref.read(onboardingProvider).currentIndex + 1;
     _animateTo(
       index >= OnboardingState.pageCount
           ? OnboardingState.pageCount - 1
@@ -61,7 +61,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   }
 
   void _goBack() {
-    final int index = ref.read(onboardingControllerProvider).currentIndex - 1;
+    final int index = ref.read(onboardingProvider).currentIndex - 1;
     _animateTo(index < 0 ? 0 : index);
   }
 
@@ -77,7 +77,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final OnboardingState state = ref.watch(onboardingControllerProvider);
+    final OnboardingState state = ref.watch(onboardingProvider);
     const List<OnboardingSlide> slides = <OnboardingSlide>[
       OnboardingSlide(
         image: 'assets/images/onboarding/onboarding_1.png',
@@ -117,7 +117,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 controller: _pageController,
                 itemCount: OnboardingState.pageCount,
                 onPageChanged: (int index) =>
-                    ref.read(onboardingControllerProvider.notifier).goTo(index),
+                    ref.read(onboardingProvider.notifier).goTo(index),
                 itemBuilder: (BuildContext context, int index) => slides[index],
               ),
             ),
