@@ -19,6 +19,7 @@ import '../data/catalog/real_product_catalog_reader.dart';
 import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
+import '../data/connectivity/data_connection_probe.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
@@ -28,20 +29,26 @@ import '../data/handlers/real/real_cancel_last_sale_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
+import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
+import '../domain/ports/cloud_intent_parser.dart';
 import '../domain/ports/command_id_factory.dart';
+import '../domain/ports/connectivity_probe.dart';
 import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
+import '../domain/ports/intent_parser.dart';
 import '../domain/ports/intent_registry.dart';
 import '../domain/ports/product_catalog_reader.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
 import '../domain/services/answer_application.dart';
 import '../domain/services/answer_reading.dart';
+import '../domain/services/cascading_parser.dart';
+import '../domain/services/circuit_breaker.dart';
 import '../domain/services/command_validator.dart';
 import '../domain/services/decision_policy.dart';
 import '../domain/services/french_number_parser.dart';
@@ -334,11 +341,60 @@ final FutureProvider<AnswerReading> voiceAnswerReadingProvider =
       ),
     );
 
+/// Whether the cascading parser attempts the cloud model when online.
+final Provider<bool> voiceEnableCloudProvider = Provider<bool>(
+  (Ref ref) => kVoiceEnableCloud,
+);
+
+/// Real connectivity probe verifying actual Internet reachability.
+final Provider<ConnectivityProbe> voiceConnectivityProbeProvider =
+    Provider<ConnectivityProbe>((Ref ref) => DataConnectionProbe());
+
+/// Circuit breaker guarding against repeated remote service failures.
+final Provider<CircuitBreaker> voiceCircuitBreakerProvider =
+    Provider<CircuitBreaker>((Ref ref) {
+      return CircuitBreaker(
+        clock: ref.watch(voiceClockProvider),
+        failureThreshold: 2,
+        resetTimeout: const Duration(seconds: 30),
+      );
+    });
+
+/// Remote cloud intent parser calling Firebase Cloud Functions.
+final FutureProvider<CloudIntentParser> voiceCloudIntentParserProvider =
+    FutureProvider<CloudIntentParser>((Ref ref) async {
+      return RemoteCloudIntentParser(
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
+
+/// The parser used by the turn executor.
+///
+/// When [voiceEnableCloudProvider] is true, uses [CascadingParser] combining
+/// the cloud model and the local rule parser under a strict time budget.
+/// When false, delegates directly to [voiceRuleBasedParserProvider].
+final FutureProvider<IntentParser> voiceParserProvider =
+    FutureProvider<IntentParser>((Ref ref) async {
+      final RuleBasedParser local = await ref.watch(
+        voiceRuleBasedParserProvider.future,
+      );
+      if (!ref.watch(voiceEnableCloudProvider)) {
+        return local;
+      }
+      return CascadingParser(
+        local: local,
+        cloud: await ref.watch(voiceCloudIntentParserProvider.future),
+        connectivity: ref.watch(voiceConnectivityProbeProvider),
+        circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
+        timeBudget: const Duration(milliseconds: 2000),
+      );
+    });
+
 /// One utterance in, what happens out.
 final FutureProvider<HandleUtterance> voiceHandleUtteranceProvider =
     FutureProvider<HandleUtterance>(
       (Ref ref) async => HandleUtterance(
-        parser: await ref.watch(voiceRuleBasedParserProvider.future),
+        parser: await ref.watch(voiceParserProvider.future),
         validator: await ref.watch(voiceCommandValidatorProvider.future),
         policy: await ref.watch(voiceDecisionPolicyProvider.future),
         executor: await ref.watch(voiceExecuteCommandProvider.future),

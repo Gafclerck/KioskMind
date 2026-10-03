@@ -8,3 +8,12 @@ const bool kVoiceUseMocks = bool.fromEnvironment(
   'VOICE_USE_MOCKS',
   defaultValue: true,
 );
+
+/// Whether the cascading parser attempts the cloud language model when online.
+///
+/// Can be disabled with `--dart-define=VOICE_ENABLE_CLOUD=false` or overridden
+/// per provider in tests.
+const bool kVoiceEnableCloud = bool.fromEnvironment(
+  'VOICE_ENABLE_CLOUD',
+  defaultValue: false,
+);
