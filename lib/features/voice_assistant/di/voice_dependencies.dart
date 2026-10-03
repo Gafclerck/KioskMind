@@ -26,6 +26,7 @@ import '../data/handlers/call_journal.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
+import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
@@ -125,6 +126,17 @@ final FutureProvider<QueryStockHandler> voiceRealQueryStockHandlerProvider =
         await ref.watch(voiceCatalogReaderProvider.future),
       );
     });
+
+/// The real restock handler, calling the products_stock feature.
+final FutureProvider<RecordRestockHandler>
+voiceRealRecordRestockHandlerProvider = FutureProvider<RecordRestockHandler>((
+  Ref ref,
+) async {
+  return RealRecordRestockHandler(
+    recordStockIn: ref.watch(recordStockInProvider),
+    catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+  );
+});
 
 /// The handlers the executor will call.
 ///
