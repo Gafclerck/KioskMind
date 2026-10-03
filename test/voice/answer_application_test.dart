@@ -199,6 +199,96 @@ void main() {
     );
   });
 
+  List<ItemMention> linesOf(CommandProposal proposal) {
+    return proposal.valueOf<List<ItemMention>>(kItemsSlot) ??
+        const <ItemMention>[];
+  }
+
+  String describeLine(ItemMention line) {
+    final double qty = line.qty;
+    return '${line.product.id} '
+        'x${qty == qty.roundToDouble() ? qty.toInt() : qty}';
+  }
+
+  /// The lines the answer produced, as "productId xqty".
+  List<String> linesAfter(String raw, DoubtKind asked, Object? value) {
+    return linesOf(
+      application.apply(parse(raw), asked: asked, value: value),
+    ).map(describeLine).toList();
+  }
+
+  group('une réponse qui porte sur une ligne précise', () {
+    // A doubtful line is never in the list: the extractor leaves it out while it is
+    // incomplete. Completing it therefore means adding a line, never overwriting
+    // the one that happens to come first. Overwriting it recorded a sale with one
+    // article missing and another invented, and nothing in the session said so.
+    test(
+      'un produit nommé sur la deuxième ligne garde la première intacte',
+      () {
+        expect(
+          linesAfter(
+            'vendu deux sucres et de l huile',
+            DoubtKind.ambiguousProduct,
+            'huile de palme',
+          ),
+          <String>['p_sucre x2', 'p_huile_palme x1'],
+        );
+      },
+    );
+
+    test('un produit nommé sur la première ligne laisse les deux autres', () {
+      expect(
+        linesAfter(
+          'vendu de l huile, deux sucres et trois laits',
+          DoubtKind.ambiguousProduct,
+          'huile de palme',
+        ),
+        <String>['p_sucre x2', 'p_lait x3', 'p_huile_palme x1'],
+      );
+    });
+
+    test(
+      'un compte nommé sur la deuxième ligne ne remplace pas la première',
+      () {
+        expect(
+          linesAfter(
+            'vendu deux laits et du sucre',
+            DoubtKind.missingQuantity,
+            3,
+          ),
+          <String>['p_lait x2', 'p_sucre x3'],
+        );
+      },
+    );
+
+    test('un compte nommé sur la première ligne garde les deux autres', () {
+      expect(
+        linesAfter(
+          'vendu du sucre, deux laits et trois eaux',
+          DoubtKind.missingQuantity,
+          3,
+        ),
+        <String>['p_lait x2', 'p_eau x3', 'p_sucre x3'],
+      );
+    });
+
+    test('la ligne complétée ne porte pas le montant d une autre', () {
+      final CommandProposal answered = application.apply(
+        parse('vendu deux sucres a sept cent cinquante et de l huile'),
+        asked: DoubtKind.ambiguousProduct,
+        value: 'huile de palme',
+      );
+      final List<ItemMention> items =
+          answered.valueOf<List<ItemMention>>(kItemsSlot) ??
+          const <ItemMention>[];
+
+      expect(items.map((ItemMention line) => line.spokenAmount), <double?>[
+        750,
+        null,
+      ]);
+    });
+  });
+
   group('le port de résolution', () {
     test('le domaine ne devine pas un produit', () {
       final AnswerApplication blind = AnswerApplication(
