@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/sale.dart';
 import '../providers/sales_provider.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class SalesHistoryPage extends ConsumerStatefulWidget {
   const SalesHistoryPage({super.key});
@@ -20,26 +21,33 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
     final getSalesHistory = ref.watch(getSalesHistoryProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Historique Ventes'),
+        backgroundColor: AppColors.lightBackground,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          'Historique des ventes',
+          style: textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimaryLight,
+          ),
+        ),
       ),
       body: FutureBuilder<List<Sale>>(
         future: getSalesHistory(),
         builder: (context, snapshot) {
-          // État de chargement
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(
-                color: colorScheme.primary,
+                color: AppColors.primary,
               ),
             );
           }
 
-          // État d'erreur
           if (snapshot.hasError) {
             return _ErrorState(
               colorScheme: colorScheme,
@@ -52,7 +60,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           }
 
           final allSales = snapshot.data ?? [];
-
           final sales = _filterSales(allSales);
 
           final total = sales.fold<double>(
@@ -63,9 +70,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           final topProduct = _getTopProduct(sales);
 
           return RefreshIndicator(
+            color: AppColors.primary,
             onRefresh: () async {
               ref.invalidate(getSalesHistoryProvider);
-
               setState(() {});
 
               await Future.delayed(
@@ -73,32 +80,30 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
               );
             },
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
-                12,
+                16,
                 8,
-                12,
+                16,
                 32,
               ),
               children: [
-                // Sélection de la période
                 _PeriodSelector(
                   selectedPeriod: selectedPeriod,
                   onChanged: _handlePeriodChanged,
                 ),
 
-                // Période personnalisée
                 if (selectedPeriod == 'Personnalisé' &&
                     selectedDateRange != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   _SelectedDateRangeCard(
                     dateRange: selectedDateRange!,
                     onChange: _selectCustomDateRange,
                   ),
                 ],
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
 
-                // Résumé des ventes
                 _SalesSummaryCard(
                   total: total,
                   salesCount: sales.length,
@@ -106,18 +111,31 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   period: _getPeriodLabel(),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-                Text(
-                  'Détails des Ventes',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Détails des ventes',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryLight,
+                      ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
 
-                // État vide / liste des ventes
                 if (sales.isEmpty)
                   _EmptyState(
                     colorScheme: colorScheme,
@@ -126,7 +144,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                 else
                   ...sales.map(
                     (sale) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 10),
                       child: _SaleCard(
                         sale: sale,
                       ),
@@ -139,10 +157,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // CHANGEMENT DE PÉRIODE
-  // ---------------------------------------------------------------------------
 
   Future<void> _handlePeriodChanged(String period) async {
     if (period == 'Personnalisé') {
@@ -159,10 +173,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       selectedDateRange = null;
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // SÉLECTION D'UNE PÉRIODE PERSONNALISÉE
-  // ---------------------------------------------------------------------------
 
   Future<void> _selectCustomDateRange() async {
     final now = DateTime.now();
@@ -190,8 +200,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     );
 
     if (pickedRange == null) {
-      // Si aucune période n'avait encore été choisie,
-      // on revient à "Cette semaine".
       if (selectedDateRange == null) {
         setState(() {
           selectedPeriod = 'Cette semaine';
@@ -216,10 +224,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       );
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // FILTRAGE DES VENTES
-  // ---------------------------------------------------------------------------
 
   List<Sale> _filterSales(List<Sale> sales) {
     final now = DateTime.now();
@@ -281,7 +285,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           selectedDateRange!.start.day,
         );
 
-        // + 1 jour pour inclure toute la journée de fin.
         endDate = DateTime(
           selectedDateRange!.end.year,
           selectedDateRange!.end.month,
@@ -301,10 +304,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     }).toList();
   }
 
-  // ---------------------------------------------------------------------------
-  // PRODUIT LE PLUS VENDU
-  // ---------------------------------------------------------------------------
-
   String _getTopProduct(List<Sale> sales) {
     final quantities = <String, double>{};
 
@@ -316,7 +315,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     }
 
     if (quantities.isEmpty) {
-      return 'Aucun';
+      return 'Aucun produit';
     }
 
     final top = quantities.entries.reduce(
@@ -325,10 +324,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
     return top.key;
   }
-
-  // ---------------------------------------------------------------------------
-  // LABEL DE LA PÉRIODE
-  // ---------------------------------------------------------------------------
 
   String _getPeriodLabel() {
     if (selectedPeriod != 'Personnalisé' ||
@@ -369,15 +364,14 @@ class _PeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return SizedBox(
-      height: 38,
+      height: 46,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: periods.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final period = periods[index];
           final selected = period == selectedPeriod;
@@ -386,20 +380,28 @@ class _PeriodSelector extends StatelessWidget {
             label: Text(period),
             selected: selected,
             onSelected: (_) => onChanged(period),
-            selectedColor: colorScheme.primary,
-            backgroundColor: colorScheme.surface,
+            selectedColor: AppColors.primary,
+            backgroundColor: AppColors.lightSurface,
             side: BorderSide(
               color: selected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
+                  ? AppColors.primary
+                  : AppColors.textSecondaryLight
+                      .withValues(alpha: 0.25),
             ),
-            labelStyle: textTheme.labelSmall?.copyWith(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 8,
+            ),
+            labelStyle: textTheme.labelMedium?.copyWith(
               color: selected
-                  ? colorScheme.onPrimary
-                  : colorScheme.onSurface,
+                  ? Colors.white
+                  : AppColors.textPrimaryLight,
               fontWeight: selected
-                  ? FontWeight.w600
-                  : FontWeight.w400,
+                  ? FontWeight.w700
+                  : FontWeight.w600,
             ),
           );
         },
@@ -409,7 +411,7 @@ class _PeriodSelector extends StatelessWidget {
 }
 
 // =============================================================================
-// CARTE PÉRIODE PERSONNALISÉE
+// PÉRIODE PERSONNALISÉE
 // =============================================================================
 
 class _SelectedDateRangeCard extends StatelessWidget {
@@ -423,50 +425,63 @@ class _SelectedDateRangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.12),
+        ),
+      ),
       child: InkWell(
         onTap: onChange,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(
-                Icons.date_range_outlined,
-                color: colorScheme.primary,
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.date_range_rounded,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Période sélectionnée',
-                      style: textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondaryLight,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       '${_formatDate(dateRange.start)} → '
                       '${_formatDate(dateRange.end)}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.edit_calendar_outlined,
-                size: 20,
-                color: colorScheme.onSurfaceVariant,
+              const Icon(
+                Icons.edit_calendar_rounded,
+                size: 22,
+                color: AppColors.secondary,
               ),
             ],
           ),
@@ -501,82 +516,121 @@ class _SalesSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.primary,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  'Total Ventes $period',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimary.withValues(
-                      alpha: 0.85,
-                    ),
+                  'Total des ventes',
+                  style: textTheme.titleMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.90),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
+                  horizontal: 12,
+                  vertical: 7,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.secondary,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '$salesCount vente${salesCount > 1 ? 's' : ''}',
-                  style: textTheme.labelSmall?.copyWith(
+                  style: textTheme.labelMedium?.copyWith(
+                    color: Colors.white,
                     fontWeight: FontWeight.w700,
-                    color: colorScheme.onSecondary,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+
+          const SizedBox(height: 4),
+
           Text(
-            '${_formatAmount(total)} FCFA',
-            style: textTheme.headlineSmall?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w800,
+            period,
+            style: textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.70),
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            '${_formatAmount(total)} FCFA',
+            style: textTheme.headlineMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.15),
+          ),
+
           const SizedBox(height: 14),
+
           Row(
             children: [
-              Icon(
-                Icons.star_outline,
-                size: 16,
-                color: colorScheme.onPrimary.withValues(
-                  alpha: 0.85,
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.star_rounded,
+                  size: 19,
+                  color: AppColors.secondary,
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  'Top produit : $topProduct',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimary.withValues(
-                      alpha: 0.85,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Produit le plus vendu',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.65),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Text(
+                      topProduct,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -607,9 +661,7 @@ class _SaleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-
     final isCancelled = sale.status == 'CANCELLED';
 
     final productSummary = sale.items
@@ -619,59 +671,95 @@ class _SaleCard extends StatelessWidget {
         )
         .join(', ');
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 11,
+    final iconColor = isCancelled
+        ? AppColors.error
+        : AppColors.primary;
+
+    final iconBackground = isCancelled
+        ? AppColors.error.withValues(alpha: 0.10)
+        : AppColors.primary.withValues(alpha: 0.10);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.05),
         ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: isCancelled
-                    ? colorScheme.errorContainer
-                    : colorScheme.primaryContainer,
-                shape: BoxShape.circle,
+                color: iconBackground,
+                borderRadius: BorderRadius.circular(15),
               ),
               child: Icon(
-                Icons.receipt_long_outlined,
-                size: 19,
-                color: isCancelled
-                    ? colorScheme.onErrorContainer
-                    : colorScheme.onPrimaryContainer,
+                isCancelled
+                    ? Icons.receipt_long_rounded
+                    : Icons.receipt_long_rounded,
+                size: 25,
+                color: iconColor,
               ),
             ),
-            const SizedBox(width: 12),
+
+            const SizedBox(width: 14),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     productSummary,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryLight,
                     ),
                   ),
-                  const SizedBox(height: 4),
+
+                  const SizedBox(height: 5),
+
                   Row(
                     children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 15,
+                        color: AppColors.textSecondaryLight,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
                         _formatTime(sale.dateTime),
                         style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: AppColors.textSecondaryLight,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+
                       if (isCancelled) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          '• Annulée',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.error,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(
+                              alpha: 0.10,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Annulée',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -680,14 +768,16 @@ class _SaleCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+
+            const SizedBox(width: 10),
+
             Text(
-              '${_formatAmount(sale.total)} F',
-              style: textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+              '${_formatAmount(sale.total)} FCFA',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
                 color: isCancelled
-                    ? colorScheme.error
-                    : colorScheme.onSurface,
+                    ? AppColors.error
+                    : AppColors.primary,
               ),
             ),
           ],
@@ -732,32 +822,55 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 42,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Aucune vente pour cette période',
-              textAlign: TextAlign.center,
-              style: textTheme.titleSmall,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Les ventes enregistrées apparaîtront ici.',
-              textAlign: TextAlign.center,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 36,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.lightSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.05),
         ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              size: 32,
+              color: AppColors.primary,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Text(
+            'Aucune vente pour cette période',
+            textAlign: TextAlign.center,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryLight,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          Text(
+            'Les ventes enregistrées apparaîtront ici.',
+            textAlign: TextAlign.center,
+            style: textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -786,21 +899,57 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.cloud_off_outlined,
-              size: 48,
-              color: colorScheme.error,
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.cloud_off_rounded,
+                size: 36,
+                color: AppColors.error,
+              ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 18),
+
             Text(
-              'Impossible de charger les ventes.',
+              'Impossible de charger les ventes',
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 16),
-            FilledButton(
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Vérifiez votre connexion et réessayez.',
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondaryLight,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            FilledButton.icon(
               onPressed: onRetry,
-              child: const Text('Réessayer'),
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Réessayer'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 13,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
           ],
         ),
