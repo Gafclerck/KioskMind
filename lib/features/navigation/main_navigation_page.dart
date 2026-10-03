@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/localization/generated/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
+import '../products_stock/presentation/pages/product_list_page.dart';
 import '../sales/presentation/pages/sales_dashboard_page.dart';
 import '../sales/presentation/pages/sales_history_page.dart';
 import '../voice_assistant/presentation/widgets/voice_session_sheet.dart';
@@ -15,11 +16,12 @@ class MainNavigationPage extends StatefulWidget {
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
+  final Set<int> _activatedIndices = <int>{0};
 
   final List<Widget> _pages = [
     const SalesDashboardPage(),
 
-    const _PlaceholderPage(title: 'Stock', icon: Icons.inventory_2_rounded),
+    const ProductListPage(),
 
     const SalesHistoryPage(),
 
@@ -29,6 +31,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   void _onNavigationSelected(int index) {
     setState(() {
       _currentIndex = index;
+      _activatedIndices.add(index);
     });
   }
 
@@ -41,7 +44,15 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     return Scaffold(
       extendBody: true,
 
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: List<Widget>.generate(_pages.length, (int index) {
+          if (_activatedIndices.contains(index)) {
+            return _pages[index];
+          }
+          return const SizedBox.shrink();
+        }),
+      ),
 
       bottomNavigationBar: _KioskMindBottomNavigation(
         currentIndex: _currentIndex,

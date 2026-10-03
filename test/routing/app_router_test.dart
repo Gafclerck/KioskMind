@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/app.dart';
 import 'package:kiosk_mind/core/storage/app_preferences.dart';
@@ -8,6 +9,8 @@ import 'package:kiosk_mind/features/auth/presentation/pages/login_page.dart';
 import 'package:kiosk_mind/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:kiosk_mind/features/navigation/main_navigation_page.dart';
 import 'package:kiosk_mind/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/pages/add_product_page.dart';
+import 'package:kiosk_mind/features/sales/presentation/pages/create_sale_page.dart';
 
 class FakeAppPreferences implements AppPreferences {
   bool seen = false;
@@ -144,4 +147,64 @@ void main() {
       expect(find.byType(OnboardingPage), findsNothing);
     },
   );
+
+  testWidgets('dashboard quick action Nouvelle vente opens CreateSalePage', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      KioskMindApp(
+        overrides: [
+          onboardingSeenProvider.overrideWith((ref) => true),
+          authStateProvider.overrideWith(
+            (ref) => Stream<String?>.value('user_123'),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MainNavigationPage), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.shopping_bag_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreateSalePage), findsOneWidget);
+  });
+
+  testWidgets('dashboard quick action Ajouter produit opens AddProductPage', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      KioskMindApp(
+        overrides: [
+          onboardingSeenProvider.overrideWith((ref) => true),
+          authStateProvider.overrideWith(
+            (ref) => Stream<String?>.value('user_123'),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MainNavigationPage), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add_circle_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AddProductPage), findsOneWidget);
+  });
 }

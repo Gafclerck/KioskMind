@@ -8,6 +8,9 @@ import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/auth/presentation/providers/auth_state_provider.dart';
 import '../features/navigation/main_navigation_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/products_stock/presentation/pages/add_product_page.dart';
+import '../features/sales/domain/entities/sale.dart';
+import '../features/sales/presentation/pages/create_sale_page.dart';
 import '../features/splash/presentation/splash_page.dart';
 import 'app_routes.dart';
 
@@ -92,6 +95,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.dashboard,
         builder: (context, state) => const MainNavigationPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.createSale,
+        builder: (context, state) {
+          final items = (state.extra as List<SaleItem>?) ?? const <SaleItem>[];
+          return CreateSalePage(items: items);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.addProduct,
+        builder: (context, state) => const AddProductPage(),
       ),
     ],
   );
