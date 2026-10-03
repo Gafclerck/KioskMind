@@ -4,6 +4,7 @@ import '../../domain/entities/sale.dart';
 
 class SaleModel extends Sale {
   SaleModel({
+    super.id,
     required super.dateTime,
     required super.createdAt,
     required super.total,
@@ -13,8 +14,9 @@ class SaleModel extends Sale {
     super.cancelledAt,
   });
 
-  factory SaleModel.fromMap(Map<String, dynamic> map) {
+  factory SaleModel.fromMap(Map<String, dynamic> map, {String? id}) {
     return SaleModel(
+      id: id ?? map['id'] as String?,
       dateTime: (map['dateTime'] as Timestamp).toDate(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       total: (map['total'] as num).toDouble(),
@@ -41,6 +43,7 @@ class SaleModel extends Sale {
 
   Map<String, dynamic> toMap() {
     return {
+      if (id != null) 'id': id,
       'dateTime': Timestamp.fromDate(dateTime),
       'createdAt': Timestamp.fromDate(createdAt),
       'total': total,

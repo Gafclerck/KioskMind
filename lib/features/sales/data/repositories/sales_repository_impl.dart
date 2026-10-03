@@ -9,8 +9,9 @@ class SalesRepositoryImpl implements SalesRepository {
   SalesRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<void> recordSale(Sale sale) async {
+  Future<Sale> recordSale(Sale sale) async {
     final saleModel = SaleModel(
+      id: sale.id,
       dateTime: sale.dateTime,
       createdAt: sale.createdAt,
       total: sale.total,
@@ -20,7 +21,12 @@ class SalesRepositoryImpl implements SalesRepository {
       cancelledAt: sale.cancelledAt,
     );
 
-    await remoteDataSource.recordSale(saleModel);
+    return await remoteDataSource.recordSale(saleModel);
+  }
+
+  @override
+  Future<Sale> cancelSale(String saleId) async {
+    return await remoteDataSource.cancelSale(saleId);
   }
 
   @override
