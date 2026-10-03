@@ -1,33 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_toast.dart';
-import 'features/onboarding/presentation/pages/onboarding_page.dart';
+import 'routing/app_router.dart';
 
 class KioskMindApp extends StatelessWidget {
-  const KioskMindApp({super.key});
+  const KioskMindApp({super.key, this.overrides});
+
+  final List<Override>? overrides;
 
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: MaterialApp(
-        title: 'KioskMind',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        // The delegates come from the generated localisations, which already carry
-        // the ones Flutter needs for its own widgets: the material library looks up
-        // its French strings there and nothing else has to be declared.
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (BuildContext context, Widget? child) {
-          return AppToastHost(child: child ?? const SizedBox.shrink());
-        },
-        home: const OnboardingPage(),
-      ),
+      overrides: overrides ?? const <Override>[],
+      child: const _KioskMindMaterialApp(),
+    );
+  }
+}
+
+class _KioskMindMaterialApp extends ConsumerWidget {
+  const _KioskMindMaterialApp();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final GoRouter router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
+      routerConfig: router,
+      title: 'KioskMind',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (BuildContext context, Widget? child) {
+        return AppToastHost(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }

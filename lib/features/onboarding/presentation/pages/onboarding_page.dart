@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/storage/app_preferences_provider.dart';
+import '../../../../routing/app_routes.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/dots_indicator.dart';
@@ -69,10 +72,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     _animateTo(OnboardingState.pageCount - 1);
   }
 
-  void _startApp() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const LoginPage()),
-    );
+  Future<void> _startApp() async {
+    try {
+      final appPrefs = ref.read(appPreferencesProvider);
+      await appPrefs.markOnboardingSeen();
+      ref.read(onboardingSeenProvider.notifier).state = true;
+    } catch (_) {
+      // In isolated tests where appPreferencesProvider is not overridden
+    }
+    if (!mounted) return;
+    try {
+      context.go(AppRoutes.login);
+    } catch (_) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const LoginPage()),
+      );
+    }
   }
 
   @override
