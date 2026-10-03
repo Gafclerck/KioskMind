@@ -9,20 +9,23 @@ import '../../../core/voice_services/platform_tts.dart';
 import '../../../core/voice_services/speech_recognizer_port.dart';
 import '../../../core/voice_services/tts_port.dart';
 import '../../../core/voice_services/voice_service_settings.dart';
+import '../../../features/products_stock/presentation/providers/product_providers.dart';
+import '../../../features/sales/presentation/providers/sales_provider.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
 import '../data/catalog/in_memory_product_catalog.dart';
 import '../data/catalog/intent_catalog_loader.dart';
 import '../data/catalog/product_resolver.dart';
+import '../data/catalog/real_product_catalog_reader.dart';
 import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
 import '../data/extractors/item_list_extractor.dart';
-import '../../../features/sales/presentation/providers/sales_provider.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
 import '../data/handlers/call_journal.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
+import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
@@ -33,6 +36,7 @@ import '../domain/ports/command_id_factory.dart';
 import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
 import '../domain/ports/intent_registry.dart';
+import '../domain/ports/product_catalog_reader.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
 import '../domain/services/answer_application.dart';
@@ -78,12 +82,28 @@ final FutureProvider<InMemoryProductCatalog> voiceMockCatalogProvider =
       return InMemoryProductCatalog(parseCatalogFixture(source));
     });
 
+/// The real product catalog reader, reading products from products_stock feature.
+final Provider<ProductCatalogReader> voiceRealProductCatalogReaderProvider =
+    Provider<ProductCatalogReader>((Ref ref) {
+      return RealProductCatalogReader(ref.watch(productRepositoryProvider));
+    });
+
+/// Active catalog reader:
+/// Uses mock fixture when voiceUseMocksProvider is true, or real products when false.
+final FutureProvider<ProductCatalogReader> voiceCatalogReaderProvider =
+    FutureProvider<ProductCatalogReader>((Ref ref) async {
+      if (ref.watch(voiceUseMocksProvider)) {
+        return ref.watch(voiceMockCatalogProvider.future);
+      }
+      return ref.watch(voiceRealProductCatalogReaderProvider);
+    });
+
 /// The real sale handler, calling the sales usecase.
 final FutureProvider<RecordSaleHandler> voiceRealRecordSaleHandlerProvider =
     FutureProvider<RecordSaleHandler>((Ref ref) async {
       return RealRecordSaleHandler(
         recordSale: ref.watch(recordSaleProvider),
-        catalogReader: await ref.watch(voiceMockCatalogProvider.future),
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
       );
     });
 
@@ -94,9 +114,17 @@ voiceRealCancelLastSaleHandlerProvider = FutureProvider<CancelLastSaleHandler>((
 ) async {
   return RealCancelLastSaleHandler(
     cancelSale: ref.watch(cancelSaleProvider),
-    catalogReader: await ref.watch(voiceMockCatalogProvider.future),
+    catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
   );
 });
+
+/// The real query stock handler, reading the product catalog.
+final FutureProvider<QueryStockHandler> voiceRealQueryStockHandlerProvider =
+    FutureProvider<QueryStockHandler>((Ref ref) async {
+      return RealQueryStockHandler(
+        await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
 
 /// The handlers the executor will call.
 ///
@@ -235,8 +263,8 @@ final Provider<TextNormalizer> voiceNormalizerProvider =
 /// it is out of his vocabulary rather than report a name it does not know.
 final FutureProvider<ProductResolver> voiceProductResolverProvider =
     FutureProvider<ProductResolver>((Ref ref) async {
-      final InMemoryProductCatalog catalog = await ref.watch(
-        voiceMockCatalogProvider.future,
+      final ProductCatalogReader catalog = await ref.watch(
+        voiceCatalogReaderProvider.future,
       );
       return ProductResolver(
         products: await catalog.readAllProducts(),
@@ -347,8 +375,8 @@ final Provider<TtsPort> voiceTtsProvider = Provider<TtsPort>(
 /// accept a vocabulary ignore a long one and the ones that do not are slow with
 /// it.
 Future<List<String>> _shopVocabulary(Ref ref) async {
-  final InMemoryProductCatalog catalog = await ref.watch(
-    voiceMockCatalogProvider.future,
+  final ProductCatalogReader catalog = await ref.watch(
+    voiceCatalogReaderProvider.future,
   );
   final List<ProductSnapshot> products = await catalog.readActiveProducts();
   final Set<String> words = <String>{};

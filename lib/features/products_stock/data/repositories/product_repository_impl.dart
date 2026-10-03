@@ -41,4 +41,19 @@ class ProductRepositoryImpl implements ProductRepository {
               .toList(),
         );
   }
+
+  @override
+  Future<List<Product>> getProducts() async {
+    final snapshot = await _products.orderBy('name').get();
+    return snapshot.docs
+        .map((doc) => ProductModel.fromFirestore(doc.id, doc.data()))
+        .toList();
+  }
+
+  @override
+  Future<Product?> getProductById(String productId) async {
+    final doc = await _products.doc(productId).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return ProductModel.fromFirestore(doc.id, doc.data()!);
+  }
 }

@@ -21,6 +21,17 @@ class _FakeProductRepository implements ProductRepository {
 
   @override
   Stream<List<Product>> watchProducts() => Stream.value(const []);
+
+  @override
+  Future<List<Product>> getProducts() async => created;
+
+  @override
+  Future<Product?> getProductById(String productId) async {
+    for (final p in created) {
+      if (p.id == productId) return p;
+    }
+    return null;
+  }
 }
 
 const _product = Product(
