@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../routing/app_routes.dart';
 import '../../domain/auth_validators.dart';
 import '../providers/login_provider.dart';
 import '../widgets/forgot_password_dialog.dart';
@@ -40,9 +42,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _goToSignup() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SignupPage()));
+    try {
+      context.push(AppRoutes.signup);
+    } catch (_) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SignupPage()));
+    }
   }
 
   @override
