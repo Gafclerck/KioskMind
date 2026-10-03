@@ -69,6 +69,18 @@ void main() {
       isEmpty,
     );
   });
+
+  test('the voice feature never names a speech plugin', () {
+    expect(
+      _importsIn(
+        feature,
+        forbidden: <String>[r'package:speech_to_text', r'package:flutter_tts'],
+      ),
+      isEmpty,
+      reason:
+          'les plugins sont derriere les adaptateurs de core/voice_services',
+    );
+  });
 }
 
 Directory _layer(Directory feature, String name) {

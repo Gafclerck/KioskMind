@@ -2,6 +2,13 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/voice_flags.dart';
+import '../../../core/voice_services/device_speech_recognizer.dart';
+import '../../../core/voice_services/device_speech_speaker.dart';
+import '../../../core/voice_services/platform_speech_recognizer.dart';
+import '../../../core/voice_services/platform_tts.dart';
+import '../../../core/voice_services/speech_recognizer_port.dart';
+import '../../../core/voice_services/tts_port.dart';
+import '../../../core/voice_services/voice_service_settings.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
 import '../data/catalog/in_memory_product_catalog.dart';
 import '../data/catalog/intent_catalog_loader.dart';
@@ -16,6 +23,7 @@ import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
+import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
 import '../domain/ports/command_id_factory.dart';
 import '../domain/ports/handler_call_journal.dart';
@@ -246,3 +254,57 @@ final FutureProvider<HandleUtterance> voiceHandleUtteranceProvider =
         reading: await ref.watch(voiceAnswerReadingProvider.future),
       ),
     );
+
+/// How the two device services behave on this phone.
+///
+/// A plain provider with no async work, so a test replaces the whole technical
+/// configuration of the microphone and the voice in one override.
+final Provider<VoiceServiceSettings> voiceServiceSettingsProvider =
+    Provider<VoiceServiceSettings>((Ref ref) => const VoiceServiceSettings());
+
+/// The microphone of the device.
+///
+/// The only adapter in the module that names a plugin, and it names it through
+/// [PluginDeviceSpeechRecognizer] rather than directly: the port the session uses
+/// is the one that can be faked, and the engine is a parameter so the adapter's
+/// own rules - which language, what the shop's vocabulary is, what a refused
+/// permission means - are reachable from a test without a phone.
+final FutureProvider<SpeechRecognizerPort> voiceRecognizerProvider =
+    FutureProvider<SpeechRecognizerPort>((Ref ref) async {
+      return PlatformSpeechRecognizer(
+        device: PluginDeviceSpeechRecognizer(),
+        settings: ref.watch(voiceServiceSettingsProvider),
+        vocabulary: await _shopVocabulary(ref),
+      );
+    });
+
+/// The voice of the device.
+final Provider<TtsPort> voiceTtsProvider = Provider<TtsPort>(
+  (Ref ref) => PlatformTts(
+    device: PluginDeviceSpeechSpeaker(),
+    settings: ref.watch(voiceServiceSettingsProvider),
+  ),
+);
+
+/// The words the recogniser is biased toward, taken from the same catalog the
+/// router reads.
+///
+/// Sorted so the payload does not change with the order the shop happens to have
+/// stored its products in, and capped by the settings, because the engines that
+/// accept a vocabulary ignore a long one and the ones that do not are slow with
+/// it.
+Future<List<String>> _shopVocabulary(Ref ref) async {
+  final InMemoryProductCatalog catalog = await ref.watch(
+    voiceMockCatalogProvider.future,
+  );
+  final List<ProductSnapshot> products = await catalog.readActiveProducts();
+  final Set<String> words = <String>{};
+  for (final ProductSnapshot product in products) {
+    words.add(product.name.toLowerCase());
+    words.addAll(product.aliases);
+  }
+  final List<String> sorted = words.toList()..sort();
+  return sorted
+      .take(ref.watch(voiceServiceSettingsProvider).vocabularyLimit)
+      .toList();
+}

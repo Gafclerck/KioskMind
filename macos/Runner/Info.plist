@@ -28,5 +28,10 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<!-- Voice module: same explanation as iOS, asked for on the desktop too. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Le micro enregistre votre voix pour transformer vos commandes en ventes. L'enregistrement ne part pas de cet appareil.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>La reconnaissance vocale transforme vos mots en commandes. Elle fonctionne sans connexion.</string>
 </dict>
 </plist>

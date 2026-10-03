@@ -50,5 +50,7 @@ app.*.map.json
 /docs/voice/
 /AGENTS.md
 
+# Localisations generees par flutter gen-l10n (ADR-002)
+/lib/core/localization/generated/
 # Maquettes de référence, jamais versionnées
 *.zip

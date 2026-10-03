@@ -1,0 +1,126 @@
+{
+  "@@locale": "fr",
+  "voicePanelLabel": "Assistant vocal",
+  "@voicePanelLabel": {
+    "description": "Nom du module vocal, lu par les lecteurs d'écran."
+  },
+  "voiceMicTooltip": "Parler",
+  "voiceMicListening": "Je vous écoute",
+  "voiceMicPreparing": "Je prépare",
+  "voiceMicThinking": "Je traite votre demande",
+  "voiceMicSpeaking": "Je vous réponds",
+  "voiceMicUnavailable": "Micro indisponible",
+  "voiceMicRefused": "Micro autorisé ? Sinon, utilisez la saisie manuelle",
+  "voiceHeardLabel": "Entendu",
+  "voiceQuestionProduct": "Quel produit ?",
+  "voiceQuestionProductInLine": "Quel produit pour la première ligne ?",
+  "voiceQuestionQuantity": "Combien ?",
+  "voiceQuestionConfirm": "Vous confirmez ?",
+  "voiceChooseProduct": "Lequel ?",
+  "voiceRefused": "Je ne peux pas faire cela",
+  "voiceCommandFailed": "La commande a échoué",
+  "voiceSaleDone": "{count, plural, =1{Une ligne enregistrée} other{{count} lignes enregistrées}}",
+  "@voiceSaleDone": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceRestockDone": "{count, plural, =1{Une ligne de réappro} other{{count} lignes de réappro}}",
+  "@voiceRestockDone": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceTotal": "total {amount}",
+  "@voiceTotal": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "voiceStockRead": "{product} : {qty}",
+  "@voiceStockRead": {
+    "placeholders": {
+      "product": {"type": "String"},
+      "qty": {"type": "String"}
+    }
+  },
+  "voiceRecapLine": "{qty} de {name}",
+  "@voiceRecapLine": {
+    "placeholders": {
+      "qty": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "voiceRecapLinePlain": "{qty} de {name}",
+  "@voiceRecapLinePlain": {
+    "placeholders": {
+      "qty": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "voiceCurrency": "francs",
+  "voiceSaleCancelled": "Vente annulée",
+  "voiceNothingToUndo": "Rien à annuler",
+  "voiceUndoFailed": "Annulation impossible",
+  "voiceUndoAction": "Annuler",
+  "voiceUndoSeconds": "{seconds} s",
+  "@voiceUndoSeconds": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "voiceYes": "Oui",
+  "voiceNo": "Non",
+  "voiceManualTitle": "Saisie manuelle",
+  "voiceManualMessage": "Les écrans de saisie manuelle arrivent plus tard. Revenez à la voix quand vous voulez.",
+  "voiceBackToVoice": "Revenir à la voix",
+  "voiceIdleHint": "Touchez le micro et dites votre commande",
+  "voiceUnitPiece": "{count, plural, one{pièce} other{pièces}}",
+  "@voiceUnitPiece": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceUnitKg": "{count, plural, one{kilogramme} other{kilogrammes}}",
+  "@voiceUnitKg": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceUnitLitre": "{count, plural, one{litre} other{litres}}",
+  "@voiceUnitLitre": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceUnitSachet": "{count, plural, one{sachet} other{sachets}}",
+  "@voiceUnitSachet": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceUnitSac": "{count, plural, one{sac} other{sacs}}",
+  "@voiceUnitSac": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceUnitBoite": "{count, plural, one{boîte} other{boîtes}}",
+  "@voiceUnitBoite": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "voiceQtyOne": "un {unit}",
+  "@voiceQtyOne": {
+    "placeholders": {
+      "unit": {"type": "String"}
+    }
+  },
+  "voiceQtyOneFeminine": "une {unit}",
+  "@voiceQtyOneFeminine": {
+    "placeholders": {
+      "unit": {"type": "String"}
+    }
+  }
+}

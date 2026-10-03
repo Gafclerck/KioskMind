@@ -1,0 +1,10 @@
+# Localisation setup, per ADR-002.
+#
+# The ARB files sit next to the code that owns them and the generated code goes to
+# a directory that is not versioned: the strings are the source, the generated
+# localisations are rebuilt by `flutter pub get` and belong to nobody's diff.
+arb-dir: lib/core/localization
+template-arb-file: app_fr.arb
+output-dir: lib/core/localization/generated
+output-localization-file: app_localizations.dart
+nullable-getter: false

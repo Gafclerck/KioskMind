@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Voice module: the microphone is opened only after the merchant pressed it,
+         and the permission is asked for at that moment, never at startup. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="kiosk_mind"
         android:name="${applicationName}"
@@ -40,6 +43,15 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Voice module: without these the speech recogniser and the speech
+             synthesiser are invisible to the app on Android 11 and later, which
+             looks exactly like a device that has neither. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE"/>
         </intent>
     </queries>
 </manifest>
