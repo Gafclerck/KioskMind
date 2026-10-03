@@ -30,6 +30,23 @@ enum SlotType {
   final String code;
 }
 
+/// Which price of the product a spoken amount is compared against.
+///
+/// Declared by the catalog because it is a business fact, not a code detail:
+/// comparing a restock to the sale price would doubt every correct restock, and
+/// comparing a sale to the purchase price would doubt the normal case.
+enum ReferencePrice {
+  /// The intent never takes an amount, so there is nothing to compare.
+  none('none'),
+  salePrice('sale_price'),
+  purchasePrice('purchase_price');
+
+  const ReferencePrice(this.code);
+
+  /// The value stored in `voice/intent_catalog.json`.
+  final String code;
+}
+
 /// One slot of an intent.
 ///
 /// A slot of type [SlotType.itemList] describes a list of lines and therefore
@@ -67,6 +84,7 @@ final class IntentDefinition {
     required this.triggers,
     required this.examples,
     required this.slots,
+    this.referencePrice = ReferencePrice.none,
   });
 
   final String id;
@@ -84,6 +102,12 @@ final class IntentDefinition {
   final List<String> examples;
 
   final List<SlotDefinition> slots;
+
+  /// Which product price an announced amount is compared against.
+  final ReferencePrice referencePrice;
+
+  /// Whether running this command takes a list of lines, from the declared shape.
+  bool get takesItems => slots.any((SlotDefinition slot) => slot.isItemList);
 }
 
 /// The validated contents of `voice/intent_catalog.json`.

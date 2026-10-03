@@ -98,6 +98,29 @@ IntentDefinition _parseIntent(Map<String, Object?> json, int index) {
     ),
     examples: _parseStringList(json['examples'], '$id.examples'),
     slots: _parseSlots(json['slots'], id),
+    referencePrice: _parseReferencePrice(json['referencePrice'], id),
+  );
+}
+
+/// The optional `referencePrice`, read by code rather than by name.
+///
+/// A command that takes no amount declares nothing and gets
+/// [ReferencePrice.none], so an amount spoken on it is never doubted.
+ReferencePrice _parseReferencePrice(Object? raw, String intentId) {
+  if (raw == null) {
+    return ReferencePrice.none;
+  }
+  for (final ReferencePrice price in ReferencePrice.values) {
+    if (price.code == raw) {
+      return price;
+    }
+  }
+  final List<String> allowed = <String>[
+    for (final ReferencePrice price in ReferencePrice.values) price.code,
+  ];
+  throw FormatException(
+    'Intent "$intentId": "referencePrice" invalide ($raw), '
+    'parmi ${allowed.join(', ')}',
   );
 }
 

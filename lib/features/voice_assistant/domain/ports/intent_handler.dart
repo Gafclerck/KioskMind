@@ -15,17 +15,28 @@ abstract interface class IntentHandler<TInput extends IntentInput, TOutput> {
   Future<Result<TOutput>> execute(CommandContext context, TInput input);
 }
 
+/// The intent the session voice owns the identifier of.
+///
+/// Named here because the intent carries no slot: the sale it targets comes from the
+/// undo window, and the binding in `data/commands/voice_bindings.dart` is where that
+/// is turned into a call.
+const String kCancelLastSaleIntent = 'cancel_last_sale';
+
 /// Every intent the module can route, in catalog order.
 ///
 /// The catalog validates its `handler` values against this set, so a command
 /// cannot be described in `voice/intent_catalog.json` without a port able to
-/// execute it. Adding a command means adding it here, in the catalog, and
-/// writing the handler: no other file has to change.
+/// execute it.
+///
+/// Adding a command means a catalog entry, a handler, and a binding registered at
+/// composition: the executor, the parser and the validator stay as they are. An
+/// intent whose input type is not declared here needs a new [IntentHandler] type,
+/// which is why this set and the handler field of [VoiceHandlers] still exist.
 const Set<String> kSupportedIntentIds = <String>{
   'record_sale',
   'record_restock',
   'query_stock',
-  'cancel_last_sale',
+  kCancelLastSaleIntent,
 };
 
 typedef RecordSaleHandler = IntentHandler<SaleIntentInput, RecordSaleResult>;

@@ -1,5 +1,6 @@
 import '../../domain/entities/command_proposal.dart';
 import '../../domain/entities/doubt.dart';
+import '../../domain/entities/intent_definition.dart';
 import '../../domain/entities/slot.dart';
 import '../../domain/entities/voice_config.dart';
 import '../../domain/entities/voice_lexicon.dart';
@@ -32,12 +33,6 @@ final class RuleBasedParser implements IntentParser {
   final IntentDetector detector;
   final ItemListExtractor items;
   final VoiceConfig config;
-
-  /// Ids whose handler writes data, and which therefore need a quantity.
-  static const Set<String> _writeIntents = <String>{
-    'record_sale',
-    'record_restock',
-  };
 
   /// Reads [raw] into a proposal.
   @override
@@ -113,18 +108,48 @@ final class RuleBasedParser implements IntentParser {
   }
 
   CommandProposal _propose(IntentDetection detection, List<String> tokens) {
-    final bool isWrite = _writeIntents.contains(detection.intentId);
+    // The catalog is the single source: whether the command writes, and whether it
+    // takes a list of lines or a single product, is declared there. Reading it here
+    // is what lets a new command be understood without touching this file.
+    final IntentDefinition? intent = detector.catalog.byId(detection.intentId);
+    final bool isWrite = intent?.risk.isWrite ?? false;
     final List<Doubt> doubts = _markerDoubts(tokens, isWrite);
-    final List<Slot> slots = switch (detection.intentId) {
-      'cancel_last_sale' => _cancelSlots(),
-      'query_stock' => _querySlots(detection, tokens, doubts),
-      _ => _itemSlots(detection, tokens, doubts, isWrite),
-    };
+    final List<Slot> slots = _slotsFor(
+      intent,
+      detection,
+      tokens,
+      doubts,
+      isWrite,
+    );
     return CommandProposal.rules(
       intentId: detection.intentId,
       slots: slots,
       doubts: doubts,
     );
+  }
+
+  /// The slots an utterance of this command may carry, from its declared shape.
+  ///
+  /// A list of lines is read as lines, anything else as the single product a read
+  /// command asks about, and a command that declares no slot names the sale it can
+  /// only target through the session.
+  List<Slot> _slotsFor(
+    IntentDefinition? intent,
+    IntentDetection detection,
+    List<String> tokens,
+    List<Doubt> doubts,
+    bool isWrite,
+  ) {
+    if (intent == null) {
+      return _cancelSlots();
+    }
+    if (intent.takesItems) {
+      return _itemSlots(detection, tokens, doubts, isWrite);
+    }
+    if (intent.slots.isEmpty) {
+      return _cancelSlots();
+    }
+    return _querySlots(detection, tokens, doubts, isWrite);
   }
 
   /// Doubts raised by the words around the command, whatever it turned out to be.
@@ -169,19 +194,21 @@ final class RuleBasedParser implements IntentParser {
     return <Slot>[Slot(name: 'items', value: reading.items)];
   }
 
-  /// A stock question: the product asked about, and nothing else.
+  /// A command about one product: the product asked about, and nothing else.
   ///
-  /// A question carries no quantity, so the product is read from the names rather
-  /// than from the lines.
+  /// A read command carries no quantity, so the product is read from the names
+  /// rather than from the lines. A write command that takes a single product does
+  /// need one, so it is required.
   List<Slot> _querySlots(
     IntentDetection detection,
     List<String> tokens,
     List<Doubt> doubts,
+    bool isWrite,
   ) {
     final ItemListReading reading = items.read(
       tokens,
       from: detection.triggerEnd,
-      requiresQuantity: false,
+      requiresQuantity: isWrite,
     );
     doubts.addAll(reading.doubts);
     if (reading.products.isEmpty) {

@@ -3,17 +3,23 @@ import 'package:kiosk_mind/core/errors/failure.dart';
 import 'package:kiosk_mind/core/usecase/result.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/call_journal.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/commands/voice_bindings.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/handlers/journaling_intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_cancel_last_sale_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/mock/mock_voice_handlers.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/dialog/dialog_manager.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_input.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_result.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_context.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_registry.dart';
 
 import 'fake_clock.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
@@ -132,11 +138,11 @@ void main() {
       expect(shop.journal.calls, isEmpty);
     });
 
-    test('un intent sans handler branche est une erreur franche', () async {
-      // Un intent du catalogue sans port ne doit pas disparaitre dans un silence:
-      // le catalogue le refuse au chargement, donc ici c'est un câblage casse.
+    test('un intent sans liaison enregistree est une erreur franche', () async {
+      // Un intent sans port ne doit pas disparaitre dans un silence. Le catalogue le
+      // refuse au chargement, donc ici c'est un cablage casse, et il doit se voir.
       final ExecuteCommand executor = ExecuteCommand(
-        handlers: const VoiceHandlers(),
+        registry: IntentRegistry(const <IntentBinding>[]),
         dialog: shop.dialog,
         clock: shop.clock,
         ids: _SequentialIds(),
@@ -345,6 +351,73 @@ void main() {
         reason: 'rien n avait ete vendu',
       );
     });
+
+    // Les deux voies d'entree doivent se comporter pareil. Avant, "annule" dit a
+    // voix consommait la fenetre pour de bon alors que le bouton la rendait : le
+    // commerçant qui lossesait la voix perdait le seul moyen de reessayer.
+    group('un echec du handler ne ferme pas la fenetre', () {
+      // Les deux voies d'entree doivent se comporter pareil. Avant, "annule" dit a
+      // voix consommait la fenetre pour de bon alors que le bouton la rendait : le
+      // commerçant qui passait par la voix perdait le seul moyen de reessayer.
+      late _Shop failing;
+
+      setUp(() async {
+        failing = _Shop(cancelFails: true);
+        await failing.execute(
+          DecisionOutcome.executeWithUndo,
+          _sale(<ItemMention>[_line('sucre', 3)]),
+        );
+      });
+
+      test('la voie du bouton rend la fenetre', () async {
+        await failing.undo();
+
+        expect(
+          failing.dialog.undoSaleId,
+          'cmd-1',
+          reason: 'le commerçant doit pouvoir reessayer',
+        );
+      });
+
+      test('la voie de la voix rend la fenetre aussi', () async {
+        await failing.execute(
+          DecisionOutcome.executeWithUndo,
+          _proposal('cancel_last_sale', null, saleId: r'$lastSaleId'),
+        );
+
+        expect(
+          failing.dialog.undoSaleId,
+          'cmd-1',
+          reason: 'la meme action doit laisser le meme etat derriere elle',
+        );
+      });
+
+      test('la vente reste faite quand l annulation echoue', () async {
+        await failing.execute(
+          DecisionOutcome.executeWithUndo,
+          _proposal('cancel_last_sale', null, saleId: r'$lastSaleId'),
+        );
+
+        expect(failing.catalog.saleById('cmd-1')!.cancelledAt, isNull);
+        expect(failing.catalog.stockOf('sucre'), 37);
+      });
+
+      test('un reussite ne rend pas la fenetre', () async {
+        final _Shop working = _Shop();
+        await working.execute(
+          DecisionOutcome.executeWithUndo,
+          _sale(<ItemMention>[_line('sucre', 3)]),
+        );
+
+        await working.undo();
+
+        expect(
+          working.dialog.undoSaleId,
+          isNull,
+          reason: 'la vente est annulee, il n y a plus rien a reprendre',
+        );
+      });
+    });
   });
 
   test('le journal ne melange pas deux commandes', () async {
@@ -393,35 +466,56 @@ ItemMention _line(String productId, double qty, [double? amount]) {
 
 /// The shop the executor runs against, plus the evidence it produces.
 final class _Shop {
-  _Shop({this.commandIds});
+  _Shop({this.commandIds, this.cancelFails = false});
 
   /// A factory that hands back the same identifier, which is what a replay is.
   final CommandIdFactory? commandIds;
+
+  /// Makes the cancellation handler refuse, which is what a sale already
+  /// cancelled, or a write the shop refused, looks like to the session.
+  final bool cancelFails;
 
   final FakeClock clock = FakeClock(DateTime(2026, 3, 14, 8));
   late final InMemoryProductCatalog catalog = InMemoryProductCatalog(
     _Shop.products(),
   );
   late final HandlerCallJournal journal = InMemoryCallJournal();
-  late final VoiceHandlers handlers = buildMockVoiceHandlers(
+  late final VoiceHandlers _working = buildMockVoiceHandlers(
     catalog: catalog,
     journal: journal,
+  );
+  late final VoiceHandlers handlers = VoiceHandlers(
+    recordSale: _working.recordSale,
+    recordRestock: _working.recordRestock,
+    queryStock: _working.queryStock,
+    cancelLastSale:
+        JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
+          cancelFails
+              ? const _RefusingCancelHandler()
+              : MockCancelLastSaleHandler(catalog),
+          journal,
+        ),
   );
   late final DialogManager dialog = DialogManager(
     config: const VoiceConfig(),
     clock: clock,
-  );
-  late final ExecuteCommand runner = ExecuteCommand(
-    handlers: handlers,
-    dialog: dialog,
-    clock: clock,
-    ids: commandIds ?? _SequentialIds(),
   );
   late final UndoLastCommand undoer = UndoLastCommand(
     handlers: handlers,
     dialog: dialog,
     clock: clock,
     ids: _SequentialIds(prefix: 'undo-'),
+  );
+  late final ExecuteCommand runner = ExecuteCommand(
+    registry: registry,
+    dialog: dialog,
+    clock: clock,
+    ids: commandIds ?? _SequentialIds(),
+  );
+
+  /// The bindings the composition root builds, and only those.
+  late final IntentRegistry registry = IntentRegistry(
+    buildVoiceBindings(handlers: handlers, undo: undoer),
   );
 
   /// Undoes the last write, the way the undo banner does.
@@ -458,6 +552,28 @@ final class _Shop {
       stock: stock,
       alertThreshold: 0,
       averageDailyQty: 0,
+    );
+  }
+}
+
+/// A cancellation the shop refuses, whatever the session still has open.
+///
+/// Stands for a sale already cancelled, or a write the shop did not accept: the
+/// words were understood, the action did not happen.
+final class _RefusingCancelHandler
+    implements IntentHandler<CancelLastSaleInput, CancelLastSaleResult> {
+  const _RefusingCancelHandler();
+
+  @override
+  String get intentId => 'cancel_last_sale';
+
+  @override
+  Future<Result<CancelLastSaleResult>> execute(
+    CommandContext context,
+    CancelLastSaleInput input,
+  ) {
+    return Future<Result<CancelLastSaleResult>>.value(
+      Failed<CancelLastSaleResult>(AlreadyCancelled(input.saleId)),
     );
   }
 }

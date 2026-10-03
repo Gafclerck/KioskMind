@@ -80,12 +80,13 @@ final class HandleUtterance {
   /// normaliser, the same French numbers, the same product resolution. It is not
   /// given to the intent detector, which only accepts commands and would report
   /// "sucre" as out of domain.
-  Future<VoiceTurn> run(String utterance) {
+  Future<VoiceTurn> run(String utterance) async {
     final PendingQuestion? waiting = dialog.pending;
     if (waiting == null || dialog.awaitsManualEntry) {
-      return _decideAndAct(_understood(utterance));
+      return _decideAndAct(await _understood(utterance));
     }
-    final CommandProposal asked = dialog.awaiting ?? _understood(utterance);
+    final CommandProposal asked =
+        dialog.awaiting ?? await _understood(utterance);
     final Object? value = reading.read(utterance, asked: waiting.reason);
     return _decideAndAct(
       answers.apply(asked, asked: waiting.reason, value: value),
@@ -138,8 +139,8 @@ final class HandleUtterance {
   ///
   /// The two are kept apart so a test can state which raised a doubt, and the
   /// proposal the policy sees carries both, as it will in the app.
-  CommandProposal _understood(String utterance) {
-    final CommandProposal parsed = parser.parse(utterance);
+  Future<CommandProposal> _understood(String utterance) async {
+    final CommandProposal parsed = await parser.parse(utterance);
     final List<Doubt> doubts = <Doubt>[...parsed.doubts];
     for (final Doubt doubt in validator.validate(parsed)) {
       if (!doubts.contains(doubt)) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../entities/command_proposal.dart';
 
 /// Reads one utterance into a proposal.
@@ -12,5 +14,5 @@ import '../entities/command_proposal.dart';
 /// what lets the same text be re-judged without being understood again.
 abstract interface class IntentParser {
   /// Reads [raw] into a proposal, with no side effect and no verdict.
-  CommandProposal parse(String raw);
+  FutureOr<CommandProposal> parse(String raw);
 }

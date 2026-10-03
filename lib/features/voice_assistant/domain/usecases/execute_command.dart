@@ -3,12 +3,9 @@ import '../../../../core/usecase/result.dart';
 import '../dialog/dialog_manager.dart';
 import '../entities/command_proposal.dart';
 import '../entities/decision_outcome.dart';
-import '../entities/intent_input.dart';
-import '../entities/intent_result.dart';
-import '../entities/slot.dart';
 import '../ports/command_context.dart';
 import '../ports/command_id_factory.dart';
-import '../ports/intent_handler.dart';
+import '../ports/intent_registry.dart';
 import '../ports/voice_clock.dart';
 
 /// What running one command produced.
@@ -68,19 +65,24 @@ final class HeldCommand extends CommandExecution {
 /// Runs a proposal the policy decided to run.
 ///
 /// This is the only place the voice module calls a business use case, and it does
-/// it through an [IntentHandler] port: it never sees Firestore, a document or a
-/// feature. Its whole job is to turn a proposal into the one typed input its
-/// intent declares, with the command context the contract asks for, and to
-/// register the undo window when a write happened.
+/// it through the [IntentRegistry]: it never sees Firestore, a document or a
+/// feature, and it names no command. Its whole job is to find the binding the
+/// proposal asks for, run it with the command context the contract asks for, and
+/// open the undo window when the binding says the run left a sale to take back.
+///
+/// A proposal for a command nothing is bound to is a wiring error, and it says so
+/// rather than doing nothing.
 final class ExecuteCommand {
   const ExecuteCommand({
-    required this.handlers,
+    required this.registry,
     required this.dialog,
     required this.clock,
     required this.ids,
   });
 
-  final VoiceHandlers handlers;
+  /// Every command the module can run, indexed by intent.
+  final IntentRegistry registry;
+
   final DialogManager dialog;
   final VoiceClock clock;
   final CommandIdFactory ids;
@@ -89,160 +91,41 @@ final class ExecuteCommand {
     required Decision decision,
     required CommandProposal proposal,
     CommandSource source = CommandSource.voice,
-  }) {
+  }) async {
     if (!decision.executes) {
-      return Future<CommandExecution>.value(HeldCommand(decision));
+      return HeldCommand(decision);
     }
-    final String intentId = proposal.intentId;
-    return switch (intentId) {
-      'record_sale' => _runSale(proposal, source),
-      'record_restock' => _runRestock(proposal, source),
-      'query_stock' => _runQuery(proposal, source),
-      'cancel_last_sale' => _runCancel(proposal, source),
-      _ => Future<CommandExecution>.error(
-        StateError('Intent sans handler branche: $intentId'),
-      ),
-    };
-  }
-
-  Future<CommandExecution> _runSale(
-    CommandProposal proposal,
-    CommandSource source,
-  ) {
-    final RecordSaleHandler? handler = handlers.recordSale;
-    if (handler == null) {
-      return Future<CommandExecution>.error(
-        StateError('Handler non branche: record_sale'),
-      );
+    final IntentBinding? binding = registry.bindingOf(proposal.intentId);
+    if (binding == null) {
+      throw StateError('Intent sans liaison enregistree: ${proposal.intentId}');
     }
-    return _dispatch(
-      handler.execute(
-        _context(source),
-        SaleIntentInput(items: _saleLines(proposal)),
-      ),
+    final Result<Object> result = await binding.call(
+      proposal,
+      _context(source),
     );
+    _openUndoWindow(binding, result);
+    return ExecutedCommand(result);
   }
 
-  Future<CommandExecution> _runRestock(
-    CommandProposal proposal,
-    CommandSource source,
-  ) {
-    final RecordRestockHandler? handler = handlers.recordRestock;
-    if (handler == null) {
-      return Future<CommandExecution>.error(
-        StateError('Handler non branche: record_restock'),
-      );
-    }
-    return _dispatch(
-      handler.execute(
-        _context(source),
-        RestockIntentInput(items: _restockLines(proposal)),
-      ),
-    );
-  }
-
-  Future<CommandExecution> _runQuery(
-    CommandProposal proposal,
-    CommandSource source,
-  ) {
-    final QueryStockHandler? handler = handlers.queryStock;
-    final String? productId = proposal.valueOf<String>(kProductIdSlot);
-    if (handler == null) {
-      return Future<CommandExecution>.error(
-        StateError('Handler non branche: query_stock'),
-      );
-    }
-    if (productId == null) {
-      return Future<CommandExecution>.value(
-        ExecutedCommand(
-          Failed<QueryStockResult>(
-            UnknownProduct(productId: '', productName: null),
-          ),
-        ),
-      );
-    }
-    return _dispatch(
-      handler.execute(_context(source), QueryStockInput(productId: productId)),
-    );
-  }
-
-  /// Cancels the sale the session holds.
+  /// Opens the undo window when the binding declares the run left a sale.
   ///
-  /// The intent has no slot of its own: the identifier comes from the undo window,
-  /// so an utterance can only ever target the sale just made (contract A12).
-  Future<CommandExecution> _runCancel(
-    CommandProposal proposal,
-    CommandSource source,
-  ) {
-    final CancelLastSaleHandler? handler = handlers.cancelLastSale;
-    if (handler == null) {
-      return Future<CommandExecution>.error(
-        StateError('Handler non branche: cancel_last_sale'),
-      );
-    }
-    final String? saleId = dialog.takeUndoable();
-    if (saleId == null) {
-      return Future<CommandExecution>.value(
-        ExecutedCommand(Failed<CancelLastSaleResult>(const NothingToUndo())),
-      );
-    }
-    return _dispatch(
-      handler.execute(_context(source), CancelLastSaleInput(saleId: saleId)),
-    );
-  }
-
-  /// Registers the undo window a successful write opens.
-  ///
-  /// Only a sale: a restock has nothing to take back through the cancellation
-  /// handler, which knows about sales and about nothing else.
-  /// Registers the undo window a successful sale opens.
-  ///
-  /// Only a sale: the cancellation handler knows about sales and about nothing
-  /// else, so a restock has no way back and does not pretend to have one.
-  Future<CommandExecution> _dispatch<T>(Future<Result<T>> call) async {
-    final Result<T> result = await call;
+  /// Only a sale the binding named can be taken back: a restock has no way back and
+  /// does not pretend to have one, and a refused command leaves nothing behind.
+  void _openUndoWindow(IntentBinding binding, Result<Object> result) {
     final Object? value = switch (result) {
-      Success<T>(:final T value) => value,
-      Failed<T>() => null,
+      Success<Object>(:final Object value) => value,
+      Failed<Object>() => null,
     };
-    if (value is RecordSaleResult) {
-      dialog.registerUndo(value.saleId);
+    if (value == null) {
+      return;
     }
-    // Every result type is already an Object, so this only lifts the generic
-    // argument; the record itself is untouched.
-    return ExecutedCommand(result as Result<Object>);
+    final String? saleId = binding.undoTarget(value);
+    if (saleId != null) {
+      dialog.registerUndo(saleId);
+    }
   }
 
   CommandContext _context(CommandSource source) {
     return (commandId: ids.next(), dateTime: clock.now(), source: source);
-  }
-
-  List<SaleIntentLine> _saleLines(CommandProposal proposal) {
-    return <SaleIntentLine>[
-      for (final ItemMention line in _items(proposal))
-        SaleIntentLine(
-          productId: line.product.id,
-          productName: line.product.name,
-          qty: line.qty,
-          spokenUnitPrice: line.spokenAmount,
-        ),
-    ];
-  }
-
-  List<RestockIntentLine> _restockLines(CommandProposal proposal) {
-    return <RestockIntentLine>[
-      for (final ItemMention line in _items(proposal))
-        RestockIntentLine(
-          productId: line.product.id,
-          productName: line.product.name,
-          qty: line.qty,
-          spokenUnitCost: line.spokenAmount,
-        ),
-    ];
-  }
-
-  List<ItemMention> _items(CommandProposal proposal) {
-    return proposal.valueOf<List<ItemMention>>(kItemsSlot) ??
-        const <ItemMention>[];
   }
 }

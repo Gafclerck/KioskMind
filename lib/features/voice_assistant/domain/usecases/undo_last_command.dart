@@ -15,6 +15,10 @@ import '../ports/voice_clock.dart';
 /// contract suite already covers what it does to the stock. What this adds is the
 /// window: past it, there is nothing left to undo, and that is reported as a named
 /// failure rather than as a silent no-op.
+///
+/// This is the only place a cancellation is run. Both ways of asking for one come
+/// here - the word the merchant speaks and the button on the undo banner - so they
+/// cannot drift apart.
 final class UndoLastCommand {
   const UndoLastCommand({
     required this.handlers,
