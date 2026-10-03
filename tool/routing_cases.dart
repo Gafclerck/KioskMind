@@ -30,6 +30,7 @@ final class FrozenCase {
   const FrozenCase({
     required this.id,
     required this.utterance,
+    required this.recording,
     required this.firstOutcome,
     required this.callExpected,
     required this.answers,
@@ -47,6 +48,7 @@ final class FrozenCase {
       // produces is measured by `voice_eval --transcripts`, not here.
       utterance:
           (json['utterance'] ?? json['groundTruthTranscript'])! as String,
+      recording: json['file'] as String?,
       firstOutcome: expected['outcome']! as String,
       callExpected: _callOf(then),
       answers: _answersOf(expected),
@@ -76,6 +78,15 @@ final class FrozenCase {
 
   final String id;
   final String utterance;
+
+  /// The recording the case was written from, when it was written from one.
+  ///
+  /// It may be absent from disk: the set was frozen before the recordings were
+  /// made, so a case can be scored on its reference transcript while its `.wav`
+  /// has never existed. The metrics count that gap so the two sets are never
+  /// presented as one.
+  final String? recording;
+
   final String firstOutcome;
   final ExpectedCall? callExpected;
   final List<AnsweredSlot> answers;
@@ -109,7 +120,21 @@ List<FrozenCase> loadFrozenCases(String path) {
 
 /// Compares one route with what its case expects.
 RouteVerdict judge(FrozenCase testCase, Route route, String? primedSaleId) {
-  final String expected = jsonEncode(<String, Object?>{
+  final String expected = expectedJson(testCase, primedSaleId);
+  final String actual = actualJson(route);
+  return RouteVerdict(
+    expected: expected,
+    actual: actual,
+    exact: expected == actual,
+  );
+}
+
+/// What the case expects, as the two sides of the comparison are written.
+///
+/// Public because the metrics have to sort the misses by what the pipeline did,
+/// and a second comparison written elsewhere would be free to drift.
+String expectedJson(FrozenCase testCase, String? primedSaleId) {
+  return jsonEncode(<String, Object?>{
     'outcome': testCase.firstOutcome,
     if (testCase.callExpected != null) 'intent': testCase.callExpected!.intent,
     if (testCase.callExpected != null)
@@ -118,16 +143,15 @@ RouteVerdict judge(FrozenCase testCase, Route route, String? primedSaleId) {
         primedSaleId,
       ),
   });
-  final String actual = jsonEncode(<String, Object?>{
+}
+
+/// What the pipeline did, in the same shape as [expectedJson].
+String actualJson(Route route) {
+  return jsonEncode(<String, Object?>{
     'outcome': route.firstOutcome,
     if (route.call != null) 'intent': route.call!.intentId,
     if (route.call != null) 'handlerArgs': route.call!.handlerArgs,
   });
-  return RouteVerdict(
-    expected: expected,
-    actual: actual,
-    exact: expected == actual,
-  );
 }
 
 /// Replaces the placeholder by the id the session recorded.

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "writtenOn": "2026-10-03",
+  "note": "Planchers releves sur la machine de developpement. La latence est une information, pas un seuil: elle depend du materiel. wrongExecuted est un plancher et non une cible: chaque identite de wrongExecutedIds est un defaut connu, pas une tolerance accordee.",
+  "sets": {
+    "texte": {
+      "label": "texte",
+      "total": 266,
+      "exactExecuted": 218,
+      "exactStopped": 42,
+      "wrongExecuted": 5,
+      "wrongStopped": 1,
+      "wrongExecutedIds": [
+        "t095",
+        "t106",
+        "t110",
+        "t135",
+        "t140"
+      ],
+      "latencyMedianMicros": 198,
+      "latencyP95Micros": 705
+    },
+    "transcription de reference": {
+      "label": "transcription de reference",
+      "total": 44,
+      "exactExecuted": 38,
+      "exactStopped": 6,
+      "wrongExecuted": 0,
+      "wrongStopped": 0,
+      "wrongExecutedIds": [],
+      "latencyMedianMicros": 175,
+      "latencyP95Micros": 673
+    }
+  }
+}

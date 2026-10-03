@@ -45,7 +45,10 @@ void main() {
 
     test('chaque jeu se nomme lui-meme dans la sortie', () {
       expect(baseline.sets[textSetLabel]!.label, 'texte');
-      expect(baseline.sets[referenceSetLabel]!.label, 'transcription de reference');
+      expect(
+        baseline.sets[referenceSetLabel]!.label,
+        'transcription de reference',
+      );
     });
   });
 

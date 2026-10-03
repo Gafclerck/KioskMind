@@ -9,7 +9,6 @@ import 'package:kiosk_mind/features/voice_assistant/data/extractors/line_extract
 import 'package:kiosk_mind/features/voice_assistant/data/handlers/canonical_arguments.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/parsers/rule_based_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
@@ -20,6 +19,7 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normali
 
 import 'routing_cases.dart';
 import 'routing_harness.dart';
+import 'routing_metrics.dart' as routing_metrics;
 
 /// Measures the pipeline against the frozen sets.
 ///
@@ -29,7 +29,23 @@ import 'routing_harness.dart';
 ///   dart run tool/voice_eval.dart --level text --cases t001,t042
 ///   dart run tool/voice_eval.dart --level routing         scores the whole pipeline
 ///   dart run tool/voice_eval.dart --level routing --cases t001,t042
-///   dart run tool/voice_eval.dart --level routing --audio  adds the 44 recordings
+///   dart run tool/voice_eval.dart --level routing --transcripts
+///                                                        adds the 44 reference
+///                                                        transcripts, scored
+///                                                        separately
+///   dart run tool/voice_eval.dart --level routing --write-baseline
+///                                                        records the floors
+///
+/// `--audio` is accepted as the old name of `--transcripts`.
+///
+/// The routing level prints four counts, and they are sorted by what the pipeline
+/// did rather than by how often it was right: **wrong routing executed** comes
+/// first, because a sale recorded without confirmation is the failure the module
+/// exists to prevent, and it is the one a single "percent exact" hides. The two
+/// sets are never added together: the 44 reference transcripts are scored on
+/// their words, with no recognizer and no recording, so merging them with the
+/// 266 text cases would credit the pipeline with an audio result it has not
+/// been given.
 ///
 /// What "exact parsing" means here, stated once so the number cannot drift:
 ///
@@ -44,11 +60,9 @@ import 'routing_harness.dart';
 /// decision policy of 1b will replace it, which is why the confirmation cases
 /// already count as parsed when their intent and arguments match.
 ///
-/// What "exact routing" means is written once, in [judge], and the two levels share
-/// the same harness, so this tool and `routing_test.dart` cannot report two
-/// different numbers for the same code.
-const String textCasesPath = 'voice/golden/text_cases.json';
-const String audioCasesPath = 'voice/golden/audio_cases.json';
+/// What "exact routing" means is written once, in `routing_cases.dart`, and the
+/// tool, the routing test and the baseline test share it, so no two of them can
+/// report different numbers for the same code.
 const String catalogFixturePath = 'voice/golden/catalog_fixture.json';
 const String intentCatalogPath = 'voice/intent_catalog.json';
 
@@ -69,20 +83,34 @@ void main(List<String> arguments) {
   final int show = _intOption(arguments, '--show') ?? 20;
   final List<String>? only = _casesOption(arguments);
   final String level = _option(arguments, '--level') ?? 'text';
+  final bool shouldWriteBaseline = _flag(arguments, '--write-baseline');
 
   switch (level) {
     case 'text':
+      if (shouldWriteBaseline) {
+        throw StateError('--write-baseline ne vaut que pour le niveau routing');
+      }
       _scoreText(show: show, only: only);
     case 'routing':
-      _scoreRouting(show: show, only: only, audio: _flag(arguments, '--audio'));
+      _scoreRouting(
+        show: show,
+        only: only,
+        reference:
+            _flag(arguments, '--transcripts') || _flag(arguments, '--audio'),
+        writeBaseline: shouldWriteBaseline,
+      );
     default:
       throw StateError('Niveau inconnu: $level (attendu: text ou routing)');
   }
 }
 
 /// Scores the rule parser alone, as step 1a measured it.
+///
+/// The three routing measures do not apply here: nothing is executed at this
+/// level, so there is no wrong execution to count. The parse latency is reported
+/// all the same, since it is the T1 parser being timed.
 void _scoreText({required int show, required List<String>? only}) {
-  final List<_Case> cases = _loadCases(textCasesPath);
+  final List<_Case> cases = _loadCases(routing_metrics.textSetPath);
   final List<_Case> selected = <_Case>[
     if (only == null)
       for (final _Case c in cases) c
@@ -92,9 +120,13 @@ void _scoreText({required int show, required List<String>? only}) {
   ];
 
   final RuleBasedParser parser = _buildParser();
+  final List<int> latencies = <int>[];
   final List<_Miss> misses = <_Miss>[];
   for (final _Case testCase in selected) {
+    final Stopwatch watch = Stopwatch()..start();
     final CommandProposal proposal = parser.parse(testCase.utterance);
+    watch.stop();
+    latencies.add(watch.elapsedMicroseconds);
     final _Verdict verdict = _judge(testCase, proposal);
     if (!verdict.exact) {
       misses.add(
@@ -104,10 +136,9 @@ void _scoreText({required int show, required List<String>? only}) {
   }
 
   final int exact = selected.length - misses.length;
-  final double rate = selected.isEmpty ? 0 : exact / selected.length;
   stdout.writeln(
     'voice_eval niveau texte : $exact/${selected.length} exact '
-    '(${(rate * 100).toStringAsFixed(1)} %)',
+    '(${(exact / selected.length * 100).toStringAsFixed(1)} %)',
   );
   stdout.writeln(
     '  appels de handler attendus : '
@@ -116,6 +147,10 @@ void _scoreText({required int show, required List<String>? only}) {
   stdout.writeln(
     '  refus ou questions attendus : '
     '${selected.where((_Case c) => !c.expectsCall).length}',
+  );
+  stdout.writeln(
+    '  latence du parseur T1 : mediane ${_ms(latencies, 0.5)}, '
+    'p95 ${_ms(latencies, 0.95)} (cette machine, pas une cible)',
   );
 
   for (final _Miss miss in misses.take(show)) {
@@ -135,78 +170,133 @@ void _scoreText({required int show, required List<String>? only}) {
 
 /// Scores the whole pipeline: parse, decide, execute, and record the call.
 ///
-/// The 44 recordings are scored on what they say, not on what a recognizer made of
-/// them: measuring a real transcription is `voice_eval --transcripts`, added with
-/// the STT adapters. Here they add the utterances the audio set covers.
+/// The two sets are scored separately and never added together. The 44
+/// reference transcripts are read from their `groundTruthTranscript`, so no
+/// recognizer has run on them and no recording exists: they measure routing on
+/// hard words, not audio.
 Future<void> _scoreRouting({
   required int show,
   required List<String>? only,
-  required bool audio,
+  required bool reference,
+  required bool writeBaseline,
 }) async {
-  final List<FrozenCase> all = <FrozenCase>[
-    if (audio) ...loadFrozenCases(audioCasesPath),
-    ...loadFrozenCases(textCasesPath),
-  ];
-  final List<FrozenCase> selected = <FrozenCase>[
-    if (only == null)
-      for (final FrozenCase c in all) c
-    else
-      for (final FrozenCase c in all)
-        if (only.contains(c.id)) c,
-  ];
-
   final RoutingHarness harness = RoutingHarness();
-  final List<String> misses = <String>[];
-  int asked = 0;
-  int refused = 0;
-  int calls = 0;
-  for (final FrozenCase testCase in selected) {
-    final Route route = await harness.run(
-      testCase.utterance,
-      answers: testCase.answers,
-      withSession: testCase.undoesASale,
-    );
-    final String first = route.firstOutcome;
-    if (first == DecisionOutcome.askClarification.code ||
-        first == DecisionOutcome.askConfirmation.code) {
-      asked += 1;
-    } else if (first == DecisionOutcome.reject.code) {
-      refused += 1;
-    }
-    if (route.call != null) {
-      calls += 1;
-    }
-    final RouteVerdict verdict = judge(testCase, route, harness.primedSaleId);
-    if (verdict.exact) {
-      continue;
-    }
-    misses.add(
-      '  ${testCase.id} "${testCase.utterance}"\n'
-      '    attendu : ${verdict.expected}\n'
-      '    obtenu  : ${verdict.actual}',
-    );
-  }
+  final List<routing_metrics.RoutingScore> scores =
+      <routing_metrics.RoutingScore>[
+        await routing_metrics.scoreSet(
+          label: routing_metrics.textSetLabel,
+          cases: _selected(loadFrozenCases(routing_metrics.textSetPath), only),
+          harness: harness,
+        ),
+        if (reference)
+          await routing_metrics.scoreSet(
+            label: routing_metrics.referenceSetLabel,
+            cases: _selected(
+              loadFrozenCases(routing_metrics.referenceSetPath),
+              only,
+            ),
+            harness: harness,
+          ),
+      ];
 
-  final int exact = selected.length - misses.length;
-  final double rate = selected.isEmpty ? 0 : exact / selected.length;
-  stdout.writeln(
-    'voice_eval niveau routage : $exact/${selected.length} exact '
-    '(${(rate * 100).toStringAsFixed(1)} %)',
-  );
-  stdout.writeln(
-    '  issues posees : $asked, refus : $refused, appels de use case : $calls',
-  );
-  for (final String miss in misses.take(show)) {
-    stdout.writeln('');
-    stdout.writeln(miss);
+  for (final routing_metrics.RoutingScore score in scores) {
+    _printScore(score, show: show);
   }
-  if (misses.length > show) {
+  if (writeBaseline) {
+    routing_metrics.writeBaseline(
+      routing_metrics.baselinePath,
+      routing_metrics.RoutingBaseline.of(scores),
+    );
     stdout.writeln('');
-    stdout.writeln('  ... ${misses.length - show} autres');
+    stdout.writeln(
+      'base de reference ecrite : ${routing_metrics.baselinePath}',
+    );
   }
-  if (misses.isNotEmpty) {
+  if (scores.any((routing_metrics.RoutingScore s) => s.exact != s.total)) {
     exitCode = 1;
   }
+}
+
+/// Prints one set, the dangerous count first.
+void _printScore(routing_metrics.RoutingScore score, {required int show}) {
+  stdout.writeln('');
+  stdout.writeln('=== jeu ${score.label} : ${score.total} cas ===');
+  if (score.casesWithRecording > 0) {
+    stdout.writeln(
+      '  ${score.casesWithRecording} cas ecrits a partir d un enregistrement, '
+      '${score.recordingsPresent} enregistrement present sur disque',
+    );
+    stdout.writeln(
+      '  aucun moteur de reconnaissance vocale n a tourne ici : '
+      'ceci mesure le texte de reference, pas une performance audio',
+    );
+  }
+  stdout.writeln(
+    'mauvais routage execute : ${score.wrongExecuted}/${score.total} '
+    '(${_rate(score.wrongExecuted, score.total)})  <- le chiffre qui compte',
+  );
+  for (final routing_metrics.ScoredCase c in score.wrongExecutedCases) {
+    stdout.writeln('  ${c.id} "${c.utterance}"');
+    stdout.writeln('    attendu : ${c.expected}');
+    stdout.writeln('    obtenu  : ${c.actual}');
+  }
+  stdout.writeln(
+    'routage exact execute : ${score.exactExecuted}/${score.total} '
+    '(${_rate(score.exactExecuted, score.total)})',
+  );
+  stdout.writeln(
+    'clarifie ou refuse    : ${score.exactStopped}/${score.total} '
+    '(${_rate(score.exactStopped, score.total)})',
+  );
+  stdout.writeln(
+    'arret incorrect       : ${score.wrongStopped}/${score.total} '
+    '(${_rate(score.wrongStopped, score.total)})',
+  );
+  stdout.writeln(
+    'latence du parseur T1 : mediane ${_duration(score.medianLatency)}, '
+    'p95 ${_duration(score.p95Latency)} (cette machine, pas une cible)',
+  );
+
+  final List<routing_metrics.ScoredCase> stopped = score.wrongStoppedCases;
+  for (final routing_metrics.ScoredCase c in stopped.take(show)) {
+    stdout.writeln('');
+    stdout.writeln('  ${c.id} "${c.utterance}"');
+    stdout.writeln('    attendu : ${c.expected}');
+    stdout.writeln('    obtenu  : ${c.actual}');
+  }
+  if (stopped.length > show) {
+    stdout.writeln('');
+    stdout.writeln('  ... ${stopped.length - show} autres arrets incorrects');
+  }
+}
+
+List<FrozenCase> _selected(List<FrozenCase> cases, List<String>? only) {
+  if (only == null) {
+    return cases;
+  }
+  return <FrozenCase>[
+    for (final FrozenCase c in cases)
+      if (only.contains(c.id)) c,
+  ];
+}
+
+String _rate(int part, int total) =>
+    total == 0 ? '-' : '${(part / total * 100).toStringAsFixed(1)} %';
+
+String _duration(Duration value) =>
+    _ms(List<int>.of(<int>[value.inMicroseconds]), 0.5);
+
+/// Nearest-rank percentile over parse latencies, in milliseconds.
+String _ms(List<int> micros, double fraction) {
+  if (micros.isEmpty) {
+    return '-';
+  }
+  final List<int> sorted = List<int>.of(micros)..sort();
+  final int index = (fraction * sorted.length).ceil() - 1;
+  final double millis =
+      sorted[index.clamp(0, sorted.length - 1)] /
+      Duration.microsecondsPerMillisecond;
+  return '${millis.toStringAsFixed(2).replaceAll('.', ',')} ms';
 }
 
 /// The parser under test, wired exactly as the app will wire it.
