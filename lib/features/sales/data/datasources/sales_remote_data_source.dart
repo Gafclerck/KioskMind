@@ -67,7 +67,9 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
           .collection('products')
           .doc(item.productId);
 
-      batch.update(productRef, {'stock': FieldValue.increment(-item.qty)});
+      batch.update(productRef, {
+        'quantity': FieldValue.increment(-item.qty.toInt()),
+      });
     }
 
     final dateId =
@@ -133,7 +135,9 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
           .collection('products')
           .doc(item.productId);
 
-      batch.update(productRef, {'stock': FieldValue.increment(item.qty)});
+      batch.update(productRef, {
+        'quantity': FieldValue.increment(item.qty.toInt()),
+      });
     }
 
     final dateId =

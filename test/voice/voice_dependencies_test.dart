@@ -30,10 +30,53 @@ import 'package:kiosk_mind/features/voice_assistant/domain/services/text_normali
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
+import 'package:kiosk_mind/features/products_stock/domain/entities/stock_movement.dart';
+import 'package:kiosk_mind/features/products_stock/domain/repositories/stock_movement_repository.dart';
+import 'package:kiosk_mind/features/products_stock/domain/usecases/record_stock_movement.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
+import 'package:kiosk_mind/features/sales/domain/entities/sale.dart';
+import 'package:kiosk_mind/features/sales/domain/repositories/sales_repository.dart';
+import 'package:kiosk_mind/features/sales/domain/usecases/cancel_sale.dart';
+import 'package:kiosk_mind/features/sales/domain/usecases/record_sale.dart';
+import 'package:kiosk_mind/features/sales/presentation/providers/sales_provider.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 
 import 'fake_clock.dart';
 import 'rule_parser_harness.dart' show fixtureProducts;
+
+final class _FakeSalesRepo implements SalesRepository {
+  @override
+  Future<Sale> recordSale(Sale sale) async => sale;
+
+  @override
+  Future<Sale> cancelSale(String saleId) async => Sale(
+    id: saleId,
+    dateTime: DateTime(2026, 3, 1),
+    createdAt: DateTime(2026, 3, 1),
+    total: 0,
+    items: const <SaleItem>[],
+    source: 'VOICE',
+    status: 'CANCELLED',
+  );
+
+  @override
+  Future<List<Sale>> getSalesHistory() async => const <Sale>[];
+
+  @override
+  Future<List<Sale>> getSalesByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async => const <Sale>[];
+}
+
+final class _FakeStockMovementRepo implements StockMovementRepository {
+  @override
+  Future<void> recordMovement(StockMovement movement) async {}
+
+  @override
+  Stream<List<StockMovement>> watchMovements(String productId) =>
+      const Stream<List<StockMovement>>.empty();
+}
 
 /// The catalog the composition root would build, without loading the asset.
 InMemoryProductCatalog buildCatalogFromDisk() {
@@ -113,16 +156,30 @@ void main() {
       expect(handlers.cancelLastSale, isNotNull);
     });
 
-    test('fails loudly when real handlers are requested, none exists yet', () {
-      final ProviderContainer container = buildContainer(
-        catalog: buildCatalogFromDisk(),
-        useMocks: false,
+    test('wires the four real handlers when mocks are disabled', () async {
+      final InMemoryProductCatalog catalog = buildCatalogFromDisk();
+      final _FakeSalesRepo salesRepo = _FakeSalesRepo();
+      final _FakeStockMovementRepo stockRepo = _FakeStockMovementRepo();
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          voiceUseMocksProvider.overrideWithValue(false),
+          voiceCatalogReaderProvider.overrideWith((Ref ref) async => catalog),
+          recordSaleProvider.overrideWithValue(RecordSale(salesRepo)),
+          cancelSaleProvider.overrideWithValue(CancelSale(salesRepo)),
+          recordStockInProvider.overrideWithValue(RecordStockIn(stockRepo)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final VoiceHandlers handlers = await container.read(
+        voiceHandlersProvider.future,
       );
 
-      expect(
-        () => container.read(voiceHandlersProvider.future),
-        throwsA(isA<StateError>()),
-      );
+      expect(handlers.recordSale, isNotNull);
+      expect(handlers.recordRestock, isNotNull);
+      expect(handlers.queryStock, isNotNull);
+      expect(handlers.cancelLastSale, isNotNull);
     });
 
     test('records every call into the shared journal', () async {

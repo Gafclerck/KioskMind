@@ -24,6 +24,7 @@ import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
 import '../data/handlers/call_journal.dart';
+import '../data/handlers/journaling_intent_handler.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
@@ -33,6 +34,8 @@ import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
+import '../domain/entities/intent_input.dart';
+import '../domain/entities/intent_result.dart';
 import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
 import '../domain/ports/cloud_intent_parser.dart';
@@ -147,22 +150,38 @@ voiceRealRecordRestockHandlerProvider = FutureProvider<RecordRestockHandler>((
 
 /// The handlers the executor will call.
 ///
-/// Throws when the build asks for real handlers: none exists yet, and failing
-/// loudly beats a silent fallback to mocks in a demo meant to prove the real
-/// path.
-final FutureProvider<VoiceHandlers> voiceHandlersProvider =
-    FutureProvider<VoiceHandlers>((Ref ref) async {
-      if (!ref.watch(voiceUseMocksProvider)) {
-        throw StateError(
-          'VOICE_USE_MOCKS=false alors qu aucun handler reel n existe encore. '
-          'Phase I du pipeline vocal.',
-        );
-      }
-      return buildMockVoiceHandlers(
-        catalog: await ref.watch(voiceMockCatalogProvider.future),
-        journal: ref.watch(voiceCallJournalProvider),
-      );
-    });
+/// Dispatches to real feature handlers when VOICE_USE_MOCKS=false, or to
+/// mock handlers when VOICE_USE_MOCKS=true.
+final FutureProvider<VoiceHandlers>
+voiceHandlersProvider = FutureProvider<VoiceHandlers>((Ref ref) async {
+  final HandlerCallJournal journal = ref.watch(voiceCallJournalProvider);
+  if (!ref.watch(voiceUseMocksProvider)) {
+    return VoiceHandlers(
+      recordSale: JournalingIntentHandler<SaleIntentInput, RecordSaleResult>(
+        await ref.watch(voiceRealRecordSaleHandlerProvider.future),
+        journal,
+      ),
+      recordRestock:
+          JournalingIntentHandler<RestockIntentInput, RecordRestockResult>(
+            await ref.watch(voiceRealRecordRestockHandlerProvider.future),
+            journal,
+          ),
+      queryStock: JournalingIntentHandler<QueryStockInput, QueryStockResult>(
+        await ref.watch(voiceRealQueryStockHandlerProvider.future),
+        journal,
+      ),
+      cancelLastSale:
+          JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
+            await ref.watch(voiceRealCancelLastSaleHandlerProvider.future),
+            journal,
+          ),
+    );
+  }
+  return buildMockVoiceHandlers(
+    catalog: await ref.watch(voiceMockCatalogProvider.future),
+    journal: journal,
+  );
+});
 
 /// The tunables, in one place so a test can replace all of them at once.
 final Provider<VoiceConfig> voiceConfigProvider = Provider<VoiceConfig>(
