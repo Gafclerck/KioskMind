@@ -47,26 +47,57 @@ final class WordSimilarity {
     return forms.toList(growable: false);
   }
 
-  /// Edit distance between two words, computed on one row of the usual table.
+  /// Damerau-Levenshtein (OSA) distance between two words.
+  ///
+  /// Supports insertions, deletions, substitutions, and transpositions of
+  /// adjacent characters.
   static int _distance(String left, String right) {
+    if (left == right) {
+      return 0;
+    }
+    if (left.isEmpty) {
+      return right.length;
+    }
+    if (right.isEmpty) {
+      return left.length;
+    }
+
+    List<int> twoPrevious = List<int>.filled(
+      right.length + 1,
+      0,
+      growable: false,
+    );
     List<int> previous = List<int>.generate(
       right.length + 1,
       (int index) => index,
       growable: false,
     );
     List<int> current = List<int>.filled(right.length + 1, 0, growable: false);
+
     for (int i = 1; i <= left.length; i++) {
       current[0] = i;
       for (int j = 1; j <= right.length; j++) {
-        final int substitution =
-            previous[j - 1] + (left[i - 1] == right[j - 1] ? 0 : 1);
+        final int cost = left[i - 1] == right[j - 1] ? 0 : 1;
+        final int substitution = previous[j - 1] + cost;
         final int deletion = previous[j] + 1;
         final int insertion = current[j - 1] + 1;
-        current[j] = _min3(substitution, deletion, insertion);
+        int distance = _min3(substitution, deletion, insertion);
+
+        if (i > 1 &&
+            j > 1 &&
+            left[i - 1] == right[j - 2] &&
+            left[i - 2] == right[j - 1]) {
+          final int transposition = twoPrevious[j - 2] + 1;
+          if (transposition < distance) {
+            distance = transposition;
+          }
+        }
+        current[j] = distance;
       }
-      final List<int> swap = previous;
+      final List<int> swapTwo = twoPrevious;
+      twoPrevious = previous;
       previous = current;
-      current = swap;
+      current = swapTwo;
     }
     return previous[right.length];
   }
