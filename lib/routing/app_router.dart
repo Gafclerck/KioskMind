@@ -8,9 +8,13 @@ import '../features/auth/presentation/pages/signup_page.dart';
 import '../features/auth/presentation/providers/auth_state_provider.dart';
 import '../features/navigation/main_navigation_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../features/export_reporting/presentation/pages/export_page.dart';
 import '../features/products_stock/presentation/pages/add_product_page.dart';
+import '../features/profile/presentation/pages/edit_profile_page.dart';
+import '../features/profile/presentation/pages/settings_page.dart';
 import '../features/sales/domain/entities/sale.dart';
 import '../features/sales/presentation/pages/create_sale_page.dart';
+import '../features/settings/presentation/widgets/settings_info_page.dart';
 import '../features/splash/presentation/splash_page.dart';
 import 'app_routes.dart';
 
@@ -106,6 +110,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.addProduct,
         builder: (context, state) => const AddProductPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.editProfile,
+        builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsHelp,
+        builder: (context, state) =>
+            const SettingsInfoPage(title: 'Aide', paragraphs: kHelpParagraphs),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsTerms,
+        builder: (context, state) => const SettingsInfoPage(
+          title: "Conditions d'Utilisation",
+          paragraphs: kTermsParagraphs,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsPrivacy,
+        builder: (context, state) => const SettingsInfoPage(
+          title: 'Politique de Confidentialité',
+          paragraphs: kPrivacyParagraphs,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.export,
+        builder: (context, state) => const ExportPage(),
       ),
     ],
   );
