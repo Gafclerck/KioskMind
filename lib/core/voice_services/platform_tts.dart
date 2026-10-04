@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
 import 'device_speech_speaker.dart';
@@ -33,11 +34,22 @@ final class PlatformTts implements TtsPort {
   Future<void> speak(String text) async {
     await _prepare();
     if (!_supported || text.trim().isEmpty) {
+      if (kDebugMode && !_supported) {
+        debugPrint(
+          '[PlatformTts] speak skipped: TTS engine is unsupported on this device.',
+        );
+      }
       return;
     }
     try {
+      if (kDebugMode) {
+        debugPrint('[PlatformTts] Speaking: "$text"');
+      }
       await device.say(text);
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PlatformTts] PlatformException while speaking: $e');
+      }
       return;
     }
   }
@@ -46,7 +58,10 @@ final class PlatformTts implements TtsPort {
   Future<void> stop() async {
     try {
       await device.stop();
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PlatformTts] PlatformException while stopping: $e');
+      }
       return;
     }
   }
@@ -62,9 +77,19 @@ final class PlatformTts implements TtsPort {
     }
     _prepared = true;
     final TtsVoice voice = settings.ttsVoice;
+    if (kDebugMode) {
+      debugPrint(
+        '[PlatformTts] Preparing TTS engine for locale "${voice.locale}"...',
+      );
+    }
     try {
       if (!await device.supports(voice.locale)) {
         _supported = false;
+        if (kDebugMode) {
+          debugPrint(
+            '[PlatformTts] Locale "${voice.locale}" is not supported by the device.',
+          );
+        }
         return;
       }
       await device.configure(
@@ -73,8 +98,16 @@ final class PlatformTts implements TtsPort {
         pitch: voice.pitch,
         volume: voice.volume,
       );
-    } on PlatformException {
+      if (kDebugMode) {
+        debugPrint(
+          '[PlatformTts] TTS engine successfully prepared and configured.',
+        );
+      }
+    } on PlatformException catch (e) {
       _supported = false;
+      if (kDebugMode) {
+        debugPrint('[PlatformTts] PlatformException during TTS preparation: $e');
+      }
     }
   }
 }

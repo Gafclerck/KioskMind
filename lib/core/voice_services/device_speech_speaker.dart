@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_tts/flutter_tts.dart';
 
 /// The calls a speech synthesiser offers, and nothing else.
@@ -27,10 +29,10 @@ abstract interface class DeviceSpeechSpeaker {
 
 /// Queue mode that drops the sentence in progress instead of lining up behind it.
 ///
-/// The module speaks one sentence at a time and never wants a recap repeated
-/// because the merchant pressed the microphone, so the queue is flushed rather
-/// than added to.
-const int kTtsQueueFlush = 1;
+/// In flutter_tts / Android TextToSpeech:
+/// 0 means QUEUE_FLUSH (drops existing playback and starts new sentence).
+/// 1 means QUEUE_ADD (appends to end of playback queue).
+const int kTtsQueueFlush = 0;
 
 /// The synthesiser of `flutter_tts`, seen through [DeviceSpeechSpeaker].
 final class PluginDeviceSpeechSpeaker implements DeviceSpeechSpeaker {
@@ -41,7 +43,66 @@ final class PluginDeviceSpeechSpeaker implements DeviceSpeechSpeaker {
 
   @override
   Future<bool> supports(String locale) async {
-    return await _engine.isLanguageAvailable(locale) == true;
+    final String baseLanguage = _extractBaseLanguage(locale);
+
+    // 1. Try isLanguageAvailable directly
+    try {
+      final dynamic direct = await _engine.isLanguageAvailable(locale);
+      if (direct == true || direct == 1) {
+        return true;
+      }
+      if (baseLanguage != locale) {
+        final dynamic baseAvailable = await _engine.isLanguageAvailable(
+          baseLanguage,
+        );
+        if (baseAvailable == true || baseAvailable == 1) {
+          return true;
+        }
+      }
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PluginDeviceSpeechSpeaker] isLanguageAvailable not supported or failed: $e',
+        );
+      }
+    } catch (_) {
+      // Ignore other exceptions and proceed to getLanguages check
+    }
+
+    // 2. Query getLanguages (works on Windows SAPI, iOS, and Android fallback)
+    bool getLanguagesAttempted = false;
+    try {
+      final dynamic languages = await _engine.getLanguages;
+      if (languages is List) {
+        getLanguagesAttempted = true;
+        if (languages.isNotEmpty) {
+          return matchesLanguageList(
+            languages,
+            locale,
+            baseLanguage,
+          );
+        }
+      }
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PluginDeviceSpeechSpeaker] getLanguages failed: $e');
+      }
+    } catch (_) {
+      // Fallback
+    }
+
+    // 3. On desktop platforms (Windows, Linux, macOS) where availability querying
+    // may not be supported by native plugins and no languages could be queried,
+    // allow configure() to attempt setting the language.
+    if (!getLanguagesAttempted &&
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS)) {
+      return true;
+    }
+
+    return false;
   }
 
   @override
@@ -51,14 +112,57 @@ final class PluginDeviceSpeechSpeaker implements DeviceSpeechSpeaker {
     required double pitch,
     required double volume,
   }) async {
-    // The completion flag is what lets the caller know it may open the
-    // microphone: without it `speak` returns before a word was said.
-    await _engine.awaitSpeakCompletion(true);
-    await _engine.setQueueMode(kTtsQueueFlush);
-    await _engine.setLanguage(locale);
-    await _engine.setSpeechRate(rate);
-    await _engine.setPitch(pitch);
-    await _engine.setVolume(volume);
+    try {
+      await _engine.awaitSpeakCompletion(true);
+    } catch (_) {
+      // Ignored if unsupported on current platform
+    }
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await _engine.setQueueMode(kTtsQueueFlush);
+      } catch (_) {
+        // Ignored if unsupported
+      }
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        await _engine.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playback,
+          <IosTextToSpeechAudioCategoryOptions>[
+            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+          ],
+        );
+      } catch (_) {
+        // Ignored if unsupported
+      }
+    }
+
+    // Set language with fallback to base language
+    final String baseLanguage = _extractBaseLanguage(locale);
+    try {
+      final dynamic res = await _engine.setLanguage(locale);
+      if (res == 0 && baseLanguage != locale) {
+        await _engine.setLanguage(baseLanguage);
+      }
+    } catch (_) {
+      if (baseLanguage != locale) {
+        try {
+          await _engine.setLanguage(baseLanguage);
+        } catch (_) {}
+      }
+    }
+
+    try {
+      await _engine.setSpeechRate(rate);
+    } catch (_) {}
+
+    try {
+      await _engine.setPitch(pitch);
+    } catch (_) {}
+
+    try {
+      await _engine.setVolume(volume);
+    } catch (_) {}
   }
 
   @override
@@ -69,5 +173,35 @@ final class PluginDeviceSpeechSpeaker implements DeviceSpeechSpeaker {
   @override
   Future<void> stop() async {
     await _engine.stop();
+  }
+
+  static String _extractBaseLanguage(String locale) {
+    final int separatorIndex = locale.indexOf(RegExp(r'[-_]'));
+    if (separatorIndex > 0) {
+      return locale.substring(0, separatorIndex).toLowerCase();
+    }
+    return locale.toLowerCase();
+  }
+
+  @visibleForTesting
+  static bool matchesLanguageList(
+    List<dynamic> languages,
+    String locale,
+    String baseLanguage,
+  ) {
+    final String normalizedTarget = locale.toLowerCase().replaceAll('_', '-');
+    final String normalizedBase = baseLanguage.toLowerCase();
+
+    for (final dynamic item in languages) {
+      if (item is! String) continue;
+      final String lang = item.toLowerCase().replaceAll('_', '-');
+      if (lang == normalizedTarget ||
+          lang == normalizedBase ||
+          lang.startsWith('$normalizedBase-') ||
+          lang.startsWith('${normalizedBase}_')) {
+        return true;
+      }
+    }
+    return false;
   }
 }
