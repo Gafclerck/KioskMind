@@ -30,6 +30,7 @@ import '../data/handlers/real/real_cancel_last_sale_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
+import '../data/parsers/direct_gemini_caller.dart';
 import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
@@ -365,6 +366,11 @@ final Provider<bool> voiceEnableCloudProvider = Provider<bool>(
   (Ref ref) => kVoiceEnableCloud,
 );
 
+/// The Google Gemini API key used for direct Cloud NLU parsing.
+final Provider<String> voiceGeminiApiKeyProvider = Provider<String>(
+  (Ref ref) => kGeminiApiKey,
+);
+
 /// Real connectivity probe verifying actual Internet reachability.
 final Provider<ConnectivityProbe> voiceConnectivityProbeProvider =
     Provider<ConnectivityProbe>((Ref ref) => DataConnectionProbe());
@@ -379,12 +385,26 @@ final Provider<CircuitBreaker> voiceCircuitBreakerProvider =
       );
     });
 
-/// Remote cloud intent parser calling Firebase Cloud Functions.
+/// Cloud intent parser calling Google Gemini directly (if apiKey provided)
+/// or Firebase Cloud Functions by default.
 final FutureProvider<CloudIntentParser> voiceCloudIntentParserProvider =
     FutureProvider<CloudIntentParser>((Ref ref) async {
-      return RemoteCloudIntentParser(
-        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+      final String apiKey = ref.watch(voiceGeminiApiKeyProvider);
+      final ProductCatalogReader catalogReader = await ref.watch(
+        voiceCatalogReaderProvider.future,
       );
+
+      if (apiKey.isNotEmpty) {
+        final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
+          apiKey: apiKey,
+        );
+        return RemoteCloudIntentParser(
+          catalogReader: catalogReader,
+          cloudCaller: geminiCaller.call,
+        );
+      }
+
+      return RemoteCloudIntentParser(catalogReader: catalogReader);
     });
 
 /// The parser used by the turn executor.

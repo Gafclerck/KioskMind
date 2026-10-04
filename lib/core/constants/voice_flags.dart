@@ -17,3 +17,11 @@ const bool kVoiceEnableCloud = bool.fromEnvironment(
   'VOICE_ENABLE_CLOUD',
   defaultValue: false,
 );
+
+/// The Google Gemini API key used for direct Cloud NLU parsing when provided.
+///
+/// Can be set at build or run time with `--dart-define=GEMINI_API_KEY=AIzaSy...`.
+const String kGeminiApiKey = String.fromEnvironment(
+  'GEMINI_API_KEY',
+  defaultValue: '',
+);

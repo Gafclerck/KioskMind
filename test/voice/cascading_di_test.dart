@@ -10,7 +10,11 @@ import 'package:kiosk_mind/features/voice_assistant/domain/ports/cloud_intent_pa
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/cascading_parser.dart';
 
-ProductSnapshot _product(String id, {required String name, double price = 500}) {
+ProductSnapshot _product(
+  String id, {
+  required String name,
+  double price = 500,
+}) {
   return ProductSnapshot(
     id: id,
     name: name,
@@ -59,19 +63,22 @@ void main() {
   });
 
   group('Cascading DI Wiring', () {
-    test('defaults to RuleBasedParser when voiceEnableCloud is false', () async {
-      final container = ProviderContainer(
-        overrides: [
-          voiceMockCatalogProvider.overrideWith((ref) async => catalog),
-          voiceEnableCloudProvider.overrideWithValue(false),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'defaults to RuleBasedParser when voiceEnableCloud is false',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceEnableCloudProvider.overrideWithValue(false),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final parser = await container.read(voiceParserProvider.future);
+        final parser = await container.read(voiceParserProvider.future);
 
-      expect(parser, isA<RuleBasedParser>());
-    });
+        expect(parser, isA<RuleBasedParser>());
+      },
+    );
 
     test('uses CascadingParser when voiceEnableCloud is true', () async {
       final stubCloud = _StubCloudParser();
@@ -92,32 +99,55 @@ void main() {
       expect(parser, isA<CascadingParser>());
     });
 
-    test('HandleUtterance delegates through cascade and uses cloud proposal', () async {
-      final stubCloud = _StubCloudParser(
-        proposal: const CommandProposal(
-          intentId: 'record_sale',
-          slots: [],
-          doubts: [],
-          origin: ProposalOrigin.languageModel,
-        ),
-      );
-      final stubConnectivity = _StubConnectivityProbe(online: true);
+    test(
+      'HandleUtterance delegates through cascade and uses cloud proposal',
+      () async {
+        final stubCloud = _StubCloudParser(
+          proposal: const CommandProposal(
+            intentId: 'record_sale',
+            slots: [],
+            doubts: [],
+            origin: ProposalOrigin.languageModel,
+          ),
+        );
+        final stubConnectivity = _StubConnectivityProbe(online: true);
 
+        final container = ProviderContainer(
+          overrides: [
+            voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceEnableCloudProvider.overrideWithValue(true),
+            voiceCloudIntentParserProvider.overrideWith(
+              (ref) async => stubCloud,
+            ),
+            voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final turn = await container.read(voiceHandleUtteranceProvider.future);
+        final result = await turn.run('vendu deux sucres');
+
+        expect(stubCloud.callCount, equals(1));
+        expect(
+          result.decision.outcome,
+          equals(DecisionOutcome.executeWithUndo),
+        );
+      },
+    );
+
+    test('wires RemoteCloudIntentParser when gemini apiKey is set', () async {
       final container = ProviderContainer(
         overrides: [
           voiceMockCatalogProvider.overrideWith((ref) async => catalog),
-          voiceEnableCloudProvider.overrideWithValue(true),
-          voiceCloudIntentParserProvider.overrideWith((ref) async => stubCloud),
-          voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
+          voiceGeminiApiKeyProvider.overrideWithValue('dummy-api-key'),
         ],
       );
       addTearDown(container.dispose);
 
-      final turn = await container.read(voiceHandleUtteranceProvider.future);
-      final result = await turn.run('vendu deux sucres');
-
-      expect(stubCloud.callCount, equals(1));
-      expect(result.decision.outcome, equals(DecisionOutcome.executeWithUndo));
+      final cloudParser = await container.read(
+        voiceCloudIntentParserProvider.future,
+      );
+      expect(cloudParser, isNotNull);
     });
   });
 }
