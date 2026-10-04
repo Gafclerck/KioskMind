@@ -35,13 +35,14 @@ final class LineExtractor {
   /// Tolerance for reading a misheard unit as the unit it was meant to be.
   final double _fuzzyThreshold;
 
-  /// Reads the line of the product whose name ends just before [start].
+  /// Reads the line of the product starting at [start] and spanning [productLength] tokens.
   ///
   /// [start] is the first token of the name, so the words that may precede it are
-  /// the ones just before that.
-  LineReading read(List<String> tokens, int start) {
+  /// the ones just before that, and the words that may follow it start at
+  /// `start + productLength`.
+  LineReading read(List<String> tokens, int start, {int productLength = 1}) {
     return LineReading(
-      quantity: _quantity(tokens, start),
+      quantity: _quantity(tokens, start, productLength),
       amount: _amount(tokens, start),
     );
   }
@@ -51,13 +52,52 @@ final class LineExtractor {
   /// "cinq sachets de sucre" is five, not one and not "sachets". The search
   /// takes the longest number that ends exactly where the bridges stop, so
   /// "trois cents pates" is three hundred and not the hundred of "cents".
-  double? _quantity(List<String> tokens, int start) {
+  /// If no count precedes the product, it checks for a repetition or a
+  /// post-product count such as "savon deux" or "riz 3 sacs".
+  double? _quantity(List<String> tokens, int start, int productLength) {
     final int anchor = _bridgeEnd(tokens, start);
     final double? before = _numberEndingAt(tokens, anchor);
     if (before != null) {
       return before;
     }
-    return _repeatedCount(tokens, start);
+    final double? repeated = _repeatedCount(tokens, start);
+    if (repeated != null) {
+      return repeated;
+    }
+    return _postProductQuantity(tokens, start + productLength);
+  }
+
+  /// Reads a quantity directly following the product name, as in "savon deux" or "riz trois sacs".
+  double? _postProductQuantity(List<String> tokens, int afterIndex) {
+    if (afterIndex >= tokens.length) {
+      return null;
+    }
+    // Price introduced by 'a' is not a quantity.
+    if (tokens[afterIndex] == 'a') {
+      return null;
+    }
+    // Stop at sentence connectors, corrections or question markers.
+    if (tokens[afterIndex] == 'et' ||
+        tokens[afterIndex] == 'ou' ||
+        tokens[afterIndex] == 'combien' ||
+        kCorrectionWords.contains(tokens[afterIndex])) {
+      return null;
+    }
+
+    int cursor = afterIndex;
+    // Allow optional bridge ("de", "d'") before the count, e.g. "savon de deux".
+    while (cursor < tokens.length &&
+        kQuantityBridges.contains(tokens[cursor])) {
+      cursor++;
+    }
+
+    if (cursor < tokens.length) {
+      final ParsedNumber? number = numbers.readAt(tokens, cursor);
+      if (number != null && number.value > 0) {
+        return number.value;
+      }
+    }
+    return null;
   }
 
   /// The first index before [start] that is neither a bridge nor a unit.

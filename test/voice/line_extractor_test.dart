@@ -8,21 +8,25 @@ void main() {
   final RuleParserHarness harness = RuleParserHarness();
   final LineExtractor lines = harness.lines;
 
-  /// Index of the first product name in [tokens].
-  int firstName(List<String> tokens) {
+  /// First product span in [tokens].
+  ProductSpan firstProduct(List<String> tokens) {
     for (int index = 0; index < tokens.length; index++) {
       final ProductSpan? span = harness.resolver.matchAt(tokens, index);
       if (span != null) {
-        return span.start;
+        return span;
       }
     }
     throw StateError('aucun produit dans cette phrase');
   }
 
+  /// Index of the first product name in [tokens].
+  int firstName(List<String> tokens) => firstProduct(tokens).start;
+
   /// Reads the line of the first product name of [raw].
   LineReading read(String raw) {
     final List<String> tokens = harness.tokensOf(raw);
-    return lines.read(tokens, firstName(tokens));
+    final ProductSpan span = firstProduct(tokens);
+    return lines.read(tokens, span.start, productLength: span.length);
   }
 
   double? quantityOf(String raw) => read(raw).quantity;
@@ -31,6 +35,14 @@ void main() {
   group('quantite', () {
     test('un nombre juste avant le nom', () {
       expect(quantityOf('vendu deux savon'), 2);
+    });
+
+    test('un nombre juste apres le nom (syntaxe comptoir)', () {
+      expect(quantityOf('vendu savon deux'), 2);
+      expect(quantityOf('vendu savon 2'), 2);
+      expect(quantityOf('vendu savon trois morceaux'), 3);
+      expect(quantityOf('vendu riz 5 kilos'), 5);
+      expect(quantityOf('vendu savon de menage quatre'), 4);
     });
 
     test('un article partitif sans nombre ne donne pas de quantite', () {
