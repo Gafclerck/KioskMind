@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 typedef HttpJsonPoster =
     Future<Map<String, dynamic>> Function(
       Uri uri,
@@ -122,14 +124,28 @@ final class DirectGeminiCaller {
         return const <String, dynamic>{};
       }
 
-      final dynamic decoded = jsonDecode(jsonText);
+      String sanitized = jsonText.trim();
+      if (sanitized.startsWith('```json')) {
+        sanitized = sanitized.substring(7);
+      } else if (sanitized.startsWith('```')) {
+        sanitized = sanitized.substring(3);
+      }
+      if (sanitized.endsWith('```')) {
+        sanitized = sanitized.substring(0, sanitized.length - 3);
+      }
+      sanitized = sanitized.trim();
+
+      final dynamic decoded = jsonDecode(sanitized);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       } else if (decoded is Map) {
         return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[DirectGeminiCaller] Error: $e');
+      }
       return const <String, dynamic>{};
     }
   }
@@ -163,6 +179,12 @@ final class DirectGeminiCaller {
           return decoded;
         } else if (decoded is Map) {
           return Map<String, dynamic>.from(decoded);
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+            '[DirectGeminiCaller] HTTP ${response.statusCode}: $responseBody',
+          );
         }
       }
       return const <String, dynamic>{};

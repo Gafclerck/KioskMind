@@ -221,6 +221,6 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
       return;
     }
 
-    slots.add(Slot(name: kProductIdSlot, value: product));
+    slots.add(Slot(name: kProductIdSlot, value: product.id));
   }
 }

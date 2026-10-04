@@ -69,6 +69,7 @@ void main() {
       expect(proposal, isNotNull);
       expect(proposal!.origin, equals(ProposalOrigin.languageModel));
       expect(proposal.intentId, equals('query_stock'));
+      expect(proposal.valueOf<String>(kProductIdSlot), equals('p_sucre'));
     });
 
     test('parses record_sale with valid products and quantities', () async {

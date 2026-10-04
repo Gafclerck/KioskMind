@@ -130,5 +130,46 @@ void main() {
         expect(result, isEmpty);
       },
     );
+
+    test(
+      'strips markdown code fences from Gemini output before decoding',
+      () async {
+        final caller = DirectGeminiCaller(
+          apiKey: 'test-api-key-123',
+          httpPoster:
+              (
+                uri,
+                headers,
+                body, {
+                timeout = const Duration(seconds: 2),
+              }) async {
+                return {
+                  'candidates': [
+                    {
+                      'content': {
+                        'parts': [
+                          {
+                            'text':
+                                '```json\n{"intentId": "query_stock", "productId": "p_sucre"}\n```',
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                };
+              },
+        );
+
+        final result = await caller.call('interpretUtterance', {
+          'utterance': 'combien de sucre reste-t-il',
+          'catalog': [
+            {'id': 'p_sucre', 'name': 'Sucre', 'price': 500},
+          ],
+        });
+
+        expect(result['intentId'], equals('query_stock'));
+        expect(result['productId'], equals('p_sucre'));
+      },
+    );
   });
 }
