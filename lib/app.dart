@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/alert_prediction_screen.dart';
+import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/notification_center_screen.dart';
 
 import 'core/theme/app_theme.dart';
 
@@ -30,6 +32,6 @@ class _PlaceholderHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('KioskMind')));
+    return const ScreenNotificationCenter();
   }
 }

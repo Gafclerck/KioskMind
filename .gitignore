@@ -47,3 +47,9 @@ app.*.map.json
 # Local-only files, not shared with the team
 /docs/ARCHITECTURE.md
 /AGENTS.md
+
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+*.py[cod]
