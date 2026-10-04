@@ -49,6 +49,9 @@ final class _FakeSalesRepo implements SalesRepository {
   Future<Sale> recordSale(Sale sale) async => sale;
 
   @override
+  Future<Sale> updateSale(Sale sale) async => sale;
+
+  @override
   Future<Sale> cancelSale(String saleId) async => Sale(
     id: saleId,
     dateTime: DateTime(2026, 3, 1),

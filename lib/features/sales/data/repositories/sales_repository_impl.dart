@@ -25,6 +25,22 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
+  Future<Sale> updateSale(Sale sale) async {
+    final saleModel = SaleModel(
+      id: sale.id,
+      dateTime: sale.dateTime,
+      createdAt: sale.createdAt,
+      total: sale.total,
+      items: sale.items,
+      source: sale.source,
+      status: sale.status,
+      cancelledAt: sale.cancelledAt,
+    );
+
+    return await remoteDataSource.updateSale(saleModel);
+  }
+
+  @override
   Future<Sale> cancelSale(String saleId) async {
     return await remoteDataSource.cancelSale(saleId);
   }

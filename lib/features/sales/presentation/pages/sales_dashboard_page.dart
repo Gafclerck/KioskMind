@@ -3,16 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routing/app_routes.dart';
-import '../../domain/entities/daily_stats.dart';
+import '../../../../features/products_stock/presentation/providers/product_providers.dart';
+import '../../domain/entities/sale.dart';
+import '../providers/sales_provider.dart';
 
 enum _Period { jour, semaine, mois }
-
-// -----------------------------------------------------------------------------
-// PALETTE
-// -----------------------------------------------------------------------------
 
 class _P {
   final ColorScheme cs;
@@ -53,10 +51,6 @@ class _P {
   );
 }
 
-// -----------------------------------------------------------------------------
-// PAGE
-// -----------------------------------------------------------------------------
-
 class SalesDashboardPage extends ConsumerStatefulWidget {
   const SalesDashboardPage({super.key});
 
@@ -65,7 +59,7 @@ class SalesDashboardPage extends ConsumerStatefulWidget {
 }
 
 class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
-  late Future<DailyStats> _future;
+  late Future<List<Sale>> _future;
 
   _Period _period = _Period.semaine;
 
@@ -75,22 +69,8 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     _load();
   }
 
-  // ---------------------------------------------------------------------------
-  // DONNÉES FICTIVES
-  // ---------------------------------------------------------------------------
-  // Temporaire uniquement pour visualiser le Dashboard.
-  // Firebase sera reconnecté plus tard via GetSalesDashboard.
-
   void _load() {
-    _future = Future.delayed(
-      const Duration(milliseconds: 400),
-      () => DailyStats(
-        revenue: 320500,
-        cost: 236500,
-        salesCount: 18,
-        qtyByProduct: {'Sac de Riz 50kg': 12, 'Huile Dinor': 9, 'Sucre 1kg': 7},
-      ),
-    );
+    _future = ref.read(getSalesHistoryProvider).call();
   }
 
   Future<void> _refresh() async {
@@ -98,31 +78,242 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     await _future;
   }
 
-  // ---------------------------------------------------------------------------
-  // DONNÉES DU GRAPHIQUE
-  // ---------------------------------------------------------------------------
+  String _getUserDisplayName() {
+    try {
+      final name = FirebaseAuth.instance.currentUser?.displayName?.trim();
+      if (name != null && name.isNotEmpty) return name;
+    } catch (_) {
+      // Firebase non initialisé ou indisponible (ex: tests widget)
+    }
+    return 'Utilisateur';
+  }
 
-  (List<String>, List<double>) get _chart {
-    return switch (_period) {
-      _Period.jour => (
-        ['8h', '10h', '12h', '14h', '16h', '18h', '20h'],
-        [20, 45, 80, 35, 60, 95, 40],
-      ),
-      _Period.semaine => (
-        ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-        [45, 60, 85, 38, 100, 92, 50],
-      ),
-      _Period.mois => (['S1', 'S2', 'S3', 'S4'], [70, 85, 60, 95]),
-    };
+  DateTimeRange _currentRange(_Period period) {
+    final now = DateTime.now();
+
+    switch (period) {
+      case _Period.jour:
+        final start = DateTime(now.year, now.month, now.day);
+
+        return DateTimeRange(
+          start: start,
+          end: start.add(const Duration(days: 1)),
+        );
+
+      case _Period.semaine:
+        final today = DateTime(now.year, now.month, now.day);
+        final daysFromMonday = today.weekday - 1;
+        final start = today.subtract(Duration(days: daysFromMonday));
+
+        return DateTimeRange(
+          start: start,
+          end: start.add(const Duration(days: 7)),
+        );
+
+      case _Period.mois:
+        final start = DateTime(now.year, now.month, 1);
+
+        return DateTimeRange(
+          start: start,
+          end: DateTime(now.year, now.month + 1, 1),
+        );
+    }
+  }
+
+  DateTimeRange _previousRange(_Period period) {
+    final current = _currentRange(period);
+    final duration = current.end.difference(current.start);
+
+    return DateTimeRange(
+      start: current.start.subtract(duration),
+      end: current.start,
+    );
+  }
+
+  List<Sale> _filterSales(List<Sale> sales, DateTimeRange range) {
+    return sales.where((sale) {
+      return !sale.dateTime.isBefore(range.start) &&
+          sale.dateTime.isBefore(range.end);
+    }).toList();
+  }
+
+  bool _isCancelled(Sale sale) {
+    return sale.status.toUpperCase() == 'CANCELLED';
+  }
+
+  List<Sale> _validSales(List<Sale> sales) {
+    return sales.where((sale) => !_isCancelled(sale)).toList();
+  }
+
+  double _totalRevenue(List<Sale> sales) {
+    return _validSales(sales).fold<double>(0, (sum, sale) => sum + sale.total);
+  }
+
+  double _totalCost(List<Sale> sales) {
+    var total = 0.0;
+
+    for (final sale in _validSales(sales)) {
+      for (final item in sale.items) {
+        final unitCost = item.unitCost ?? 0;
+
+        total += item.qty * unitCost;
+      }
+    }
+
+    return total;
+  }
+
+  (List<String>, List<double>) _buildChart(List<Sale> sales) {
+    final validSales = _validSales(sales);
+
+    switch (_period) {
+      case _Period.jour:
+        final labels = ['00h', '04h', '08h', '12h', '16h', '20h', '24h'];
+
+        final values = List<double>.filled(7, 0);
+
+        for (final sale in validSales) {
+          final hour = sale.dateTime.hour;
+
+          var index = hour ~/ 4;
+
+          if (index < 0) {
+            index = 0;
+          }
+
+          if (index > 5) {
+            index = 6;
+          }
+
+          values[index] += sale.total;
+        }
+
+        return (labels, values);
+
+      case _Period.semaine:
+        final labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+        final values = List<double>.filled(7, 0);
+
+        for (final sale in validSales) {
+          final index = sale.dateTime.weekday - 1;
+
+          if (index >= 0 && index < 7) {
+            values[index] += sale.total;
+          }
+        }
+
+        return (labels, values);
+
+      case _Period.mois:
+        final labels = ['S1', 'S2', 'S3', 'S4'];
+
+        final values = List<double>.filled(4, 0);
+
+        for (final sale in validSales) {
+          final day = sale.dateTime.day;
+
+          var index = (day - 1) ~/ 7;
+
+          if (index > 3) {
+            index = 3;
+          }
+
+          values[index] += sale.total;
+        }
+
+        return (labels, values);
+    }
+  }
+
+  Map<String, double> _productQuantities(List<Sale> sales) {
+    final quantities = <String, double>{};
+
+    for (final sale in _validSales(sales)) {
+      for (final item in sale.items) {
+        quantities[item.name] = (quantities[item.name] ?? 0) + item.qty;
+      }
+    }
+
+    return quantities;
+  }
+
+  Map<String, double> _categoryQuantities(
+    List<Sale> sales,
+    List<dynamic> products,
+  ) {
+    final quantities = _productQuantities(sales);
+
+    final categories = <String, double>{};
+
+    for (final entry in quantities.entries) {
+      String category = 'Autres';
+
+      for (final product in products) {
+        if (product.name == entry.key) {
+          category = product.category;
+          break;
+        }
+      }
+
+      categories[category] = (categories[category] ?? 0) + entry.value;
+    }
+
+    return categories;
+  }
+
+  String _peakHour(List<Sale> sales) {
+    final validSales = _validSales(sales);
+
+    if (validSales.isEmpty) {
+      return 'Aucune donnée';
+    }
+
+    final hourly = <int, double>{};
+
+    for (final sale in validSales) {
+      final hour = sale.dateTime.hour;
+
+      hourly[hour] = (hourly[hour] ?? 0) + sale.total;
+    }
+
+    if (hourly.isEmpty) {
+      return 'Aucune donnée';
+    }
+
+    final peak = hourly.entries.reduce((a, b) => a.value >= b.value ? a : b);
+
+    final startHour = peak.key;
+    final endHour = startHour + 1;
+
+    return '${startHour.toString().padLeft(2, '0')}h00 - '
+        '${endHour.toString().padLeft(2, '0')}h00';
+  }
+
+  double _growth(List<Sale> current, List<Sale> previous) {
+    final currentRevenue = _totalRevenue(current);
+    final previousRevenue = _totalRevenue(previous);
+
+    if (previousRevenue == 0) {
+      if (currentRevenue == 0) {
+        return 0;
+      }
+
+      return 100;
+    }
+
+    return ((currentRevenue - previousRevenue) / previousRevenue) * 100;
   }
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    final productsAsync = ref.watch(productsProvider);
+
     return Scaffold(
       body: SafeArea(
-        child: FutureBuilder<DailyStats>(
+        child: FutureBuilder<List<Sale>>(
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
@@ -136,15 +327,69 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
               );
             }
 
-            final s = snap.data!;
+            final allSales = snap.data ?? [];
 
-            final revenue = s.revenue.toDouble();
+            final todayRange = _currentRange(_Period.jour);
+            final todaySales = _filterSales(allSales, todayRange);
 
-            final margin = revenue - s.cost.toDouble();
+            final currentRange = _currentRange(_period);
+            final currentSales = _filterSales(allSales, currentRange);
 
-            final basket = s.salesCount > 0 ? revenue / s.salesCount : 0.0;
+            final previousRange = _previousRange(_period);
+            final previousSales = _filterSales(allSales, previousRange);
 
-            final (labels, values) = _chart;
+            final revenue = _totalRevenue(todaySales);
+            final cost = _totalCost(todaySales);
+            final margin = revenue - cost;
+
+            final validTodaySales = _validSales(todaySales);
+
+            final basket = validTodaySales.isNotEmpty
+                ? revenue / validTodaySales.length
+                : 0.0;
+
+            final growth = _growth(currentSales, previousSales);
+
+            final (labels, values) = _buildChart(currentSales);
+
+            final products = productsAsync.valueOrNull ?? [];
+
+            final totalUnits = products.fold<int>(
+              0,
+              (sum, product) => sum + product.quantity,
+            );
+
+            final categoriesCount = products
+                .map((product) => product.category.trim())
+                .where((category) => category.isNotEmpty)
+                .toSet()
+                .length;
+
+            final alertProducts =
+                products
+                    .where(
+                      (product) => product.quantity <= product.alertThreshold,
+                    )
+                    .toList()
+                  ..sort((a, b) => a.quantity.compareTo(b.quantity));
+
+            final alertCount = alertProducts.length;
+
+            final productQuantities = _productQuantities(currentSales);
+
+            final categoryQuantities = _categoryQuantities(
+              currentSales,
+              products,
+            );
+
+            final bestProduct = productQuantities.isEmpty
+                ? 'Aucun produit'
+                : (productQuantities.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value)))
+                      .first
+                      .key;
+
+            final peakHour = _peakHour(currentSales);
 
             return RefreshIndicator(
               onRefresh: _refresh,
@@ -153,15 +398,21 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
-                  const _Header(name: 'Amadou', alertCount: 4),
+                  _Header(name: _getUserDisplayName(), alertCount: alertCount),
 
                   const SizedBox(height: 20),
 
                   _KpiGrid(
                     revenue: revenue,
                     margin: margin,
-                    salesCount: s.salesCount,
+                    totalUnits: totalUnits,
+                    categoriesCount: categoriesCount,
                     basket: basket,
+                    alertCount: alertCount,
+                    growth: _growth(
+                      todaySales,
+                      _filterSales(allSales, _previousRange(_Period.jour)),
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -185,7 +436,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                         _toast('Nouvelle vente');
                       }
                     },
-                    onScan: () => _toast('Scanner bientôt disponible'),
+                    onScan: () {
+                      _toast('Scanner bientôt disponible');
+                    },
                   ),
 
                   const SizedBox(height: 24),
@@ -209,15 +462,19 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  const _CategoriesCard(),
+                  _CategoriesCard(quantities: categoryQuantities),
 
                   const SizedBox(height: 12),
 
-                  _TopProductsCard(qty: s.qtyByProduct),
+                  _TopProductsCard(qty: productQuantities),
 
                   const SizedBox(height: 12),
 
-                  const _InsightsRow(),
+                  _InsightsRow(
+                    bestProduct: bestProduct,
+                    growth: growth,
+                    peakHour: peakHour,
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -225,7 +482,7 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  const _StockAlertsCard(),
+                  _StockAlertsCard(products: alertProducts),
 
                   const SizedBox(height: 24),
 
@@ -233,7 +490,10 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  const _RecentActivity(),
+                  _RecentActivity(
+                    sales: allSales,
+                    alertProducts: alertProducts,
+                  ),
                 ],
               ),
             );
@@ -250,102 +510,236 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// HEADER
-// -----------------------------------------------------------------------------
-
 class _Header extends StatelessWidget {
   final String name;
   final int alertCount;
 
   const _Header({required this.name, required this.alertCount});
 
+  String _formatDate() {
+    final now = DateTime.now();
+
+    const days = [
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+      'Dimanche',
+    ];
+
+    const months = [
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
+    ];
+
+    return '${days[now.weekday - 1]} ${now.day} '
+        '${months[now.month - 1]} ${now.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final p = _P.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F4F1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      'Bonjour, ',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Flexible(
+                      child: Text(
+                        name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF164D46),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 8),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF0DD),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 14,
+                        color: Color(0xFFE9973E),
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        'Votre boutique est sous contrôle',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFD98228),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  _formatDate(),
+                  style: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF71817D),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Row(
             children: [
-              Text(
-                'Bonjour, $name 👋',
-                style: p.t.headlineMedium?.copyWith(color: p.primary),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 43,
+                    height: 43,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+
+                  if (alertCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -5,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 19,
+                          minHeight: 19,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFE8F4F1),
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            alertCount > 9 ? '9+' : '$alertCount',
+                            style: const TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Votre boutique est sous contrôle',
-                style: p.t.bodyMedium?.copyWith(color: p.muted),
+
+              const SizedBox(width: 9),
+              Container(
+                width: 43,
+                height: 43,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.person_outline_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
               ),
             ],
           ),
-        ),
-
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: p.card,
-                shape: BoxShape.circle,
-                border: Border.all(color: p.border),
-              ),
-              child: Icon(Icons.notifications_none_rounded, color: p.text),
-            ),
-
-            if (alertCount > 0)
-              Positioned(
-                right: 2,
-                top: 2,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: p.error,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: p.card, width: 1.5),
-                  ),
-                ),
-              ),
-          ],
-        ),
-
-        const SizedBox(width: 10),
-
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: p.soft,
-          child: Icon(Icons.person_rounded, color: p.onSoft),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// KPI
-// -----------------------------------------------------------------------------
-
 class _KpiGrid extends StatelessWidget {
   final double revenue;
   final double margin;
-  final int salesCount;
+  final int totalUnits;
+  final int categoriesCount;
   final double basket;
+  final int alertCount;
+  final double growth;
 
   const _KpiGrid({
     required this.revenue,
     required this.margin,
-    required this.salesCount,
+    required this.totalUnits,
+    required this.categoriesCount,
     required this.basket,
+    required this.alertCount,
+    required this.growth,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
+
+    final growthText = growth >= 0
+        ? '+${growth.toStringAsFixed(1)}% vs hier'
+        : '${growth.toStringAsFixed(1)}% vs hier';
 
     return GridView.count(
       crossAxisCount: 2,
@@ -359,30 +753,29 @@ class _KpiGrid extends StatelessWidget {
           title: 'Ventes du jour',
           value: _money(revenue),
           color: p.success,
-          trend: '+12% vs hier',
-          trendUp: true,
+          trend: growthText,
+          trendUp: growth >= 0,
+        ),
+
+        _KpiCard(
+          title: 'Produits en stock',
+          value: '$totalUnits',
+          color: p.primary,
+          trend: '$categoriesCount catégories',
         ),
 
         _KpiCard(
           title: 'Bénéfice (est.)',
           value: _money(margin),
           color: p.info,
-          trend: '+8% vs hier',
-          trendUp: true,
-        ),
-
-        _KpiCard(
-          title: 'Transactions',
-          value: '$salesCount',
-          color: p.primary,
-          trend: 'Panier moyen ${_money(basket)}',
+          trend: 'Marge réelle',
         ),
 
         _KpiCard(
           title: 'Alertes',
-          value: '4',
+          value: '$alertCount',
           color: p.error,
-          trend: 'Stock faible',
+          trend: alertCount > 0 ? 'Stock faible' : 'Stock sous contrôle',
         ),
       ],
     );
@@ -415,7 +808,13 @@ class _KpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: p.t.bodySmall?.copyWith(color: p.muted)),
+          Text(
+            title,
+            style: p.t.bodyMedium?.copyWith(
+              color: p.muted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
 
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -440,7 +839,7 @@ class _KpiCard extends StatelessWidget {
                 child: Text(
                   trend,
                   overflow: TextOverflow.ellipsis,
-                  style: p.t.labelSmall?.copyWith(
+                  style: p.t.bodySmall?.copyWith(
                     color: trendUp ? p.success : p.muted,
                     fontWeight: FontWeight.w600,
                   ),
@@ -453,10 +852,6 @@ class _KpiCard extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// ACTIONS RAPIDES
-// -----------------------------------------------------------------------------
 
 class _QuickActions extends StatelessWidget {
   final VoidCallback onAddProduct;
@@ -493,14 +888,6 @@ class _QuickActions extends StatelessWidget {
         ),
 
         const SizedBox(width: 10),
-
-        Expanded(
-          child: _ActionChip(
-            icon: Icons.qr_code_scanner_rounded,
-            label: 'Scanner',
-            onTap: onScan,
-          ),
-        ),
       ],
     );
   }
@@ -523,30 +910,34 @@ class _ActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final bg = primary ? p.primary : p.soft;
-    final fg = primary ? p.onPrimary : p.onSoft;
+    final bg = primary ? p.accent.withValues(alpha: 0.18) : p.soft;
+
+    final fg = primary ? p.accent : p.onSoft;
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          child: Column(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: fg, size: 26),
+              Icon(icon, color: fg, size: 21),
 
-              const SizedBox(height: 6),
+              const SizedBox(width: 7),
 
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: p.t.labelMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
+              Flexible(
+                child: Text(
+                  label.replaceAll('\n', ' '),
+                  textAlign: TextAlign.center,
+                  style: p.t.labelMedium?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
                 ),
               ),
             ],
@@ -556,10 +947,6 @@ class _ActionChip extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// SELECTEUR DE PERIODE
-// -----------------------------------------------------------------------------
 
 class _PeriodSelector extends StatelessWidget {
   final _Period value;
@@ -615,10 +1002,6 @@ class _PeriodSelector extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// GRAPHIQUE
-// -----------------------------------------------------------------------------
-
 class _SalesChartCard extends StatelessWidget {
   final List<String> labels;
   final List<double> values;
@@ -646,7 +1029,7 @@ class _SalesChartCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(values.length, (i) {
-                final isMax = values[i] == maxV;
+                final isMax = values[i] == maxV && maxV > 0;
 
                 return Expanded(
                   child: Padding(
@@ -657,7 +1040,7 @@ class _SalesChartCard extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: TweenAnimationBuilder<double>(
-                              key: ValueKey('${labels.length}-$i'),
+                              key: ValueKey('${labels.length}-$i-${values[i]}'),
                               tween: Tween(
                                 begin: 0,
                                 end: maxV == 0 ? 0 : values[i] / maxV,
@@ -702,22 +1085,49 @@ class _SalesChartCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// CATEGORIES
-// -----------------------------------------------------------------------------
-
 class _CategoriesCard extends StatelessWidget {
-  const _CategoriesCard();
+  final Map<String, double> quantities;
+
+  const _CategoriesCard({required this.quantities});
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final data = [
-      ('Alimentation', 50.0, p.primary),
-      ('Boissons', 42.0, p.primary.withValues(alpha: 0.5)),
-      ('Autres', 8.0, p.accent),
-    ];
+    final entries = quantities.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final topEntries = entries.take(3).toList();
+
+    if (topEntries.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: p.cardDecoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Top catégories', style: p.t.titleMedium),
+            const SizedBox(height: 12),
+            Text(
+              'Aucune vente pour le moment.',
+              style: p.t.bodyMedium?.copyWith(color: p.muted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final total = topEntries.fold<double>(0, (sum, item) => sum + item.value);
+
+    final data = <(String, double, Color)>[];
+
+    final colors = [p.primary, p.primary.withValues(alpha: 0.5), p.accent];
+
+    for (var i = 0; i < topEntries.length; i++) {
+      final percentage = total == 0 ? 0.0 : (topEntries[i].value / total) * 100;
+
+      data.add((topEntries[i].key, percentage, colors[i]));
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -760,9 +1170,13 @@ class _CategoriesCard extends StatelessWidget {
 
                         const SizedBox(width: 8),
 
-                        Text(
-                          '${item.$1} (${item.$2.round()}%)',
-                          style: p.t.bodySmall,
+                        Expanded(
+                          child: Text(
+                            '${item.$1} '
+                            '(${item.$2.round()}%)',
+                            overflow: TextOverflow.ellipsis,
+                            style: p.t.bodySmall,
+                          ),
                         ),
                       ],
                     ),
@@ -818,10 +1232,6 @@ class _DonutPainter extends CustomPainter {
     return oldDelegate.slices != slices;
   }
 }
-
-// -----------------------------------------------------------------------------
-// TOP PRODUITS
-// -----------------------------------------------------------------------------
 
 class _TopProductsCard extends StatelessWidget {
   final Map<String, double> qty;
@@ -903,25 +1313,33 @@ class _TopProductsCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// INSIGHTS
-// -----------------------------------------------------------------------------
-
 class _InsightsRow extends StatelessWidget {
-  const _InsightsRow();
+  final String bestProduct;
+  final double growth;
+  final String peakHour;
+
+  const _InsightsRow({
+    required this.bestProduct,
+    required this.growth,
+    required this.peakHour,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    final growthText = growth >= 0
+        ? '+${growth.toStringAsFixed(1)}%'
+        : '${growth.toStringAsFixed(1)}%';
+
     return Column(
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: _InsightCard(
                 label: 'Meilleur produit',
-                value: 'Sac de Riz 50kg',
+                value: bestProduct,
               ),
             ),
 
@@ -930,8 +1348,8 @@ class _InsightsRow extends StatelessWidget {
             Expanded(
               child: _InsightCard(
                 label: 'Croissance',
-                value: '+18,4%',
-                valueColor: p.success,
+                value: growthText,
+                valueColor: growth >= 0 ? p.success : p.error,
               ),
             ),
           ],
@@ -956,7 +1374,7 @@ class _InsightsRow extends StatelessWidget {
               ),
 
               Text(
-                '17h00 - 19h00',
+                peakHour,
                 style: p.t.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: p.primary,
@@ -1010,29 +1428,51 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ALERTES STOCK
-// -----------------------------------------------------------------------------
-
 class _StockAlertsCard extends StatelessWidget {
-  const _StockAlertsCard();
+  final List<dynamic> products;
+
+  const _StockAlertsCard({required this.products});
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    const items = [
-      ('Huile Dinor', 3),
-      ('Sucre 1kg', 5),
-      ('Lait en poudre', 2),
-      ('Savon Citron', 4),
-    ];
-
     return Container(
       decoration: p.cardDecoration,
       child: Column(
         children: [
-          for (var i = 0; i < items.length; i++) ...[
+          if (products.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: p.soft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: p.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Aucune alerte de stock.',
+                      style: p.t.bodyMedium?.copyWith(
+                        color: p.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          for (var i = 0; i < products.length && i < 4; i++) ...[
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -1052,11 +1492,12 @@ class _StockAlertsCard extends StatelessWidget {
                 ),
               ),
               title: Text(
-                items[i].$1,
+                products[i].name,
                 style: p.t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               subtitle: Text(
-                'Il reste ${items[i].$2} unités',
+                'Il reste ${products[i].quantity} '
+                'unité${products[i].quantity > 1 ? 's' : ''}',
                 style: p.t.bodySmall?.copyWith(color: p.muted),
               ),
               trailing: Text(
@@ -1068,7 +1509,7 @@ class _StockAlertsCard extends StatelessWidget {
               ),
             ),
 
-            if (i < items.length - 1)
+            if (i < products.length - 1 && i < 3)
               Divider(height: 1, indent: 16, endIndent: 16, color: p.border),
           ],
         ],
@@ -1077,105 +1518,197 @@ class _StockAlertsCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ACTIVITÉ RÉCENTE
-// -----------------------------------------------------------------------------
-
 class _RecentActivity extends StatelessWidget {
-  const _RecentActivity();
+  final List<Sale> sales;
+  final List<dynamic> alertProducts;
+
+  const _RecentActivity({required this.sales, required this.alertProducts});
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    const items = [
-      (
-        'Vente : 2x Sac de Riz 50kg',
-        'Il y a 5 min · Par Amadou',
-        '+34 000 F',
-        false,
-      ),
-      (
-        'Stock bas : Huile Dinor',
-        'Il y a 20 min · Seuil : 3 restants',
-        'Alerte',
-        true,
-      ),
-      (
-        'Vente : 5x Canettes Coca-Cola',
-        'Il y a 1 h · Par Fatou',
-        '+2 500 F',
-        false,
-      ),
-    ];
+    final validSales =
+        sales.where((sale) => sale.status.toUpperCase() != 'CANCELLED').toList()
+          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
-    return Column(
-      children: [
-        for (final item in items)
-          Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: p.cardDecoration,
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: item.$4 ? p.errorSoft : p.soft,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    item.$4
-                        ? Icons.warning_amber_rounded
-                        : Icons.shopping_cart_outlined,
-                    color: item.$4 ? p.error : p.onSoft,
-                  ),
+    final recentSales = validSales.take(3).toList();
+
+    final children = <Widget>[];
+
+    if (recentSales.isEmpty && alertProducts.isEmpty) {
+      children.add(
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: p.cardDecoration,
+          child: Row(
+            children: [
+              Icon(Icons.history_rounded, color: p.muted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Aucune activité récente.',
+                  style: p.t.bodyMedium?.copyWith(color: p.muted),
                 ),
-
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.$1,
-                        style: p.t.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      const SizedBox(height: 2),
-
-                      Text(
-                        item.$2,
-                        style: p.t.bodySmall?.copyWith(color: p.muted),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-
-                Text(
-                  item.$3,
-                  style: p.t.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: item.$4 ? p.error : p.success,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-      ],
-    );
+        ),
+      );
+    }
+
+    for (final sale in recentSales) {
+      final productSummary = sale.items
+          .map((item) => '${_formatQuantity(item.qty)}x ${item.name}')
+          .join(', ');
+
+      children.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: p.cardDecoration,
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: p.soft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.shopping_cart_outlined, color: p.onSoft),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vente : $productSummary',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: p.t.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      _relativeDate(sale.dateTime),
+                      style: p.t.bodySmall?.copyWith(color: p.muted),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Text(
+                '+${_money(sale.total)}',
+                style: p.t.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: p.success,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (alertProducts.isNotEmpty) {
+      final product = alertProducts.first;
+
+      children.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: p.cardDecoration,
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: p.errorSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.warning_amber_rounded, color: p.error),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Stock bas : ${product.name}',
+                      style: p.t.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Il reste ${product.quantity} unité'
+                      '${product.quantity > 1 ? 's' : ''}',
+                      style: p.t.bodySmall?.copyWith(color: p.muted),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              Text(
+                'Alerte',
+                style: p.t.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: p.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(children: children);
+  }
+
+  static String _formatQuantity(double quantity) {
+    if (quantity == quantity.roundToDouble()) {
+      return quantity.toInt().toString();
+    }
+
+    return quantity.toString();
+  }
+
+  static String _relativeDate(DateTime date) {
+    final difference = DateTime.now().difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'À l’instant';
+    }
+
+    if (difference.inMinutes < 60) {
+      return 'Il y a ${difference.inMinutes} min';
+    }
+
+    if (difference.inHours < 24) {
+      return 'Il y a ${difference.inHours} h';
+    }
+
+    if (difference.inDays == 1) {
+      return 'Hier';
+    }
+
+    return 'Il y a ${difference.inDays} jours';
   }
 }
-
-// -----------------------------------------------------------------------------
-// ETAT D'ERREUR
-// -----------------------------------------------------------------------------
 
 class _ErrorState extends StatelessWidget {
   final String message;
@@ -1209,10 +1742,6 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// TITRE DE SECTION
-// -----------------------------------------------------------------------------
-
 class _SectionTitle extends StatelessWidget {
   final String text;
   final _P p;
@@ -1224,14 +1753,6 @@ class _SectionTitle extends StatelessWidget {
     return Text(text, style: p.t.titleLarge);
   }
 }
-
-// -----------------------------------------------------------------------------
-// FORMAT MONÉTAIRE
-// -----------------------------------------------------------------------------
-//
-// Exemple :
-// 320500 -> 320 500 F
-// 1250000 -> 1 250 000 F
 
 String _money(num value) {
   final string = value.round().toString();

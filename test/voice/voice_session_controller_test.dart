@@ -129,19 +129,22 @@ void main() {
       expect(harness.recognizer.cancelCount, greaterThan(0));
     });
 
-    test('discards trailing utterances received after listening stopped', () async {
-      final SessionHarness harness = SessionHarness();
-      addTearDown(harness.dispose);
-      await harness.controller.startListening();
-      harness.recognizer.hearFinal('vendu deux savon');
-      await Future<void>.delayed(Duration.zero);
-      expect(harness.state.status, VoiceSessionStatus.idle);
-      expect(harness.state.lastHeard, isEmpty);
+    test(
+      'discards trailing utterances received after listening stopped',
+      () async {
+        final SessionHarness harness = SessionHarness();
+        addTearDown(harness.dispose);
+        await harness.controller.startListening();
+        harness.recognizer.hearFinal('vendu deux savon');
+        await Future<void>.delayed(Duration.zero);
+        expect(harness.state.status, VoiceSessionStatus.idle);
+        expect(harness.state.lastHeard, isEmpty);
 
-      // Trailing event from engine after turn completed
-      harness.recognizer.hear('unwanted late utterance');
-      expect(harness.state.lastHeard, isEmpty);
-    });
+        // Trailing event from engine after turn completed
+        harness.recognizer.hear('unwanted late utterance');
+        expect(harness.state.lastHeard, isEmpty);
+      },
+    );
 
     test('resets lastHeard when starting a new listening session', () async {
       final SessionHarness harness = SessionHarness();
@@ -165,7 +168,9 @@ void main() {
       harness.recognizer.hear('vendu');
       expect(harness.state.lastHeard, 'vendu');
 
-      harness.recognizer.fail(const SpeechServiceError(SpeechFault.listenFailed));
+      harness.recognizer.fail(
+        const SpeechServiceError(SpeechFault.listenFailed),
+      );
 
       expect(harness.state.lastHeard, isEmpty);
       expect(harness.state.status, VoiceSessionStatus.idle);
