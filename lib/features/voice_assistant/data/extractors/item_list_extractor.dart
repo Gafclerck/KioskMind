@@ -67,11 +67,16 @@ final class ItemListExtractor {
     final List<ItemMention> items = <ItemMention>[];
     final List<ProductSnapshot> products = <ProductSnapshot>[];
 
-    for (final _Mention mention in mentions) {
+    for (int i = 0; i < mentions.length; i++) {
+      final _Mention mention = mentions[i];
+      final int? nextProductStart = i + 1 < mentions.length
+          ? mentions[i + 1].start
+          : null;
       final LineReading reading = lines.read(
         tokens,
         mention.start,
         productLength: mention.length,
+        nextProductStart: nextProductStart,
       );
       final double? quantity = _quantityOf(reading);
       final Doubt? doubt = _doubtOf(mention.resolution, quantity);

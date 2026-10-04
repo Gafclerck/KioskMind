@@ -40,9 +40,14 @@ final class LineExtractor {
   /// [start] is the first token of the name, so the words that may precede it are
   /// the ones just before that, and the words that may follow it start at
   /// `start + productLength`.
-  LineReading read(List<String> tokens, int start, {int productLength = 1}) {
+  LineReading read(
+    List<String> tokens,
+    int start, {
+    int productLength = 1,
+    int? nextProductStart,
+  }) {
     return LineReading(
-      quantity: _quantity(tokens, start, productLength),
+      quantity: _quantity(tokens, start, productLength, nextProductStart),
       amount: _amount(tokens, start),
     );
   }
@@ -54,7 +59,12 @@ final class LineExtractor {
   /// "trois cents pates" is three hundred and not the hundred of "cents".
   /// If no count precedes the product, it checks for a repetition or a
   /// post-product count such as "savon deux" or "riz 3 sacs".
-  double? _quantity(List<String> tokens, int start, int productLength) {
+  double? _quantity(
+    List<String> tokens,
+    int start,
+    int productLength,
+    int? nextProductStart,
+  ) {
     final int anchor = _bridgeEnd(tokens, start);
     final double? before = _numberEndingAt(tokens, anchor);
     if (before != null) {
@@ -64,11 +74,19 @@ final class LineExtractor {
     if (repeated != null) {
       return repeated;
     }
-    return _postProductQuantity(tokens, start + productLength);
+    return _postProductQuantity(
+      tokens,
+      start + productLength,
+      nextProductStart: nextProductStart,
+    );
   }
 
   /// Reads a quantity directly following the product name, as in "savon deux" or "riz trois sacs".
-  double? _postProductQuantity(List<String> tokens, int afterIndex) {
+  double? _postProductQuantity(
+    List<String> tokens,
+    int afterIndex, {
+    int? nextProductStart,
+  }) {
     if (afterIndex >= tokens.length) {
       return null;
     }
@@ -94,6 +112,12 @@ final class LineExtractor {
     if (cursor < tokens.length) {
       final ParsedNumber? number = numbers.readAt(tokens, cursor);
       if (number != null && number.value > 0) {
+        // If this number precedes the next product, it belongs to that next
+        // product, not to the current one.
+        if (nextProductStart != null &&
+            cursor + number.consumed >= _bridgeEnd(tokens, nextProductStart)) {
+          return null;
+        }
         return number.value;
       }
     }
