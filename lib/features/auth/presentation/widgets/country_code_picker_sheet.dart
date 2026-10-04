@@ -5,7 +5,10 @@ import '../../domain/country_codes.dart';
 import '../providers/signup_provider.dart';
 
 class CountryCodePickerSheet extends ConsumerStatefulWidget {
-  const CountryCodePickerSheet({super.key});
+  const CountryCodePickerSheet({super.key, this.code, this.onChanged});
+
+  final String? code;
+  final ValueChanged<String>? onChanged;
 
   @override
   ConsumerState<CountryCodePickerSheet> createState() =>
@@ -38,15 +41,22 @@ class _CountryCodePickerSheetState
   }
 
   void _select(CountryCode country) {
-    ref.read(signupProvider.notifier).selectCountryCode(country.code);
+    final ValueChanged<String>? onChanged = widget.onChanged;
+    if (onChanged == null) {
+      ref.read(signupProvider.notifier).selectCountryCode(country.code);
+    } else {
+      onChanged(country.code);
+    }
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final String currentCode = ref.watch(
-      signupProvider.select((SignupState state) => state.countryCode),
-    );
+    final String currentCode = widget.onChanged == null
+        ? ref.watch(
+            signupProvider.select((SignupState state) => state.countryCode),
+          )
+        : widget.code ?? '+225';
     final ThemeData theme = Theme.of(context);
 
     return SafeArea(
