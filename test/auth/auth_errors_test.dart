@@ -36,6 +36,10 @@ void main() {
         'Identifiants invalides',
       );
       expect(
+        messageForFirebaseAuthCode('requires-recent-login'),
+        'Veuillez vous reconnecter pour continuer',
+      );
+      expect(
         messageForFirebaseAuthCode('operation-not-allowed'),
         "La connexion par e-mail n'est pas activée",
       );
