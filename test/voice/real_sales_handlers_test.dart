@@ -20,6 +20,7 @@ final class _FakeSalesRepository implements SalesRepository {
   @override
   Future<Sale> recordSale(Sale sale) async {
     final id = sale.id ?? 'gen-${sales.length + 1}';
+
     final saved = Sale(
       id: id,
       dateTime: sale.dateTime,
@@ -30,19 +31,58 @@ final class _FakeSalesRepository implements SalesRepository {
       status: sale.status,
       cancelledAt: sale.cancelledAt,
     );
+
     sales[id] = saved;
+
     return saved;
+  }
+
+  @override
+  Future<Sale> updateSale(Sale sale) async {
+    final saleId = sale.id;
+
+    if (saleId == null || saleId.isEmpty) {
+      throw SaleNotFoundException('');
+    }
+
+    final existing = sales[saleId];
+
+    if (existing == null) {
+      throw SaleNotFoundException(saleId);
+    }
+
+    if (existing.status == 'CANCELLED' || existing.cancelledAt != null) {
+      throw AlreadyCancelledException(saleId);
+    }
+
+    final updated = Sale(
+      id: existing.id,
+      dateTime: sale.dateTime,
+      createdAt: existing.createdAt,
+      total: sale.total,
+      items: sale.items,
+      source: existing.source,
+      status: existing.status,
+      cancelledAt: null,
+    );
+
+    sales[saleId] = updated;
+
+    return updated;
   }
 
   @override
   Future<Sale> cancelSale(String saleId) async {
     final existing = sales[saleId];
+
     if (existing == null) {
       throw SaleNotFoundException(saleId);
     }
+
     if (existing.status == 'CANCELLED' || existing.cancelledAt != null) {
       throw AlreadyCancelledException(saleId);
     }
+
     final cancelled = Sale(
       id: existing.id,
       dateTime: existing.dateTime,
@@ -53,18 +93,24 @@ final class _FakeSalesRepository implements SalesRepository {
       status: 'CANCELLED',
       cancelledAt: DateTime(2026, 3, 1, 12),
     );
+
     sales[saleId] = cancelled;
+
     return cancelled;
   }
 
   @override
-  Future<List<Sale>> getSalesHistory() async => sales.values.toList();
+  Future<List<Sale>> getSalesHistory() async {
+    return sales.values.toList();
+  }
 
   @override
   Future<List<Sale>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,
-  }) async => sales.values.toList();
+  }) async {
+    return sales.values.toList();
+  }
 }
 
 ProductSnapshot _product(
@@ -103,6 +149,7 @@ void main() {
 
   setUp(() {
     salesRepo = _FakeSalesRepository();
+
     catalog = InMemoryProductCatalog(<ProductSnapshot>[
       _product('p_sucre', name: 'Sucre', price: 500, stock: 20, unit: 'KG'),
       _product('p_lait', name: 'Lait', price: 250, stock: 10, unit: 'BOITE'),
@@ -114,10 +161,12 @@ void main() {
         isArchived: true,
       ),
     ]);
+
     recordSaleHandler = RealRecordSaleHandler(
       recordSale: RecordSale(salesRepo),
       catalogReader: catalog,
     );
+
     cancelLastSaleHandler = RealCancelLastSaleHandler(
       cancelSale: CancelSale(salesRepo),
       catalogReader: catalog,
@@ -140,7 +189,9 @@ void main() {
       final result = await recordSaleHandler.execute(context, input);
 
       expect(result, isA<Success<RecordSaleResult>>());
+
       final success = result as Success<RecordSaleResult>;
+
       expect(success.value.saleId, equals('cmd-v1'));
       expect(success.value.total, equals(1000));
       expect(success.value.lines.first.resultingStock, equals(18));
@@ -166,6 +217,7 @@ void main() {
 
         expect(first, isA<Success<RecordSaleResult>>());
         expect(second, isA<Success<RecordSaleResult>>());
+
         expect(
           (first as Success<RecordSaleResult>).value.total,
           equals((second as Success<RecordSaleResult>).value.total),
@@ -175,9 +227,11 @@ void main() {
 
     test('refuses empty items', () async {
       const input = SaleIntentInput(items: []);
+
       final result = await recordSaleHandler.execute(context, input);
 
       expect(result, isA<Failed<RecordSaleResult>>());
+
       expect((result as Failed<RecordSaleResult>).failure, isA<EmptyItems>());
     });
 
@@ -187,9 +241,11 @@ void main() {
           SaleIntentLine(productId: 'unknown', productName: 'Inconnu', qty: 1),
         ],
       );
+
       final result = await recordSaleHandler.execute(context, input);
 
       expect(result, isA<Failed<RecordSaleResult>>());
+
       expect(
         (result as Failed<RecordSaleResult>).failure,
         isA<UnknownProduct>(),
@@ -202,9 +258,11 @@ void main() {
           SaleIntentLine(productId: 'p_ancien', productName: 'Ancien', qty: 1),
         ],
       );
+
       final result = await recordSaleHandler.execute(context, input);
 
       expect(result, isA<Failed<RecordSaleResult>>());
+
       expect(
         (result as Failed<RecordSaleResult>).failure,
         isA<ArchivedProduct>(),
@@ -217,9 +275,11 @@ void main() {
           SaleIntentLine(productId: 'p_sucre', productName: 'Sucre', qty: 0),
         ],
       );
+
       final result = await recordSaleHandler.execute(context, input);
 
       expect(result, isA<Failed<RecordSaleResult>>());
+
       expect(
         (result as Failed<RecordSaleResult>).failure,
         isA<InvalidQuantity>(),
@@ -229,7 +289,6 @@ void main() {
 
   group('RealCancelLastSaleHandler', () {
     test('cancels sale and restores line items', () async {
-      // Setup recorded sale first
       salesRepo.sales['sale-abc'] = Sale(
         id: 'sale-abc',
         dateTime: DateTime(2026, 3, 1, 10),
@@ -248,7 +307,9 @@ void main() {
       );
 
       expect(result, isA<Success<CancelLastSaleResult>>());
+
       final success = result as Success<CancelLastSaleResult>;
+
       expect(success.value.saleId, equals('sale-abc'));
       expect(success.value.restored.length, equals(1));
       expect(success.value.restored.first.qty, equals(2));
@@ -263,6 +324,7 @@ void main() {
       );
 
       expect(result, isA<Failed<CancelLastSaleResult>>());
+
       expect(
         (result as Failed<CancelLastSaleResult>).failure,
         isA<SaleNotFound>(),
@@ -284,12 +346,14 @@ void main() {
         context,
         const CancelLastSaleInput(saleId: 'sale-twice'),
       );
+
       final second = await cancelLastSaleHandler.execute(
         context,
         const CancelLastSaleInput(saleId: 'sale-twice'),
       );
 
       expect(second, isA<Failed<CancelLastSaleResult>>());
+
       expect(
         (second as Failed<CancelLastSaleResult>).failure,
         isA<AlreadyCancelled>(),

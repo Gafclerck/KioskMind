@@ -147,36 +147,37 @@ void main() {
       expect(harness.intentsCalled(tester), <String>['record_sale']);
     });
 
-    testWidgets('clears lastHeard on completion and isolates subsequent sessions', (
-      WidgetTester tester,
-    ) async {
-      final PanelHarness harness = PanelHarness();
-      await harness.pump(tester);
+    testWidgets(
+      'clears lastHeard on completion and isolates subsequent sessions',
+      (WidgetTester tester) async {
+        final PanelHarness harness = PanelHarness();
+        await harness.pump(tester);
 
-      // Session 1: speech in progress shows Entendu:
-      await tester.tap(find.byIcon(Icons.mic_none));
-      await flush(tester);
-      harness.recognizer.hear('vendu deux');
-      await flush(tester);
-      expect(find.text('Entendu: vendu deux'), findsOneWidget);
+        // Session 1: speech in progress shows Entendu:
+        await tester.tap(find.byIcon(Icons.mic_none));
+        await flush(tester);
+        harness.recognizer.hear('vendu deux');
+        await flush(tester);
+        expect(find.text('Entendu: vendu deux'), findsOneWidget);
 
-      // Session 1 finishes: Entendu: must disappear
-      harness.recognizer.hearFinal('vendu deux savon');
-      await flush(tester);
-      expect(find.textContaining('Entendu'), findsNothing);
-      expect(find.textContaining('ligne enregistrée'), findsOneWidget);
+        // Session 1 finishes: Entendu: must disappear
+        harness.recognizer.hearFinal('vendu deux savon');
+        await flush(tester);
+        expect(find.textContaining('Entendu'), findsNothing);
+        expect(find.textContaining('ligne enregistrée'), findsOneWidget);
 
-      // Session 2: merchant presses mic again
-      await tester.tap(find.byIcon(Icons.mic_none));
-      await flush(tester);
-      expect(find.textContaining('Entendu'), findsNothing);
+        // Session 2: merchant presses mic again
+        await tester.tap(find.byIcon(Icons.mic_none));
+        await flush(tester);
+        expect(find.textContaining('Entendu'), findsNothing);
 
-      // Session 2 speaks new command: Entendu: reflects only new speech
-      harness.recognizer.hear('combien coute');
-      await flush(tester);
-      expect(find.text('Entendu: combien coute'), findsOneWidget);
-      expect(find.textContaining('savon'), findsNothing);
-    });
+        // Session 2 speaks new command: Entendu: reflects only new speech
+        harness.recognizer.hear('combien coute');
+        await flush(tester);
+        expect(find.text('Entendu: combien coute'), findsOneWidget);
+        expect(find.textContaining('savon'), findsNothing);
+      },
+    );
 
     testWidgets('the undo banner closes with its window', (
       WidgetTester tester,

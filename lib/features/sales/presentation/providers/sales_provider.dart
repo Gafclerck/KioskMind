@@ -12,6 +12,7 @@ import '../../domain/usecases/cancel_sale.dart';
 import '../../domain/usecases/get_sales_dashboard.dart';
 import '../../domain/usecases/get_sales_history.dart';
 import '../../domain/usecases/record_sale.dart';
+import '../../domain/usecases/update_sale.dart';
 
 final salesRemoteDataSourceProvider = Provider<SalesRemoteDataSource>((ref) {
   return SalesRemoteDataSourceImpl(
@@ -30,6 +31,10 @@ final getSalesHistoryProvider = Provider<GetSalesHistory>((ref) {
 
 final recordSaleProvider = Provider<RecordSale>((ref) {
   return RecordSale(ref.watch(salesRepositoryProvider));
+});
+
+final updateSaleProvider = Provider<UpdateSale>((ref) {
+  return UpdateSale(ref.watch(salesRepositoryProvider));
 });
 
 final cancelSaleProvider = Provider<CancelSale>((ref) {
