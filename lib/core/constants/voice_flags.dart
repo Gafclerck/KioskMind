@@ -25,3 +25,23 @@ const String kGeminiApiKey = String.fromEnvironment(
   'GEMINI_API_KEY',
   defaultValue: '',
 );
+
+/// The Rodium AI API key used for Cloud NLU parsing via Rodium AI gateway.
+///
+/// Can be set at build or run time with `--dart-define=RODIUM_API_KEY=rd_sk_...`.
+const String kRodiumApiKey = String.fromEnvironment(
+  'RODIUM_API_KEY',
+  defaultValue: '',
+);
+
+/// Optional model identifier for Rodium AI (defaults to 'google/gemini-1.5-flash').
+const String kRodiumModel = String.fromEnvironment(
+  'RODIUM_MODEL',
+  defaultValue: 'google/gemini-1.5-flash',
+);
+
+/// Optional base URL for Rodium AI gateway (defaults to 'https://api.rodiumai.io/v1').
+const String kRodiumBaseUrl = String.fromEnvironment(
+  'RODIUM_BASE_URL',
+  defaultValue: 'https://api.rodiumai.io/v1',
+);

@@ -32,6 +32,7 @@ import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
 import '../data/parsers/direct_gemini_caller.dart';
 import '../data/parsers/remote_cloud_intent_parser.dart';
+import '../data/parsers/rodium_ai_caller.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
@@ -371,6 +372,21 @@ final Provider<String> voiceGeminiApiKeyProvider = Provider<String>(
   (Ref ref) => kGeminiApiKey,
 );
 
+/// The Rodium AI API key used for Cloud NLU parsing via Rodium AI gateway.
+final Provider<String> voiceRodiumApiKeyProvider = Provider<String>(
+  (Ref ref) => kRodiumApiKey,
+);
+
+/// The model identifier requested from Rodium AI.
+final Provider<String> voiceRodiumModelProvider = Provider<String>(
+  (Ref ref) => kRodiumModel,
+);
+
+/// The base URL for the Rodium AI gateway.
+final Provider<String> voiceRodiumBaseUrlProvider = Provider<String>(
+  (Ref ref) => kRodiumBaseUrl,
+);
+
 /// Real connectivity probe verifying actual Internet reachability.
 final Provider<ConnectivityProbe> voiceConnectivityProbeProvider =
     Provider<ConnectivityProbe>((Ref ref) => DataConnectionProbe());
@@ -385,27 +401,56 @@ final Provider<CircuitBreaker> voiceCircuitBreakerProvider =
       );
     });
 
-/// Cloud intent parser calling Google Gemini directly (if apiKey provided)
-/// or Firebase Cloud Functions by default.
-final FutureProvider<CloudIntentParser> voiceCloudIntentParserProvider =
-    FutureProvider<CloudIntentParser>((Ref ref) async {
-      final String apiKey = ref.watch(voiceGeminiApiKeyProvider);
-      final ProductCatalogReader catalogReader = await ref.watch(
-        voiceCatalogReaderProvider.future,
+/// Cloud intent parser calling Rodium AI, Google Gemini, or Firebase Cloud Functions.
+final FutureProvider<CloudIntentParser>
+voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
+  Ref ref,
+) async {
+  final String rodiumApiKey = ref.watch(voiceRodiumApiKeyProvider);
+  final String geminiApiKey = ref.watch(voiceGeminiApiKeyProvider);
+  final ProductCatalogReader catalogReader = await ref.watch(
+    voiceCatalogReaderProvider.future,
+  );
+
+  // 1. Explicit Rodium AI key provided
+  if (rodiumApiKey.isNotEmpty) {
+    final RodiumAiCaller rodiumCaller = RodiumAiCaller(
+      apiKey: rodiumApiKey,
+      model: ref.watch(voiceRodiumModelProvider),
+      baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+    );
+    return RemoteCloudIntentParser(
+      catalogReader: catalogReader,
+      cloudCaller: rodiumCaller.call,
+    );
+  }
+
+  // 2. GEMINI_API_KEY provided (with auto-detection if user passed an rd_ key)
+  if (geminiApiKey.isNotEmpty) {
+    if (geminiApiKey.startsWith('rd_')) {
+      final RodiumAiCaller rodiumCaller = RodiumAiCaller(
+        apiKey: geminiApiKey,
+        model: ref.watch(voiceRodiumModelProvider),
+        baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
       );
+      return RemoteCloudIntentParser(
+        catalogReader: catalogReader,
+        cloudCaller: rodiumCaller.call,
+      );
+    }
 
-      if (apiKey.isNotEmpty) {
-        final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
-          apiKey: apiKey,
-        );
-        return RemoteCloudIntentParser(
-          catalogReader: catalogReader,
-          cloudCaller: geminiCaller.call,
-        );
-      }
+    final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
+      apiKey: geminiApiKey,
+    );
+    return RemoteCloudIntentParser(
+      catalogReader: catalogReader,
+      cloudCaller: geminiCaller.call,
+    );
+  }
 
-      return RemoteCloudIntentParser(catalogReader: catalogReader);
-    });
+  // 3. Fallback to Firebase Cloud Functions default
+  return RemoteCloudIntentParser(catalogReader: catalogReader);
+});
 
 /// The parser used by the turn executor.
 ///

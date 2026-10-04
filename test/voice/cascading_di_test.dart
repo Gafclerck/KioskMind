@@ -149,5 +149,35 @@ void main() {
       );
       expect(cloudParser, isNotNull);
     });
+
+    test('wires RemoteCloudIntentParser when rodium apiKey is set', () async {
+      final container = ProviderContainer(
+        overrides: [
+          voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+          voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final cloudParser = await container.read(
+        voiceCloudIntentParserProvider.future,
+      );
+      expect(cloudParser, isNotNull);
+    });
+
+    test('auto-detects Rodium AI when gemini apiKey has rd_ prefix', () async {
+      final container = ProviderContainer(
+        overrides: [
+          voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+          voiceGeminiApiKeyProvider.overrideWithValue('rd_sk_auto_detect_456'),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final cloudParser = await container.read(
+        voiceCloudIntentParserProvider.future,
+      );
+      expect(cloudParser, isNotNull);
+    });
   });
 }
