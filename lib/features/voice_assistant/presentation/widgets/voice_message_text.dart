@@ -19,12 +19,20 @@ String voiceMessageText(AppLocalizations l10n, VoiceMessage message) {
   return switch (message) {
     QuestionMessage() => _questionText(l10n, message),
     RefusalMessage() => l10n.voiceRefused,
-    DoneMessage(outcome: final VoiceOutcome outcome) => _outcomeText(
-      l10n,
-      outcome,
-      formatter,
-    ),
-    UndoneMessage() => l10n.voiceSaleCancelled,
+    DoneMessage(
+      outcome: final VoiceOutcome outcome,
+      customSpeechText: final String? customText,
+    ) =>
+      customText != null && customText.isNotEmpty
+          ? customText
+          : _outcomeText(l10n, outcome, formatter),
+    UndoneMessage(
+      outcome: final VoiceOutcome _,
+      customSpeechText: final String? customText,
+    ) =>
+      customText != null && customText.isNotEmpty
+          ? customText
+          : l10n.voiceSaleCancelled,
     NothingToUndoMessage() => l10n.voiceNothingToUndo,
     UndoFailedMessage() => l10n.voiceUndoFailed,
     MicUnavailableMessage(fault: final Object fault) =>

@@ -11,7 +11,9 @@ import '../../di/voice_dependencies.dart';
 import '../../domain/dialog/dialog_manager.dart';
 import '../../domain/entities/clarification_slot.dart';
 import '../../domain/entities/doubt.dart';
+import '../../domain/entities/fact_result.dart';
 import '../../domain/entities/intent_result.dart';
+import '../../domain/ports/message_formulator.dart';
 import '../../domain/usecases/execute_command.dart';
 import '../../domain/usecases/handle_utterance.dart';
 import 'voice_message.dart';
@@ -110,7 +112,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
           .then((HandleUtterance handle) => handle.run(words));
-      _afterTurn(turn);
+      _afterTurn(turn, userUtterance: words);
     } finally {
       _busy = false;
     }
@@ -218,14 +220,44 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// Turns a finished turn into what the panel shows and the speaker reads.
-  void _afterTurn(VoiceTurn turn) {
+  void _afterTurn(VoiceTurn turn, {String userUtterance = ''}) {
     final DialogManager dialog = ref.read(voiceDialogProvider);
     final PendingQuestion? pending = dialog.pending;
-    final VoiceMessage message;
+    VoiceMessage message;
     if (dialog.awaitsManualEntry) {
       message = const ManualEntryMessage();
     } else if (pending == null) {
       message = _messageOfRefusal(turn);
+      if (message is DoneMessage) {
+        try {
+          final MessageFormulator formulator = ref.read(
+            voiceMessageFormulatorProvider,
+          );
+          final List<FactResult> allFacts = <FactResult>[
+            message.outcome.toFactResult(),
+          ];
+          for (final CommandExecution exec in turn.secondaryExecutions) {
+            final VoiceOutcome? secondaryOutcome = outcomeOf(exec);
+            if (secondaryOutcome != null) {
+              allFacts.add(secondaryOutcome.toFactResult());
+            }
+          }
+
+          final String naturalSpeech = formulator.formatSync(
+            userUtterance: userUtterance,
+            facts: allFacts,
+            staticFallback: '',
+          );
+          if (naturalSpeech.isNotEmpty) {
+            message = DoneMessage(
+              message.outcome,
+              customSpeechText: naturalSpeech,
+            );
+          }
+        } catch (_) {
+          // If formulation encounters any issue, retain standard DoneMessage
+        }
+      }
     } else {
       message = _messageOfQuestion(turn, pending);
     }
