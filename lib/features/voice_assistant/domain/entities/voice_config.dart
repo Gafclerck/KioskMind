@@ -17,6 +17,7 @@ final class VoiceConfig {
     this.underSpecifiedNames = kUnderSpecifiedNames,
     this.undoWindow = kDefaultUndoWindow,
     this.questionTimeout = kDefaultQuestionTimeout,
+    this.confirmationTimeout = kDefaultConfirmationTimeout,
     this.maxClarificationTurns = kDefaultMaxClarificationTurns,
     this.sessionTimeout = kDefaultSessionTimeout,
   });
@@ -75,6 +76,13 @@ final class VoiceConfig {
   /// cannot leave: silence ends the question rather than the morning.
   final Duration questionTimeout;
 
+  /// How long the session waits for confirmation before offering manual entry.
+  ///
+  /// Confirmations include a recap read aloud by text-to-speech (TTS), which
+  /// takes 3-6 seconds. A 30s timeout gives the merchant plenty of time to
+  /// listen and answer naturally without dropping to manual entry.
+  final Duration confirmationTimeout;
+
   /// How many questions one command may draw before manual entry is offered.
   final int maxClarificationTurns;
 
@@ -91,6 +99,7 @@ final class VoiceConfig {
     Map<String, List<String>>? underSpecifiedNames,
     Duration? undoWindow,
     Duration? questionTimeout,
+    Duration? confirmationTimeout,
     int? maxClarificationTurns,
     Duration? sessionTimeout,
   }) {
@@ -105,6 +114,7 @@ final class VoiceConfig {
       underSpecifiedNames: underSpecifiedNames ?? this.underSpecifiedNames,
       undoWindow: undoWindow ?? this.undoWindow,
       questionTimeout: questionTimeout ?? this.questionTimeout,
+      confirmationTimeout: confirmationTimeout ?? this.confirmationTimeout,
       maxClarificationTurns:
           maxClarificationTurns ?? this.maxClarificationTurns,
       sessionTimeout: sessionTimeout ?? this.sessionTimeout,
@@ -119,6 +129,8 @@ final class VoiceConfig {
 const Duration kDefaultUndoWindow = Duration(seconds: 10);
 
 const Duration kDefaultQuestionTimeout = Duration(seconds: 10);
+
+const Duration kDefaultConfirmationTimeout = Duration(seconds: 30);
 
 const Duration kDefaultSessionTimeout = Duration(seconds: 30);
 

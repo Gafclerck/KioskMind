@@ -369,6 +369,61 @@ void main() {
       expect(harness.state.message, isA<QuestionMessage>());
       expect(harness.journal.calls, isEmpty);
     });
+
+    test(
+      'a confirmation does not expire after 15 seconds and completes',
+      () async {
+        final SessionHarness harness = SessionHarness();
+        addTearDown(harness.dispose);
+        await harness.controller.submit('vendu trente sucre');
+        expect(harness.state.message, isA<QuestionMessage>());
+        expect(harness.state.awaitingManualEntry, isFalse);
+
+        // Simulate TTS recap playback + merchant pause (15 seconds, exceeding 10s clarification timeout)
+        await harness.elapse(const Duration(seconds: 15));
+
+        // After 15s, confirmation remains active and does not drop to manual entry
+        expect(harness.state.message, isA<QuestionMessage>());
+        expect(harness.state.awaitingManualEntry, isFalse);
+
+        final QuestionMessage question =
+            harness.state.message! as QuestionMessage;
+        await harness.controller.confirm(question.doubt, accepted: true);
+
+        expect(harness.state.awaitingManualEntry, isFalse);
+        expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
+          <String, Object?>{'productId': 'p_sucre', 'qty': 30},
+        ]);
+      },
+    );
+
+    test('a spoken "d\'accord" settles the confirmation and executes', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.submit('vendu trente sucre');
+      expect(harness.state.message, isA<QuestionMessage>());
+
+      await harness.controller.submit("d'accord");
+
+      expect(harness.state.awaitingManualEntry, isFalse);
+      expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
+        <String, Object?>{'productId': 'p_sucre', 'qty': 30},
+      ]);
+    });
+
+    test('a spoken "c\'est bon" settles the confirmation and executes', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.submit('vendu trente sucre');
+      expect(harness.state.message, isA<QuestionMessage>());
+
+      await harness.controller.submit("c'est bon");
+
+      expect(harness.state.awaitingManualEntry, isFalse);
+      expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
+        <String, Object?>{'productId': 'p_sucre', 'qty': 30},
+      ]);
+    });
   });
 
   group('a refusal', () {
