@@ -171,5 +171,47 @@ void main() {
         expect(result['productId'], equals('p_sucre'));
       },
     );
+
+    test(
+      'passes custom dynamic systemPrompt into system_instruction payload',
+      () async {
+        Map<String, dynamic>? capturedBody;
+
+        final caller = DirectGeminiCaller(
+          apiKey: 'test-api-key-123',
+          systemPrompt: 'CUSTOM_SYSTEM_PROMPT_FROM_REGISTRY',
+          httpPoster:
+              (
+                uri,
+                headers,
+                body, {
+                timeout = const Duration(seconds: 2),
+              }) async {
+                capturedBody = body;
+                return {
+                  'candidates': [
+                    {
+                      'content': {
+                        'parts': [
+                          {'text': '{"intentId": "custom_intent"}'},
+                        ],
+                      },
+                    },
+                  ],
+                };
+              },
+        );
+
+        await caller.call('interpretUtterance', {
+          'utterance': 'test',
+          'catalog': [],
+        });
+
+        expect(capturedBody, isNotNull);
+        final systemInstruction =
+            capturedBody!['system_instruction']['parts'][0]['text'] as String;
+        expect(systemInstruction, equals('CUSTOM_SYSTEM_PROMPT_FROM_REGISTRY'));
+      },
+    );
   });
 }

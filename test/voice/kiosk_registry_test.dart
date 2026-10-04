@@ -81,5 +81,57 @@ void main() {
 
       expect(verdict.toString(), contains('Quel sucre'));
     });
+
+    test(
+      'dynamically compiles system prompt and response formats from registered tools',
+      () {
+        registry.register(
+          KioskToolSpec(
+            name: 'record_sale',
+            label: 'Enregistrer une vente',
+            example: 'vends deux savons',
+            jsonFormatExample:
+                '{"intentId": "record_sale", "items": [{"productId": "<id>", "qty": 1.0}]}',
+            handler: (params) async =>
+                const FactResult(operation: 'record_sale', data: {}),
+          ),
+        );
+
+        registry.register(
+          KioskToolSpec(
+            name: 'record_client_debt',
+            label: 'Enregistrer une dette client',
+            example: 'amadou me doit cinq mille francs',
+            paramLabels: const <String, String>{
+              'clientName': 'Nom du client',
+              'amount': 'Montant en FCFA',
+            },
+            handler: (params) async =>
+                const FactResult(operation: 'record_client_debt', data: {}),
+          ),
+        );
+
+        final String responseFormat = registry.toResponseFormatPrompt();
+        expect(responseFormat, contains("Pour 'record_sale'"));
+        expect(responseFormat, contains('"intentId": "record_sale"'));
+        expect(responseFormat, contains("Pour 'record_client_debt'"));
+        expect(responseFormat, contains('"clientName": ...'));
+
+        final String fullPrompt = registry.buildSystemPrompt();
+        expect(
+          fullPrompt,
+          contains("Tu es l'assistant de caisse de KioskMind"),
+        );
+        expect(fullPrompt, contains("- 'record_sale' : Enregistrer une vente"));
+        expect(
+          fullPrompt,
+          contains("- 'record_client_debt' : Enregistrer une dette client"),
+        );
+        expect(
+          fullPrompt,
+          contains("FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR"),
+        );
+      },
+    );
   });
 }

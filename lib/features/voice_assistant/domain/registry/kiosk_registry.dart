@@ -33,11 +33,31 @@ final class KioskRegistry {
   String toPromptDescription() {
     final StringBuffer buffer = StringBuffer();
     for (final KioskToolSpec spec in _tools.values) {
-      buffer.writeln(
-        '- \'${spec.name}\' : ${spec.label} (ex: "${spec.example}")',
-      );
+      buffer.writeln('- \'${spec.name}\' : ${spec.label}.');
     }
     return buffer.toString().trim();
+  }
+
+  /// Generates the formatted JSON response examples section for LLM system prompts.
+  String toResponseFormatPrompt() {
+    final StringBuffer buffer = StringBuffer();
+    for (final KioskToolSpec spec in _tools.values) {
+      buffer.writeln('- Pour \'${spec.name}\' :');
+      buffer.writeln('  ${spec.formatExample()}');
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Builds a complete grounded system prompt for LLM intent interpretation.
+  String buildSystemPrompt() {
+    return "Tu es l'assistant de caisse de KioskMind pour les commerçants d'Afrique de l'Ouest.\n"
+        "Analyse la phrase prononcée par le commerçant et identifie son intention parmi :\n"
+        "${toPromptDescription()}\n\n"
+        "RÈGLE D'ANCRAGE STRICTE (D5) :\n"
+        "Tu dois OBLIGATOIREMENT et UNIQUEMENT utiliser les 'id' des produits qui figurent explicitement dans le catalogue fourni.\n"
+        "N'invente JAMAIS d'identifiant de produit qui n'est pas dans le catalogue.\n\n"
+        "FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR :\n"
+        "${toResponseFormatPrompt()}";
   }
 
   /// Fallback detector (DeclarationSpec from assistantv3):

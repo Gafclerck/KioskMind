@@ -24,6 +24,7 @@ final class KioskToolSpec {
     this.precheck,
     this.declarationKeywords = const <String>{},
     this.paramLabels = const <String, String>{},
+    this.jsonFormatExample,
   });
 
   /// Unique name (e.g. 'record_sale', 'query_stock', 'record_client_debt').
@@ -49,6 +50,23 @@ final class KioskToolSpec {
 
   /// Parameter labels for readable confirmation summaries.
   final Map<String, String> paramLabels;
+
+  /// Canonical JSON format example for LLM prompting.
+  final String? jsonFormatExample;
+
+  /// Returns the formatted JSON example, either custom or computed from paramLabels.
+  String formatExample() {
+    if (jsonFormatExample != null && jsonFormatExample!.isNotEmpty) {
+      return jsonFormatExample!;
+    }
+    if (paramLabels.isEmpty) {
+      return '{"intentId": "$name"}';
+    }
+    final String params = paramLabels.keys
+        .map((String k) => '"$k": ...')
+        .join(', ');
+    return '{"intentId": "$name", $params}';
+  }
 
   /// Exports this tool as a standard Gemini / OpenAI compatible Tool Declaration.
   Map<String, dynamic> toFunctionDeclaration() {
