@@ -1,53 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/localization/generated/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../products_stock/presentation/pages/product_list_page.dart';
+import '../profile/presentation/pages/profile_page.dart';
 import '../sales/presentation/pages/sales_dashboard_page.dart';
 import '../sales/presentation/pages/sales_history_page.dart';
 import '../voice_assistant/presentation/widgets/voice_session_sheet.dart';
+import 'navigation_index_provider.dart';
 
-class MainNavigationPage extends StatefulWidget {
+class MainNavigationPage extends ConsumerWidget {
   const MainNavigationPage({super.key});
 
-  @override
-  State<MainNavigationPage> createState() => _MainNavigationPageState();
-}
-
-class _MainNavigationPageState extends State<MainNavigationPage> {
-  int _currentIndex = 0;
-  final Set<int> _activatedIndices = <int>{0};
-
-  final List<Widget> _pages = [
-    const SalesDashboardPage(),
-
-    const ProductListPage(),
-
-    const SalesHistoryPage(),
-
-    const _PlaceholderPage(title: 'Profil', icon: Icons.person_rounded),
+  static const List<Widget> _pages = [
+    SalesDashboardPage(),
+    ProductListPage(),
+    SalesHistoryPage(),
+    ProfilePage(),
   ];
 
-  void _onNavigationSelected(int index) {
-    setState(() {
-      _currentIndex = index;
-      _activatedIndices.add(index);
-    });
+  void _onNavigationSelected(int index, WidgetRef ref) {
+    ref.read(navigationIndexProvider.notifier).goTo(index);
   }
 
-  void _onVoicePressed() {
+  void _onVoicePressed(BuildContext context) {
     openVoiceSession(context);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final int currentIndex = ref.watch(navigationIndexProvider);
+    final Set<int> activatedIndices = ref.watch(navigationActivatedProvider);
+
     return Scaffold(
       extendBody: true,
 
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: List<Widget>.generate(_pages.length, (int index) {
-          if (_activatedIndices.contains(index)) {
+          if (activatedIndices.contains(index)) {
             return _pages[index];
           }
           return const SizedBox.shrink();
@@ -55,20 +47,18 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       ),
 
       bottomNavigationBar: _KioskMindBottomNavigation(
-        currentIndex: _currentIndex,
-        onItemSelected: _onNavigationSelected,
+        currentIndex: currentIndex,
+        onItemSelected: (int index) => _onNavigationSelected(index, ref),
       ),
 
-      floatingActionButton: _VoiceButton(onPressed: _onVoicePressed),
+      floatingActionButton: _VoiceButton(
+        onPressed: () => _onVoicePressed(context),
+      ),
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
-
-// ============================================================
-// BOTTOM NAVIGATION
-// ============================================================
 
 class _KioskMindBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -98,7 +88,6 @@ class _KioskMindBottomNavigation extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // ACCUEIL
             Expanded(
               child: _NavigationItem(
                 icon: Icons.home_outlined,
@@ -109,7 +98,6 @@ class _KioskMindBottomNavigation extends StatelessWidget {
               ),
             ),
 
-            // STOCK
             Expanded(
               child: _NavigationItem(
                 icon: Icons.inventory_2_outlined,
@@ -120,10 +108,9 @@ class _KioskMindBottomNavigation extends StatelessWidget {
               ),
             ),
 
-            // ESPACE POUR LE BOUTON VOCAL
+            // Emplacement réservé au bouton vocal flottant.
             const SizedBox(width: 62),
 
-            // VENTES
             Expanded(
               child: _NavigationItem(
                 icon: Icons.receipt_long_outlined,
@@ -134,7 +121,6 @@ class _KioskMindBottomNavigation extends StatelessWidget {
               ),
             ),
 
-            // PROFIL
             Expanded(
               child: _NavigationItem(
                 icon: Icons.person_outline,
@@ -150,10 +136,6 @@ class _KioskMindBottomNavigation extends StatelessWidget {
     );
   }
 }
-
-// ============================================================
-// ITEM NAVIGATION
-// ============================================================
 
 class _NavigationItem extends StatelessWidget {
   final IconData icon;
@@ -220,10 +202,6 @@ class _NavigationItem extends StatelessWidget {
   }
 }
 
-// ============================================================
-// BOUTON VOCAL
-// ============================================================
-
 class _VoiceButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -268,33 +246,6 @@ class _VoiceButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// PLACEHOLDER TEMPORAIRE
-// ============================================================
-
-class _PlaceholderPage extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const _PlaceholderPage({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: AppColors.primary),
-
-          const SizedBox(height: 16),
-
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-        ],
       ),
     );
   }

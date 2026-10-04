@@ -7,16 +7,10 @@ import '../providers/sales_provider.dart';
 class CreateSalePage extends ConsumerWidget {
   final List<SaleItem> items;
 
-  const CreateSalePage({
-    super.key,
-    required this.items,
-  });
+  const CreateSalePage({super.key, required this.items});
 
   double get total {
-    return items.fold(
-      0,
-      (sum, item) => sum + (item.qty * item.unitPrice),
-    );
+    return items.fold(0, (sum, item) => sum + (item.qty * item.unitPrice));
   }
 
   @override
@@ -25,19 +19,14 @@ class CreateSalePage extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Créer une vente'),
-      ),
+      appBar: AppBar(title: const Text('Créer une vente')),
       body: Column(
         children: [
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text(
-                  'Produits détectés',
-                  style: textTheme.titleMedium,
-                ),
+                Text('Produits détectés', style: textTheme.titleMedium),
                 const SizedBox(height: 12),
                 if (items.isEmpty)
                   Card(
@@ -54,11 +43,7 @@ class CreateSalePage extends ConsumerWidget {
                     ),
                   )
                 else
-                  ...items.map(
-                    (item) => _ProductSaleCard(
-                      item: item,
-                    ),
-                  ),
+                  ...items.map((item) => _ProductSaleCard(item: item)),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -110,10 +95,7 @@ class CreateSalePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmSale(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _confirmSale(BuildContext context, WidgetRef ref) async {
     final sale = Sale(
       dateTime: DateTime.now(),
       createdAt: DateTime.now(),
@@ -129,9 +111,7 @@ class CreateSalePage extends ConsumerWidget {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vente enregistrée avec succès.'),
-        ),
+        const SnackBar(content: Text('Vente enregistrée avec succès.')),
       );
 
       Navigator.pop(context);
@@ -139,11 +119,7 @@ class CreateSalePage extends ConsumerWidget {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Impossible d’enregistrer la vente.',
-          ),
-        ),
+        const SnackBar(content: Text('Impossible d’enregistrer la vente.')),
       );
     }
   }
@@ -152,9 +128,7 @@ class CreateSalePage extends ConsumerWidget {
 class _ProductSaleCard extends StatelessWidget {
   final SaleItem item;
 
-  const _ProductSaleCard({
-    required this.item,
-  });
+  const _ProductSaleCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -166,35 +140,25 @@ class _ProductSaleCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: colorScheme.primaryContainer,
           child: Text(
-            item.name.isNotEmpty
-                ? item.name[0].toUpperCase()
-                : '?',
+            item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
             style: TextStyle(
               color: colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        title: Text(
-          item.name,
-          style: textTheme.titleSmall,
-        ),
+        title: Text(item.name, style: textTheme.titleSmall),
         subtitle: Text(
           '${_formatQuantity(item.qty)} × '
           '${item.unitPrice.toStringAsFixed(0)} F',
         ),
         trailing: Text(
           '${itemTotal.toStringAsFixed(0)} F',
-          style: textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
     );

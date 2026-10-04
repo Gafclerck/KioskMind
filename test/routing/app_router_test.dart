@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/app.dart';
-import 'package:kiosk_mind/core/storage/app_preferences.dart';
 import 'package:kiosk_mind/core/storage/app_preferences_provider.dart';
 import 'package:kiosk_mind/features/auth/presentation/pages/login_page.dart';
 import 'package:kiosk_mind/features/auth/presentation/providers/auth_state_provider.dart';
@@ -12,13 +11,7 @@ import 'package:kiosk_mind/features/onboarding/presentation/pages/onboarding_pag
 import 'package:kiosk_mind/features/products_stock/presentation/pages/add_product_page.dart';
 import 'package:kiosk_mind/features/sales/presentation/pages/create_sale_page.dart';
 
-class FakeAppPreferences implements AppPreferences {
-  bool seen = false;
-  @override
-  Future<bool> hasSeenOnboarding() async => seen;
-  @override
-  Future<void> markOnboardingSeen() async => seen = true;
-}
+import '../core/fake_app_preferences.dart';
 
 void main() {
   testWidgets(

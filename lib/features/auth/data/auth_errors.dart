@@ -25,6 +25,8 @@ String messageForFirebaseAuthCode(String code) {
       return 'Adresse e-mail manquante';
     case 'invalid-credential':
       return 'Identifiants invalides';
+    case 'requires-recent-login':
+      return 'Veuillez vous reconnecter pour continuer';
     case 'operation-not-allowed':
       return "La connexion par e-mail n'est pas activée";
     case 'network-request-failed':

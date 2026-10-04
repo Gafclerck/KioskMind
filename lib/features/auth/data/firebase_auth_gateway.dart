@@ -62,22 +62,32 @@ class FirebaseAuthGateway implements AuthGateway {
   Future<bool> isPhoneInUse({
     required String countryCode,
     required String phone,
+    String? exceptUid,
   }) async {
     final QuerySnapshot paired = await _firestore
         .collection('users')
         .where('countryCode', isEqualTo: countryCode)
         .where('phone', isEqualTo: phone)
-        .limit(1)
+        .limit(2)
         .get();
-    if (paired.docs.isNotEmpty) {
+    if (_isOwnedByAnother(paired, exceptUid)) {
       return true;
     }
     final QuerySnapshot normalized = await _firestore
         .collection('users')
         .where('phone', isEqualTo: '$countryCode$phone')
-        .limit(1)
+        .limit(2)
         .get();
-    return normalized.docs.isNotEmpty;
+    return _isOwnedByAnother(normalized, exceptUid);
+  }
+
+  bool _isOwnedByAnother(QuerySnapshot snapshot, String? exceptUid) {
+    for (final QueryDocumentSnapshot<Object?> doc in snapshot.docs) {
+      if (doc.id != exceptUid) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -120,6 +130,41 @@ class FirebaseAuthGateway implements AuthGateway {
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+    } catch (error) {
+      throw authErrorFrom(error);
+    }
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('Vous devez être connecté');
+    }
+    final String email = user.email ?? '';
+    final AuthCredential credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+    try {
+      await user.reauthenticateWithCredential(credential);
+    } catch (error) {
+      if (error is FirebaseAuthException &&
+          error.code == 'invalid-credential') {
+        throw const AuthException('Mot de passe actuel incorrect');
+      }
+      throw authErrorFrom(error);
+    }
+    try {
+      await user.updatePassword(newPassword);
     } catch (error) {
       throw authErrorFrom(error);
     }
