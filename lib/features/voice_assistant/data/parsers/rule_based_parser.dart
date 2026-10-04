@@ -186,6 +186,8 @@ final class RuleBasedParser implements IntentParser {
       tokens,
       from: detection.triggerEnd,
       requiresQuantity: isWrite,
+      triggerStart: detection.triggerStart,
+      triggerEnd: detection.triggerEnd,
     );
     doubts.addAll(reading.doubts);
     if (reading.items.isEmpty) {
@@ -209,6 +211,8 @@ final class RuleBasedParser implements IntentParser {
       tokens,
       from: detection.triggerEnd,
       requiresQuantity: isWrite,
+      triggerStart: detection.triggerStart,
+      triggerEnd: detection.triggerEnd,
     );
     doubts.addAll(reading.doubts);
     if (reading.products.isEmpty) {

@@ -186,6 +186,7 @@ const Set<String> kCurrencyWords = <String>{
   'franc',
   'francs',
   'fcfa',
+  'cfa',
   'xof',
   're',
 };

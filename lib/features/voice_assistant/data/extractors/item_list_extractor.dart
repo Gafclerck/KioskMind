@@ -42,20 +42,42 @@ final class ItemListExtractor {
   /// and is still complete, while "vendu du riz" without a count is not.
   ///
   /// Every doubt about a line carries what the merchant did say about it, so that
+  /// Reads the products named in [tokens], ignoring the trigger span [triggerStart, triggerEnd].
+  ///
+  /// [requiresQuantity] is false for a question: "combien de riz" has no count
+  /// and is still complete, while "vendu du riz" without a count is not.
+  ///
+  /// Every doubt about a line carries what the merchant did say about it, so that
   /// the answer to the question completes the line. The reading never invents a
   /// count: a line the merchant left half said stays half said.
   ItemListReading read(
     List<String> tokens, {
     required int from,
     required bool requiresQuantity,
+    int triggerStart = 0,
+    int? triggerEnd,
   }) {
-    final List<_Mention> mentions = _keptMentions(tokens, from);
+    final int effectiveTriggerEnd = triggerEnd ?? from;
+    final List<_Mention> mentions = _keptMentions(
+      tokens,
+      triggerStart: triggerStart,
+      triggerEnd: effectiveTriggerEnd,
+    );
     final List<Doubt> doubts = <Doubt>[];
     final List<ItemMention> items = <ItemMention>[];
     final List<ProductSnapshot> products = <ProductSnapshot>[];
 
-    for (final _Mention mention in mentions) {
-      final LineReading reading = lines.read(tokens, mention.start);
+    for (int i = 0; i < mentions.length; i++) {
+      final _Mention mention = mentions[i];
+      final int? nextProductStart = i + 1 < mentions.length
+          ? mentions[i + 1].start
+          : null;
+      final LineReading reading = lines.read(
+        tokens,
+        mention.start,
+        productLength: mention.length,
+        nextProductStart: nextProductStart,
+      );
       final double? quantity = _quantityOf(reading);
       final Doubt? doubt = _doubtOf(mention.resolution, quantity);
       if (doubt != null) {
@@ -76,7 +98,14 @@ final class ItemListExtractor {
       }
     }
     if (mentions.isEmpty) {
-      doubts.add(_noProductDoubt(tokens, from, requiresQuantity));
+      doubts.add(
+        _noProductDoubt(
+          tokens,
+          triggerStart: triggerStart,
+          triggerEnd: effectiveTriggerEnd,
+          requiresQuantity: requiresQuantity,
+        ),
+      );
     }
     return ItemListReading(items: items, products: products, doubts: doubts);
   }
@@ -87,9 +116,20 @@ final class ItemListExtractor {
   /// named nothing at all: the difference is what the merchant is told. The count
   /// is read as if the missing name stood at the end of the utterance, which is
   /// where the reader looks back from, so "vendu deux sachets" keeps its two.
-  Doubt _noProductDoubt(List<String> tokens, int from, bool requiresQuantity) {
+  Doubt _noProductDoubt(
+    List<String> tokens, {
+    required int triggerStart,
+    required int triggerEnd,
+    required bool requiresQuantity,
+  }) {
     return Doubt(
-      kind: _namesSomething(tokens, from, const <_Mention>[])
+      kind:
+          _namesSomething(
+            tokens,
+            triggerStart: triggerStart,
+            triggerEnd: triggerEnd,
+            mentions: const <_Mention>[],
+          )
           ? DoubtKind.unknownProduct
           : DoubtKind.missingProduct,
       partial: (
@@ -114,11 +154,19 @@ final class ItemListExtractor {
     return reading.amount == null ? null : 1;
   }
 
-  /// Every product name from [from] onwards, minus the ones a correction undid.
-  List<_Mention> _keptMentions(List<String> tokens, int from) {
+  /// Every product name outside the trigger span, minus the ones a correction undid.
+  List<_Mention> _keptMentions(
+    List<String> tokens, {
+    required int triggerStart,
+    required int triggerEnd,
+  }) {
     final List<_Mention> found = <_Mention>[];
-    int index = from;
+    int index = 0;
     while (index < tokens.length) {
+      if (index >= triggerStart && index < triggerEnd) {
+        index = triggerEnd;
+        continue;
+      }
       final ProductSpan? span = resolver.matchAt(tokens, index);
       if (span == null) {
         index++;
@@ -222,12 +270,20 @@ final class ItemListExtractor {
 
   /// Whether a plain word stands where a product was expected.
   ///
-  /// Bounded to the words that precede the last name actually found, so the
-  /// chatter after a correct command ("je te raconterai apres") cannot turn a
-  /// complete line into an unknown product.
-  bool _namesSomething(List<String> tokens, int from, List<_Mention> mentions) {
+  /// Bounded to the words that precede the last name actually found, skipping
+  /// the trigger span itself, so neither the trigger nor the chatter after a
+  /// command can turn a complete line into an unknown product.
+  bool _namesSomething(
+    List<String> tokens, {
+    required int triggerStart,
+    required int triggerEnd,
+    required List<_Mention> mentions,
+  }) {
     final int limit = mentions.isEmpty ? tokens.length : mentions.last.end;
-    for (int index = from; index < limit; index++) {
+    for (int index = 0; index < limit; index++) {
+      if (index >= triggerStart && index < triggerEnd) {
+        continue;
+      }
       final String token = tokens[index];
       if (_isPlaceholder(token)) {
         continue;

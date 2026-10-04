@@ -92,6 +92,10 @@ void main() {
       ]);
     });
 
+    test('une vente avec le declencheur a la fin (phrase inversee)', () {
+      expect(linesOf('deux savon vendu'), <String>['p_savon x2']);
+    });
+
     test('le prix annonce reste un doute, pas un argument de vente', () {
       // A7: le prix du catalogue s'applique, le prix parle sert de signal. La
       // ligne le conserve pour le policy, mais les arguments du handler ne le
@@ -256,6 +260,14 @@ void main() {
         'p_riz',
       );
       expect(doubtsOf('combien il reste de riz'), isEmpty);
+    });
+
+    test('une question avec le produit avant le declencheur', () {
+      expect(
+        parse('le riz il reste combien').valueOf<String>('productId'),
+        'p_riz',
+      );
+      expect(doubtsOf('le riz il reste combien'), isEmpty);
     });
 
     test('sans produit, la question est incomplete', () {

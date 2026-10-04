@@ -35,14 +35,25 @@ final class LineExtractor {
   /// Tolerance for reading a misheard unit as the unit it was meant to be.
   final double _fuzzyThreshold;
 
-  /// Reads the line of the product whose name ends just before [start].
+  /// Reads the line of the product starting at [start] and spanning [productLength] tokens.
   ///
   /// [start] is the first token of the name, so the words that may precede it are
-  /// the ones just before that.
-  LineReading read(List<String> tokens, int start) {
+  /// the ones just before that, and the words that may follow it start at
+  /// `start + productLength`.
+  LineReading read(
+    List<String> tokens,
+    int start, {
+    int productLength = 1,
+    int? nextProductStart,
+  }) {
     return LineReading(
-      quantity: _quantity(tokens, start),
-      amount: _amount(tokens, start),
+      quantity: _quantity(tokens, start, productLength, nextProductStart),
+      amount: _amount(
+        tokens,
+        start,
+        productLength: productLength,
+        nextProductStart: nextProductStart,
+      ),
     );
   }
 
@@ -51,13 +62,77 @@ final class LineExtractor {
   /// "cinq sachets de sucre" is five, not one and not "sachets". The search
   /// takes the longest number that ends exactly where the bridges stop, so
   /// "trois cents pates" is three hundred and not the hundred of "cents".
-  double? _quantity(List<String> tokens, int start) {
+  /// If no count precedes the product, it checks for a repetition or a
+  /// post-product count such as "savon deux" or "riz 3 sacs".
+  double? _quantity(
+    List<String> tokens,
+    int start,
+    int productLength,
+    int? nextProductStart,
+  ) {
     final int anchor = _bridgeEnd(tokens, start);
     final double? before = _numberEndingAt(tokens, anchor);
     if (before != null) {
       return before;
     }
-    return _repeatedCount(tokens, start);
+    final double? repeated = _repeatedCount(tokens, start);
+    if (repeated != null) {
+      return repeated;
+    }
+    return _postProductQuantity(
+      tokens,
+      start + productLength,
+      nextProductStart: nextProductStart,
+    );
+  }
+
+  /// Reads a quantity directly following the product name, as in "savon deux" or "riz trois sacs".
+  double? _postProductQuantity(
+    List<String> tokens,
+    int afterIndex, {
+    int? nextProductStart,
+  }) {
+    if (afterIndex >= tokens.length) {
+      return null;
+    }
+    // Price introduced by 'a' is not a quantity.
+    if (tokens[afterIndex] == 'a') {
+      return null;
+    }
+    // Stop at sentence connectors, corrections or question markers.
+    if (tokens[afterIndex] == 'et' ||
+        tokens[afterIndex] == 'ou' ||
+        tokens[afterIndex] == 'combien' ||
+        kCorrectionWords.contains(tokens[afterIndex])) {
+      return null;
+    }
+
+    int cursor = afterIndex;
+    // Allow optional bridge ("de", "d'") before the count, e.g. "savon de deux".
+    while (cursor < tokens.length &&
+        kQuantityBridges.contains(tokens[cursor])) {
+      cursor++;
+    }
+
+    if (cursor < tokens.length) {
+      final ParsedNumber? number = numbers.readAt(tokens, cursor);
+      if (number != null && number.value > 0) {
+        // If this number precedes the next product, it belongs to that next
+        // product, not to the current one.
+        if (nextProductStart != null &&
+            cursor + number.consumed >= _bridgeEnd(tokens, nextProductStart)) {
+          return null;
+        }
+        // If followed by a currency word, it is an amount, NOT a quantity.
+        final int afterNumber = cursor + number.consumed;
+        if (afterNumber < tokens.length &&
+            kCurrencyWords.contains(tokens[afterNumber])) {
+          return null;
+        }
+        return number.value;
+      }
+    }
+    return null;
   }
 
   /// The first index before [start] that is neither a bridge nor a unit.
@@ -139,24 +214,54 @@ final class LineExtractor {
     return null;
   }
 
-  /// The amount announced just after the name, as in "a sept cents".
+  /// The amount announced just after the name, as in "a sept cents" or "2000 francs".
   ///
-  /// Only a number introduced by "a" counts, and only within a few tokens, so
-  /// "un riz a sept cents le kilo et un sucre" prices the rice and not the sugar.
-  double? _amount(List<String> tokens, int start) {
-    final int limit = tokens.length < start + kAmountReach + 1
-        ? tokens.length
-        : start + kAmountReach + 1;
+  /// Either introduced by "a" within a few tokens, or directly followed by a
+  /// currency word (franc, fcfa, cfa, etc.).
+  double? _amount(
+    List<String> tokens,
+    int start, {
+    int productLength = 1,
+    int? nextProductStart,
+  }) {
+    final int afterIndex = start + productLength;
+    final int ceiling = nextProductStart ?? tokens.length;
+    int limit = afterIndex + kAmountReach + 2;
+    if (limit > ceiling) {
+      limit = ceiling;
+    }
+
+    // 1. Look for amount introduced by 'a' (e.g. "a sept cents", "a 500 francs")
     for (int index = start; index < limit; index++) {
-      if (tokens[index] != 'a' || index + 1 >= tokens.length) {
+      if (tokens[index] != 'a' || index + 1 >= ceiling) {
         continue;
       }
       final ParsedNumber? number = numbers.readAt(tokens, index + 1);
-      if (number == null) {
-        continue;
+      if (number != null &&
+          number.value > 0 &&
+          index + 1 + number.consumed <= ceiling) {
+        return number.value;
       }
-      return number.value;
     }
+
+    // 2. Look for direct amount followed by currency (e.g. "riz deux mille francs", "savon 500 cfa")
+    for (int cursor = afterIndex; cursor < limit; cursor++) {
+      if (tokens[cursor] == 'et' ||
+          tokens[cursor] == 'ou' ||
+          tokens[cursor] == 'combien' ||
+          kCorrectionWords.contains(tokens[cursor])) {
+        break;
+      }
+      final ParsedNumber? number = numbers.readAt(tokens, cursor);
+      if (number != null && number.value > 0) {
+        final int currencyIndex = cursor + number.consumed;
+        if (currencyIndex < ceiling &&
+            kCurrencyWords.contains(tokens[currencyIndex])) {
+          return number.value;
+        }
+      }
+    }
+
     return null;
   }
 }

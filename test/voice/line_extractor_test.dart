@@ -8,21 +8,25 @@ void main() {
   final RuleParserHarness harness = RuleParserHarness();
   final LineExtractor lines = harness.lines;
 
-  /// Index of the first product name in [tokens].
-  int firstName(List<String> tokens) {
+  /// First product span in [tokens].
+  ProductSpan firstProduct(List<String> tokens) {
     for (int index = 0; index < tokens.length; index++) {
       final ProductSpan? span = harness.resolver.matchAt(tokens, index);
       if (span != null) {
-        return span.start;
+        return span;
       }
     }
     throw StateError('aucun produit dans cette phrase');
   }
 
+  /// Index of the first product name in [tokens].
+  int firstName(List<String> tokens) => firstProduct(tokens).start;
+
   /// Reads the line of the first product name of [raw].
   LineReading read(String raw) {
     final List<String> tokens = harness.tokensOf(raw);
-    return lines.read(tokens, firstName(tokens));
+    final ProductSpan span = firstProduct(tokens);
+    return lines.read(tokens, span.start, productLength: span.length);
   }
 
   double? quantityOf(String raw) => read(raw).quantity;
@@ -31,6 +35,14 @@ void main() {
   group('quantite', () {
     test('un nombre juste avant le nom', () {
       expect(quantityOf('vendu deux savon'), 2);
+    });
+
+    test('un nombre juste apres le nom (syntaxe comptoir)', () {
+      expect(quantityOf('vendu savon deux'), 2);
+      expect(quantityOf('vendu savon 2'), 2);
+      expect(quantityOf('vendu savon trois morceaux'), 3);
+      expect(quantityOf('vendu riz 5 kilos'), 5);
+      expect(quantityOf('vendu savon de menage quatre'), 4);
     });
 
     test('un article partitif sans nombre ne donne pas de quantite', () {
@@ -103,6 +115,30 @@ void main() {
       expect(amountOf('vendu un sucre a cent francs'), 100);
       expect(amountOf('reçu du riz a cinq cent soixante'), 560);
       expect(amountOf('reçu du ciment a quatre mille huit cents'), 4800);
+    });
+
+    test('direct avec mot de devise (sans "a")', () {
+      expect(amountOf('vendu riz deux mille francs'), 2000);
+      expect(amountOf('vendu savon 500 cfa'), 500);
+      expect(amountOf('vendu huile mille cinq cents fcfa'), 1500);
+    });
+
+    test('un montant suivi de devise n est pas confondu avec une quantite', () {
+      // "riz deux mille francs" -> montant 2000, pas quantite 2000.
+      expect(amountOf('vendu riz deux mille francs'), 2000);
+      expect(quantityOf('vendu riz deux mille francs'), isNull);
+
+      // "deux savon 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu deux savon 500 cfa'), 2);
+      expect(amountOf('vendu deux savon 500 cfa'), 500);
+
+      // "savon deux a 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu savon deux a 500 cfa'), 2);
+      expect(amountOf('vendu savon deux a 500 cfa'), 500);
+
+      // "savon deux morceaux 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu savon deux morceaux 500 cfa'), 2);
+      expect(amountOf('vendu savon deux morceaux 500 cfa'), 500);
     });
 
     test('un montant ne se deplace pas sur la ligne suivante', () {

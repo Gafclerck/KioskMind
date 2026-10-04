@@ -23,6 +23,19 @@ void main() {
       );
     });
 
+    test(
+      'transposition de deux lettres adjacentes compte pour une seule operation',
+      () {
+        // Damerau-Levenshtein: une inversion adjacente est une distance de 1.
+        expect(WordSimilarity.of('scure', 'sucre'), closeTo(0.8, 0.0001));
+        expect(
+          WordSimilarity.of('cosnerve', 'conserve'),
+          closeTo(0.875, 0.0001),
+        );
+        expect(WordSimilarity.of('tomaet', 'tomate'), closeTo(0.8333, 0.001));
+      },
+    );
+
     test('symetrique', () {
       expect(
         WordSimilarity.of('savon', 'savons'),
