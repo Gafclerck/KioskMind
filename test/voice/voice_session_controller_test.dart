@@ -110,7 +110,65 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(harness.recognizer.stopCount, 1);
+      expect(harness.recognizer.cancelCount, 1);
       expect(harness.intentsCalled, <String>['record_sale']);
+      expect(harness.state.lastHeard, isEmpty);
+    });
+
+    test('resets lastHeard and cancels recognizer on stopListening', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hear('vendu');
+      expect(harness.state.lastHeard, 'vendu');
+
+      await harness.controller.stopListening();
+
+      expect(harness.state.status, VoiceSessionStatus.idle);
+      expect(harness.state.lastHeard, isEmpty);
+      expect(harness.recognizer.cancelCount, greaterThan(0));
+    });
+
+    test('discards trailing utterances received after listening stopped', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hearFinal('vendu deux savon');
+      await Future<void>.delayed(Duration.zero);
+      expect(harness.state.status, VoiceSessionStatus.idle);
+      expect(harness.state.lastHeard, isEmpty);
+
+      // Trailing event from engine after turn completed
+      harness.recognizer.hear('unwanted late utterance');
+      expect(harness.state.lastHeard, isEmpty);
+    });
+
+    test('resets lastHeard when starting a new listening session', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hear('vendu deux');
+      expect(harness.state.lastHeard, 'vendu deux');
+
+      // Now stop and start listening again: must reset lastHeard to empty
+      await harness.controller.stopListening();
+      await harness.controller.startListening();
+
+      expect(harness.state.lastHeard, isEmpty);
+      expect(harness.state.status, VoiceSessionStatus.listening);
+    });
+
+    test('resets lastHeard when microphone fails', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hear('vendu');
+      expect(harness.state.lastHeard, 'vendu');
+
+      harness.recognizer.fail(const SpeechServiceError(SpeechFault.listenFailed));
+
+      expect(harness.state.lastHeard, isEmpty);
+      expect(harness.state.status, VoiceSessionStatus.idle);
     });
 
     test('a refused permission ends the attempt on the screens', () async {
