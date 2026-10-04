@@ -626,6 +626,11 @@ final Provider<KioskRegistry> kioskRegistryProvider = Provider<KioskRegistry>((
         'entree',
         'recu',
         'stocker',
+        'reappro',
+        'reassort',
+        'achat',
+        'livraison',
+        'restock',
       },
       handler: (params) async =>
           const FactResult(operation: 'record_restock', data: {}),

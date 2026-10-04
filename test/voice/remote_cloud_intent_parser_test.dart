@@ -147,6 +147,24 @@ void main() {
       expect(items?.first.spokenAmount, equals(4000.0));
     });
 
+    test('adds missingQuantity doubt when restock item has null qty', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'record_restock',
+          'items': <Map<String, dynamic>>[
+            <String, dynamic>{'productId': 'p_riz', 'qty': null},
+          ],
+        },
+      );
+
+      final proposal = await parser.parse('reçu du riz');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('record_restock'));
+      expect(proposal.hasDoubt(DoubtKind.missingQuantity), isTrue);
+    });
+
     test('parses cancel_last_sale intent with empty slots', () async {
       final parser = RemoteCloudIntentParser(
         catalogReader: catalog,

@@ -124,7 +124,12 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
     for (final dynamic item in rawItems) {
       if (item is! Map) continue;
       final String? productId = item['productId'] as String?;
-      final double qty = (item['qty'] as num?)?.toDouble() ?? 1.0;
+      final num? rawQty = item['qty'] as num?;
+      if (rawQty == null) {
+        doubts.add(const Doubt(kind: DoubtKind.missingQuantity));
+        continue;
+      }
+      final double qty = rawQty.toDouble();
       final double? spokenPrice = (item['spokenUnitPrice'] as num?)?.toDouble();
 
       if (productId == null) {
@@ -170,7 +175,12 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
     for (final dynamic item in rawItems) {
       if (item is! Map) continue;
       final String? productId = item['productId'] as String?;
-      final double qty = (item['qty'] as num?)?.toDouble() ?? 1.0;
+      final num? rawQty = item['qty'] as num?;
+      if (rawQty == null) {
+        doubts.add(const Doubt(kind: DoubtKind.missingQuantity));
+        continue;
+      }
+      final double qty = rawQty.toDouble();
       final double? spokenCost = (item['spokenUnitCost'] as num?)?.toDouble();
 
       if (productId == null) {
