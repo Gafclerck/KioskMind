@@ -48,7 +48,12 @@ final class LineExtractor {
   }) {
     return LineReading(
       quantity: _quantity(tokens, start, productLength, nextProductStart),
-      amount: _amount(tokens, start),
+      amount: _amount(
+        tokens,
+        start,
+        productLength: productLength,
+        nextProductStart: nextProductStart,
+      ),
     );
   }
 
@@ -116,6 +121,12 @@ final class LineExtractor {
         // product, not to the current one.
         if (nextProductStart != null &&
             cursor + number.consumed >= _bridgeEnd(tokens, nextProductStart)) {
+          return null;
+        }
+        // If followed by a currency word, it is an amount, NOT a quantity.
+        final int afterNumber = cursor + number.consumed;
+        if (afterNumber < tokens.length &&
+            kCurrencyWords.contains(tokens[afterNumber])) {
           return null;
         }
         return number.value;
@@ -203,24 +214,54 @@ final class LineExtractor {
     return null;
   }
 
-  /// The amount announced just after the name, as in "a sept cents".
+  /// The amount announced just after the name, as in "a sept cents" or "2000 francs".
   ///
-  /// Only a number introduced by "a" counts, and only within a few tokens, so
-  /// "un riz a sept cents le kilo et un sucre" prices the rice and not the sugar.
-  double? _amount(List<String> tokens, int start) {
-    final int limit = tokens.length < start + kAmountReach + 1
-        ? tokens.length
-        : start + kAmountReach + 1;
+  /// Either introduced by "a" within a few tokens, or directly followed by a
+  /// currency word (franc, fcfa, cfa, etc.).
+  double? _amount(
+    List<String> tokens,
+    int start, {
+    int productLength = 1,
+    int? nextProductStart,
+  }) {
+    final int afterIndex = start + productLength;
+    final int ceiling = nextProductStart ?? tokens.length;
+    int limit = afterIndex + kAmountReach + 2;
+    if (limit > ceiling) {
+      limit = ceiling;
+    }
+
+    // 1. Look for amount introduced by 'a' (e.g. "a sept cents", "a 500 francs")
     for (int index = start; index < limit; index++) {
-      if (tokens[index] != 'a' || index + 1 >= tokens.length) {
+      if (tokens[index] != 'a' || index + 1 >= ceiling) {
         continue;
       }
       final ParsedNumber? number = numbers.readAt(tokens, index + 1);
-      if (number == null) {
-        continue;
+      if (number != null &&
+          number.value > 0 &&
+          index + 1 + number.consumed <= ceiling) {
+        return number.value;
       }
-      return number.value;
     }
+
+    // 2. Look for direct amount followed by currency (e.g. "riz deux mille francs", "savon 500 cfa")
+    for (int cursor = afterIndex; cursor < limit; cursor++) {
+      if (tokens[cursor] == 'et' ||
+          tokens[cursor] == 'ou' ||
+          tokens[cursor] == 'combien' ||
+          kCorrectionWords.contains(tokens[cursor])) {
+        break;
+      }
+      final ParsedNumber? number = numbers.readAt(tokens, cursor);
+      if (number != null && number.value > 0) {
+        final int currencyIndex = cursor + number.consumed;
+        if (currencyIndex < ceiling &&
+            kCurrencyWords.contains(tokens[currencyIndex])) {
+          return number.value;
+        }
+      }
+    }
+
     return null;
   }
 }

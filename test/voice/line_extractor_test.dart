@@ -117,6 +117,30 @@ void main() {
       expect(amountOf('reçu du ciment a quatre mille huit cents'), 4800);
     });
 
+    test('direct avec mot de devise (sans "a")', () {
+      expect(amountOf('vendu riz deux mille francs'), 2000);
+      expect(amountOf('vendu savon 500 cfa'), 500);
+      expect(amountOf('vendu huile mille cinq cents fcfa'), 1500);
+    });
+
+    test('un montant suivi de devise n est pas confondu avec une quantite', () {
+      // "riz deux mille francs" -> montant 2000, pas quantite 2000.
+      expect(amountOf('vendu riz deux mille francs'), 2000);
+      expect(quantityOf('vendu riz deux mille francs'), isNull);
+
+      // "deux savon 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu deux savon 500 cfa'), 2);
+      expect(amountOf('vendu deux savon 500 cfa'), 500);
+
+      // "savon deux a 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu savon deux a 500 cfa'), 2);
+      expect(amountOf('vendu savon deux a 500 cfa'), 500);
+
+      // "savon deux morceaux 500 cfa" -> quantite 2, montant 500.
+      expect(quantityOf('vendu savon deux morceaux 500 cfa'), 2);
+      expect(amountOf('vendu savon deux morceaux 500 cfa'), 500);
+    });
+
     test('un montant ne se deplace pas sur la ligne suivante', () {
       // Le prix annonce est celui du riz, pas du sucre qui suit.
       expect(amountOf('vendu un riz a sept cents le kilo et un sucre'), 700);
