@@ -1,1 +1,0 @@
-Repository Firestore (persistance offline par defaut), mouvements de stock via FieldValue.increment pour eviter les conflits d'ecrasement hors-ligne

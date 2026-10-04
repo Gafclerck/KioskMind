@@ -1,16 +1,48 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/storage/app_preferences.dart';
+import 'core/storage/app_preferences_provider.dart';
+import 'core/storage/shared_preferences_app_prefs.dart';
+import 'core/theme/theme_mode_provider.dart';
+import 'features/settings/presentation/providers/settings_providers.dart';
 import 'firebase_options.dart';
 
 /// Application entry point.
 ///
 /// Keep this thin: it only wires dependencies and bootstraps services.
-/// Dependency injection, Riverpod and localization will be added here once the
-/// corresponding packages are actually needed.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const KioskMindApp());
+
+  final SharedPreferences sharedPrefs = await SharedPreferences.getInstance();
+  final AppPreferences appPrefs = SharedPreferencesAppPrefs(sharedPrefs);
+  final bool hasSeenOnboarding = await appPrefs.hasSeenOnboarding();
+  final ThemeMode savedThemeMode = _parseThemeMode(
+    await appPrefs.getThemeMode(),
+  );
+  final bool promosEnabled = await appPrefs.getPromosNotificationsEnabled();
+  final bool stockAlertsEnabled = await appPrefs.getStockAlertsEnabled();
+
+  runApp(
+    KioskMindApp(
+      overrides: [
+        appPreferencesProvider.overrideWithValue(appPrefs),
+        onboardingSeenProvider.overrideWith((ref) => hasSeenOnboarding),
+        themeModeProvider.overrideWith((ref) => savedThemeMode),
+        promosNotificationsProvider.overrideWith((ref) => promosEnabled),
+        stockAlertsProvider.overrideWith((ref) => stockAlertsEnabled),
+      ],
+    ),
+  );
+}
+
+ThemeMode _parseThemeMode(String value) {
+  return switch (value) {
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 }

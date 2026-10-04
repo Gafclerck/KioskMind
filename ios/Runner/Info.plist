@@ -26,6 +26,13 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Voice module: iOS refuses to open the microphone or the speech recogniser
+	     without a sentence explaining why, and the merchant is the one who reads
+	     it. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Le micro enregistre votre voix pour transformer vos commandes en ventes. L'enregistrement ne part pas de cet appareil.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>La reconnaissance vocale transforme vos mots en commandes. Elle fonctionne sans connexion.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1,37 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/alert_prediction_screen.dart';
-import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/notification_center_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
+import 'core/widgets/app_toast.dart';
+import 'routing/app_router.dart';
 
-/// Root widget of the application.
-///
-/// Owns the theme and, once routing is introduced, the router.
-/// Business logic and data access must never live here.
 class KioskMindApp extends StatelessWidget {
-  const KioskMindApp({super.key});
+  const KioskMindApp({super.key, this.overrides});
+
+  final List<Override>? overrides;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KioskMind',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      home: const _PlaceholderHome(),
+    return ProviderScope(
+      overrides: overrides ?? const <Override>[],
+      child: const _KioskMindMaterialApp(),
     );
   }
 }
 
-/// Temporary home used while no feature is implemented yet.
-///
-/// Replace it with the first real feature from `lib/features/`.
-class _PlaceholderHome extends StatelessWidget {
-  const _PlaceholderHome();
+class _KioskMindMaterialApp extends ConsumerWidget {
+  const _KioskMindMaterialApp();
 
   @override
-  Widget build(BuildContext context) {
-    return const ScreenNotificationCenter();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final GoRouter router = ref.watch(appRouterProvider);
+    final ThemeMode themeMode = ref.watch(themeModeProvider);
+
+    return MaterialApp.router(
+      routerConfig: router,
+      title: 'KioskMind',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (BuildContext context, Widget? child) {
+        return AppToastHost(child: child ?? const SizedBox.shrink());
+      },
+    );
   }
 }

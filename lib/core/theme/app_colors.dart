@@ -22,4 +22,5 @@ abstract final class AppColors {
   static const Color success = Color(0xFF1A9E75);
   static const Color successLight = Color(0xFF0F7A5A);
   static const Color successDark = Color(0xFF2BC48F);
+  static const Color info = Color(0xFF2E7CF6);
 }

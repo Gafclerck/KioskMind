@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "source": "voice/golden/text_cases.json",
+  "count": 30,
+  "phrases": [
+    {
+      "id": "t001",
+      "text": "vendu deux savon",
+      "tags": [
+        "simple"
+      ]
+    },
+    {
+      "id": "t042",
+      "text": "vendu deux sucre et un lait",
+      "tags": [
+        "multi_items"
+      ]
+    },
+    {
+      "id": "t067",
+      "text": "vendu un sucre",
+      "tags": [
+        "numbers_words"
+      ]
+    },
+    {
+      "id": "t097",
+      "text": "vendu 2 sucre",
+      "tags": [
+        "numbers_digits"
+      ]
+    },
+    {
+      "id": "t117",
+      "text": "j'ai vendu un maggi a cent francs",
+      "tags": [
+        "price"
+      ]
+    },
+    {
+      "id": "t137",
+      "text": "vendu de l'huile",
+      "tags": [
+        "ambiguous_product"
+      ]
+    },
+    {
+      "id": "t170",
+      "text": "vendu du sucre",
+      "tags": [
+        "missing_slot"
+      ]
+    },
+    {
+      "id": "t213",
+      "text": "euh vendu deux sucre",
+      "tags": [
+        "noise"
+      ]
+    },
+    {
+      "id": "t223",
+      "text": "vendu 2 sucres",
+      "tags": [
+        "accent"
+      ]
+    },
+    {
+      "id": "t191",
+      "text": "quel temps fait-il",
+      "tags": [
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "t243",
+      "text": "j'ai vendu deux sucre, trois laits et une eau",
+      "tags": [
+        "hard"
+      ]
+    },
+    {
+      "id": "t002",
+      "text": "j'ai vendu trois maggi",
+      "tags": [
+        "simple"
+      ]
+    },
+    {
+      "id": "t043",
+      "text": "j'ai vendu trois maggi et deux savon",
+      "tags": [
+        "multi_items"
+      ]
+    },
+    {
+      "id": "t068",
+      "text": "vendu deux sucre",
+      "tags": [
+        "numbers_words"
+      ]
+    },
+    {
+      "id": "t098",
+      "text": "vendu 3 maggi",
+      "tags": [
+        "numbers_digits"
+      ]
+    },
+    {
+      "id": "t118",
+      "text": "vendu deux sucre a cent francs",
+      "tags": [
+        "price"
+      ]
+    },
+    {
+      "id": "t138",
+      "text": "vendu deux huiles",
+      "tags": [
+        "ambiguous_product"
+      ]
+    },
+    {
+      "id": "t171",
+      "text": "vendu du riz",
+      "tags": [
+        "missing_slot"
+      ]
+    },
+    {
+      "id": "t214",
+      "text": "bonjour, vendu un savon",
+      "tags": [
+        "noise"
+      ]
+    },
+    {
+      "id": "t224",
+      "text": "Vendu 2 savon",
+      "tags": [
+        "accent"
+      ]
+    },
+    {
+      "id": "t192",
+      "text": "appelle ma femme",
+      "tags": [
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "t244",
+      "text": "vendu un riz, attends, non, deux riz",
+      "tags": [
+        "hard"
+      ]
+    },
+    {
+      "id": "t003",
+      "text": "je vends un savon",
+      "tags": [
+        "simple"
+      ]
+    },
+    {
+      "id": "t044",
+      "text": "ça part un riz et un sucre",
+      "tags": [
+        "multi_items"
+      ]
+    },
+    {
+      "id": "t069",
+      "text": "vendu trois sucre",
+      "tags": [
+        "numbers_words"
+      ]
+    },
+    {
+      "id": "t099",
+      "text": "vendu 1 savon",
+      "tags": [
+        "numbers_digits"
+      ]
+    },
+    {
+      "id": "t119",
+      "text": "vendu un cafe a trois cents",
+      "tags": [
+        "price"
+      ]
+    },
+    {
+      "id": "t139",
+      "text": "vendu un litre d'huile",
+      "tags": [
+        "ambiguous_product"
+      ]
+    },
+    {
+      "id": "t172",
+      "text": "j'ai vendu du cafe",
+      "tags": [
+        "missing_slot"
+      ]
+    },
+    {
+      "id": "t215",
+      "text": "vendu deux sucre euh voila",
+      "tags": [
+        "noise"
+      ]
+    }
+  ]
+}
