@@ -50,6 +50,24 @@ final class KioskToolSpec {
   /// Parameter labels for readable confirmation summaries.
   final Map<String, String> paramLabels;
 
+  /// Exports this tool as a standard Gemini / OpenAI compatible Tool Declaration.
+  Map<String, dynamic> toFunctionDeclaration() {
+    return <String, dynamic>{
+      'name': name,
+      'description': '$label (ex: "$example")',
+      'parameters': <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{
+          for (final MapEntry<String, String> entry in paramLabels.entries)
+            entry.key: <String, dynamic>{
+              'type': 'string',
+              'description': entry.value,
+            },
+        },
+      },
+    };
+  }
+
   @override
   String toString() => 'KioskToolSpec($name)';
 }

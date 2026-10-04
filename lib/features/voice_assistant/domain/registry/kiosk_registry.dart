@@ -24,6 +24,22 @@ final class KioskRegistry {
   List<KioskToolSpec> allTools() =>
       List<KioskToolSpec>.unmodifiable(_tools.values);
 
+  /// Converts all registered tools into a standard Gemini Function Calling declarations list.
+  List<Map<String, dynamic>> toGeminiTools() => _tools.values
+      .map((KioskToolSpec s) => s.toFunctionDeclaration())
+      .toList();
+
+  /// Converts all registered tools into a concise prompt description for LLM system instructions.
+  String toPromptDescription() {
+    final StringBuffer buffer = StringBuffer();
+    for (final KioskToolSpec spec in _tools.values) {
+      buffer.writeln(
+        '- \'${spec.name}\' : ${spec.label} (ex: "${spec.example}")',
+      );
+    }
+    return buffer.toString().trim();
+  }
+
   /// Fallback detector (DeclarationSpec from assistantv3):
   /// If the NLU fails to match, inspects utterance tokens for declared tool keywords.
   KioskToolSpec? detectDeclaration(String utterance) {
