@@ -52,7 +52,7 @@ final class RealCancelLastSaleHandler implements CancelLastSaleHandler {
           unit: product?.unit ?? 'PIECE',
           qty: item.qty,
           appliedUnitPrice: item.unitPrice,
-          resultingStock: (product?.stock ?? 0) + item.qty,
+          resultingStock: product?.stock ?? item.qty,
         ));
       }
 

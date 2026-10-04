@@ -43,3 +43,20 @@ Salut ! Je te documente ici les quelques ajustements que j'ai apportés au modul
 
 * **Ce que tu avais fait :** Tu avais prototypé `sales_dashboard_page.dart` avec des boutons et modales locaux.
 * **Ce que j'ai fait :** J'ai relié les boutons d'action rapide vers les vraies routes de l'application (`AppRoutes.createSale` et `AppRoutes.products`) via GoRouter, tout en conservant tes composants visuels et indicateurs.
+
+---
+
+## 5. Source de Vérité Unique (SSOT) sur le stock : `'quantity'` au lieu de `'stock'`
+
+* **Ce que tu avais fait :** Dans `recordSale()` et `cancelSale()`, les mutations de stock appliquées aux documents produits ciblaient la clé `'stock'` :
+  ```dart
+  batch.update(productRef, {'stock': FieldValue.increment(-item.qty)});
+  ```
+* **Le problème rencontré :** Le modèle canonique [`ProductModel`](file:///D:/kiosk_mind/lib/features/products_stock/data/models/product_model.dart) conçu par Valisoa lit et écrit le stock sous la clé `'quantity'`. En écrivant sur `'stock'`, Firestore créait un champ parasite non lu par l'interface "Mon Stock", provoquant une désynchronisation invisible (la vente s'enregistrait mais le stock affiché ne diminuait pas).
+* **Ce que j'ai fait :** Pour garantir une **source de vérité unique (Single Source of Truth - SSOT)** sans champ doublon, j'ai remplacé `'stock'` par `'quantity'` avec un typage entier (`-item.qty.toInt()`) pour respecter le type int du document produit Firestore :
+  ```dart
+  batch.update(productRef, {
+    'quantity': FieldValue.increment(-item.qty.toInt()),
+  });
+  ```
+

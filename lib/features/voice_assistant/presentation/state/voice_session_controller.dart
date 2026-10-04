@@ -57,7 +57,13 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     _busy = true;
     try {
       await _stopSpeech();
-      _set(state.copyWith(status: VoiceSessionStatus.preparing, fault: null));
+      _set(
+        state.copyWith(
+          status: VoiceSessionStatus.preparing,
+          lastHeard: '',
+          fault: null,
+        ),
+      );
       final SpeechRecognizerPort recognizer = await ref.read(
         voiceRecognizerProvider.future,
       );
@@ -77,9 +83,11 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
 
   /// Closes the microphone, letting the engine send what it heard.
   Future<void> stopListening() async {
-    await _recognizer()?.stop();
-    if (state.status == VoiceSessionStatus.listening) {
-      _set(state.copyWith(status: VoiceSessionStatus.idle));
+    final SpeechRecognizerPort? recognizer = _recognizer();
+    await recognizer?.stop();
+    await recognizer?.cancel();
+    if (!_disposed && state.status == VoiceSessionStatus.listening) {
+      _set(state.copyWith(status: VoiceSessionStatus.idle, lastHeard: ''));
     }
   }
 
@@ -98,6 +106,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         state.copyWith(status: VoiceSessionStatus.thinking, lastHeard: words),
       );
       await _recognizer()?.stop();
+      await _recognizer()?.cancel();
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
           .then((HandleUtterance handle) => handle.run(words));
@@ -187,6 +196,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       state.copyWith(
         message: null,
         fault: null,
+        lastHeard: '',
         awaitingManualEntry: false,
         status: VoiceSessionStatus.idle,
         undoSaleId: null,
@@ -197,6 +207,9 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
 
   /// What a partial result changes: nothing but the transcript on screen.
   void _onUtterance(SpeechUtterance utterance) {
+    if (state.status != VoiceSessionStatus.listening) {
+      return;
+    }
     if (!utterance.isFinal) {
       _set(state.copyWith(lastHeard: utterance.words));
       return;
@@ -221,6 +234,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         message: message,
         speechId: state.speechId + 1,
         status: VoiceSessionStatus.idle,
+        lastHeard: '',
         awaitingManualEntry: dialog.awaitsManualEntry,
         undoSaleId: dialog.undoSaleId,
         remainingUndo: dialog.remainingUndo,
@@ -279,6 +293,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         message: message,
         speechId: state.speechId + 1,
         status: VoiceSessionStatus.idle,
+        lastHeard: '',
         undoSaleId: dialog.undoSaleId,
         remainingUndo: dialog.remainingUndo,
       ),
@@ -294,6 +309,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         message: MicUnavailableMessage(fault.fault),
         speechId: state.speechId + 1,
         fault: fault,
+        lastHeard: '',
         status: VoiceSessionStatus.idle,
         awaitingManualEntry: true,
         undoSaleId: null,
@@ -313,12 +329,35 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// Silences the module before the microphone opens.
-  Future<void> _stopSpeech() => ref.read(voiceTtsProvider).stop();
+  Future<void> _stopSpeech() async {
+    if (_disposed) {
+      return;
+    }
+    try {
+      await ref.read(voiceTtsProvider).stop();
+    } catch (_) {
+      // Le conteneur peut être en cours de fermeture.
+    }
+    await _recognizer()?.cancel();
+  }
 
-  SpeechRecognizerPort? _recognizer() =>
-      ref.read(voiceRecognizerProvider).valueOrNull;
+  SpeechRecognizerPort? _recognizer() {
+    if (_disposed) {
+      return null;
+    }
+    try {
+      return ref.read(voiceRecognizerProvider).valueOrNull;
+    } catch (_) {
+      return null;
+    }
+  }
 
-  void _set(VoiceSessionState next) => state = next;
+  void _set(VoiceSessionState next) {
+    if (_disposed) {
+      return;
+    }
+    state = next;
+  }
 
   /// Keeps the countdown and the timeouts moving, as only a timer can.
   void _startTicking() {

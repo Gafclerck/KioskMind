@@ -19,29 +19,41 @@ import '../data/catalog/real_product_catalog_reader.dart';
 import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
+import '../data/connectivity/data_connection_probe.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
 import '../data/handlers/call_journal.dart';
+import '../data/handlers/journaling_intent_handler.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
+import '../data/parsers/direct_gemini_caller.dart';
+import '../data/parsers/remote_cloud_intent_parser.dart';
+import '../data/parsers/rodium_ai_caller.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/entities/intent_definition.dart';
+import '../domain/entities/intent_input.dart';
+import '../domain/entities/intent_result.dart';
 import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
+import '../domain/ports/cloud_intent_parser.dart';
 import '../domain/ports/command_id_factory.dart';
+import '../domain/ports/connectivity_probe.dart';
 import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
+import '../domain/ports/intent_parser.dart';
 import '../domain/ports/intent_registry.dart';
 import '../domain/ports/product_catalog_reader.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
 import '../domain/services/answer_application.dart';
 import '../domain/services/answer_reading.dart';
+import '../domain/services/cascading_parser.dart';
+import '../domain/services/circuit_breaker.dart';
 import '../domain/services/command_validator.dart';
 import '../domain/services/decision_policy.dart';
 import '../domain/services/french_number_parser.dart';
@@ -140,22 +152,38 @@ voiceRealRecordRestockHandlerProvider = FutureProvider<RecordRestockHandler>((
 
 /// The handlers the executor will call.
 ///
-/// Throws when the build asks for real handlers: none exists yet, and failing
-/// loudly beats a silent fallback to mocks in a demo meant to prove the real
-/// path.
-final FutureProvider<VoiceHandlers> voiceHandlersProvider =
-    FutureProvider<VoiceHandlers>((Ref ref) async {
-      if (!ref.watch(voiceUseMocksProvider)) {
-        throw StateError(
-          'VOICE_USE_MOCKS=false alors qu aucun handler reel n existe encore. '
-          'Phase I du pipeline vocal.',
-        );
-      }
-      return buildMockVoiceHandlers(
-        catalog: await ref.watch(voiceMockCatalogProvider.future),
-        journal: ref.watch(voiceCallJournalProvider),
-      );
-    });
+/// Dispatches to real feature handlers when VOICE_USE_MOCKS=false, or to
+/// mock handlers when VOICE_USE_MOCKS=true.
+final FutureProvider<VoiceHandlers>
+voiceHandlersProvider = FutureProvider<VoiceHandlers>((Ref ref) async {
+  final HandlerCallJournal journal = ref.watch(voiceCallJournalProvider);
+  if (!ref.watch(voiceUseMocksProvider)) {
+    return VoiceHandlers(
+      recordSale: JournalingIntentHandler<SaleIntentInput, RecordSaleResult>(
+        await ref.watch(voiceRealRecordSaleHandlerProvider.future),
+        journal,
+      ),
+      recordRestock:
+          JournalingIntentHandler<RestockIntentInput, RecordRestockResult>(
+            await ref.watch(voiceRealRecordRestockHandlerProvider.future),
+            journal,
+          ),
+      queryStock: JournalingIntentHandler<QueryStockInput, QueryStockResult>(
+        await ref.watch(voiceRealQueryStockHandlerProvider.future),
+        journal,
+      ),
+      cancelLastSale:
+          JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
+            await ref.watch(voiceRealCancelLastSaleHandlerProvider.future),
+            journal,
+          ),
+    );
+  }
+  return buildMockVoiceHandlers(
+    catalog: await ref.watch(voiceMockCatalogProvider.future),
+    journal: journal,
+  );
+});
 
 /// The tunables, in one place so a test can replace all of them at once.
 final Provider<VoiceConfig> voiceConfigProvider = Provider<VoiceConfig>(
@@ -334,11 +362,123 @@ final FutureProvider<AnswerReading> voiceAnswerReadingProvider =
       ),
     );
 
+/// Whether the cascading parser attempts the cloud model when online.
+final Provider<bool> voiceEnableCloudProvider = Provider<bool>(
+  (Ref ref) => kVoiceEnableCloud,
+);
+
+/// The Google Gemini API key used for direct Cloud NLU parsing.
+final Provider<String> voiceGeminiApiKeyProvider = Provider<String>(
+  (Ref ref) => kGeminiApiKey,
+);
+
+/// The Rodium AI API key used for Cloud NLU parsing via Rodium AI gateway.
+final Provider<String> voiceRodiumApiKeyProvider = Provider<String>(
+  (Ref ref) => kRodiumApiKey,
+);
+
+/// The model identifier requested from Rodium AI.
+final Provider<String> voiceRodiumModelProvider = Provider<String>(
+  (Ref ref) => kRodiumModel,
+);
+
+/// The base URL for the Rodium AI gateway.
+final Provider<String> voiceRodiumBaseUrlProvider = Provider<String>(
+  (Ref ref) => kRodiumBaseUrl,
+);
+
+/// Real connectivity probe verifying actual Internet reachability.
+final Provider<ConnectivityProbe> voiceConnectivityProbeProvider =
+    Provider<ConnectivityProbe>((Ref ref) => DataConnectionProbe());
+
+/// Circuit breaker guarding against repeated remote service failures.
+final Provider<CircuitBreaker> voiceCircuitBreakerProvider =
+    Provider<CircuitBreaker>((Ref ref) {
+      return CircuitBreaker(
+        clock: ref.watch(voiceClockProvider),
+        failureThreshold: 2,
+        resetTimeout: const Duration(seconds: 30),
+      );
+    });
+
+/// Cloud intent parser calling Rodium AI, Google Gemini, or Firebase Cloud Functions.
+final FutureProvider<CloudIntentParser>
+voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
+  Ref ref,
+) async {
+  final String rodiumApiKey = ref.watch(voiceRodiumApiKeyProvider);
+  final String geminiApiKey = ref.watch(voiceGeminiApiKeyProvider);
+  final ProductCatalogReader catalogReader = await ref.watch(
+    voiceCatalogReaderProvider.future,
+  );
+
+  // 1. Explicit Rodium AI key provided
+  if (rodiumApiKey.isNotEmpty) {
+    final RodiumAiCaller rodiumCaller = RodiumAiCaller(
+      apiKey: rodiumApiKey,
+      model: ref.watch(voiceRodiumModelProvider),
+      baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+    );
+    return RemoteCloudIntentParser(
+      catalogReader: catalogReader,
+      cloudCaller: rodiumCaller.call,
+    );
+  }
+
+  // 2. GEMINI_API_KEY provided (with auto-detection if user passed an rd_ key)
+  if (geminiApiKey.isNotEmpty) {
+    if (geminiApiKey.startsWith('rd_')) {
+      final RodiumAiCaller rodiumCaller = RodiumAiCaller(
+        apiKey: geminiApiKey,
+        model: ref.watch(voiceRodiumModelProvider),
+        baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+      );
+      return RemoteCloudIntentParser(
+        catalogReader: catalogReader,
+        cloudCaller: rodiumCaller.call,
+      );
+    }
+
+    final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
+      apiKey: geminiApiKey,
+    );
+    return RemoteCloudIntentParser(
+      catalogReader: catalogReader,
+      cloudCaller: geminiCaller.call,
+    );
+  }
+
+  // 3. Fallback to Firebase Cloud Functions default
+  return RemoteCloudIntentParser(catalogReader: catalogReader);
+});
+
+/// The parser used by the turn executor.
+///
+/// When [voiceEnableCloudProvider] is true, uses [CascadingParser] combining
+/// the cloud model and the local rule parser under a strict time budget.
+/// When false, delegates directly to [voiceRuleBasedParserProvider].
+final FutureProvider<IntentParser> voiceParserProvider =
+    FutureProvider<IntentParser>((Ref ref) async {
+      final RuleBasedParser local = await ref.watch(
+        voiceRuleBasedParserProvider.future,
+      );
+      if (!ref.watch(voiceEnableCloudProvider)) {
+        return local;
+      }
+      return CascadingParser(
+        local: local,
+        cloud: await ref.watch(voiceCloudIntentParserProvider.future),
+        connectivity: ref.watch(voiceConnectivityProbeProvider),
+        circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
+        timeBudget: const Duration(milliseconds: 2000),
+      );
+    });
+
 /// One utterance in, what happens out.
 final FutureProvider<HandleUtterance> voiceHandleUtteranceProvider =
     FutureProvider<HandleUtterance>(
       (Ref ref) async => HandleUtterance(
-        parser: await ref.watch(voiceRuleBasedParserProvider.future),
+        parser: await ref.watch(voiceParserProvider.future),
         validator: await ref.watch(voiceCommandValidatorProvider.future),
         policy: await ref.watch(voiceDecisionPolicyProvider.future),
         executor: await ref.watch(voiceExecuteCommandProvider.future),

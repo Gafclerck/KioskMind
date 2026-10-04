@@ -55,3 +55,11 @@ app.*.map.json
 /lib/core/localization/generated/
 # Maquettes de référence, jamais versionnées
 *.zip
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+env.json
+env.*.json
+!env.json.example

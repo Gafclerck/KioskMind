@@ -252,6 +252,7 @@ void main() {
       expect(success.value.saleId, equals('sale-abc'));
       expect(success.value.restored.length, equals(1));
       expect(success.value.restored.first.qty, equals(2));
+      expect(success.value.restored.first.resultingStock, equals(20));
       expect(salesRepo.sales['sale-abc']?.status, equals('CANCELLED'));
     });
 
