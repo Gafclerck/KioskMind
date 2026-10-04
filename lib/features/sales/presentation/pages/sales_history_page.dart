@@ -8,8 +8,7 @@ class SalesHistoryPage extends ConsumerStatefulWidget {
   const SalesHistoryPage({super.key});
 
   @override
-  ConsumerState<SalesHistoryPage> createState() =>
-      _SalesHistoryPageState();
+  ConsumerState<SalesHistoryPage> createState() => _SalesHistoryPageState();
 }
 
 class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
@@ -24,18 +23,14 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     final getSalesHistory = ref.watch(getSalesHistoryProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Historique Ventes'),
-      ),
+      appBar: AppBar(title: const Text('Historique Ventes')),
       body: FutureBuilder<List<Sale>>(
         future: getSalesHistory(),
         builder: (context, snapshot) {
           // État de chargement
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-              child: CircularProgressIndicator(
-                color: colorScheme.primary,
-              ),
+              child: CircularProgressIndicator(color: colorScheme.primary),
             );
           }
 
@@ -55,10 +50,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
           final sales = _filterSales(allSales);
 
-          final total = sales.fold<double>(
-            0,
-            (sum, sale) => sum + sale.total,
-          );
+          final total = sales.fold<double>(0, (sum, sale) => sum + sale.total);
 
           final topProduct = _getTopProduct(sales);
 
@@ -68,17 +60,10 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
               setState(() {});
 
-              await Future.delayed(
-                const Duration(milliseconds: 300),
-              );
+              await Future.delayed(const Duration(milliseconds: 300));
             },
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                12,
-                8,
-                12,
-                32,
-              ),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
               children: [
                 // Sélection de la période
                 _PeriodSelector(
@@ -119,17 +104,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
                 // État vide / liste des ventes
                 if (sales.isEmpty)
-                  _EmptyState(
-                    colorScheme: colorScheme,
-                    textTheme: textTheme,
-                  )
+                  _EmptyState(colorScheme: colorScheme, textTheme: textTheme)
                 else
                   ...sales.map(
                     (sale) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: _SaleCard(
-                        sale: sale,
-                      ),
+                      child: _SaleCard(sale: sale),
                     ),
                   ),
               ],
@@ -167,15 +147,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   Future<void> _selectCustomDateRange() async {
     final now = DateTime.now();
 
-    final initialRange = selectedDateRange ??
-        DateTimeRange(
-          start: DateTime(
-            now.year,
-            now.month,
-            1,
-          ),
-          end: now,
-        );
+    final initialRange =
+        selectedDateRange ??
+        DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
 
     final pickedRange = await showDateRangePicker(
       context: context,
@@ -229,15 +203,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
     switch (selectedPeriod) {
       case 'Aujourd’hui':
-        startDate = DateTime(
-          now.year,
-          now.month,
-          now.day,
-        );
+        startDate = DateTime(now.year, now.month, now.day);
 
-        endDate = startDate.add(
-          const Duration(days: 1),
-        );
+        endDate = startDate.add(const Duration(days: 1));
         break;
 
       case 'Cette semaine':
@@ -247,27 +215,15 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           now.year,
           now.month,
           now.day,
-        ).subtract(
-          Duration(days: daysFromMonday),
-        );
+        ).subtract(Duration(days: daysFromMonday));
 
-        endDate = startDate.add(
-          const Duration(days: 7),
-        );
+        endDate = startDate.add(const Duration(days: 7));
         break;
 
       case 'Ce mois':
-        startDate = DateTime(
-          now.year,
-          now.month,
-          1,
-        );
+        startDate = DateTime(now.year, now.month, 1);
 
-        endDate = DateTime(
-          now.year,
-          now.month + 1,
-          1,
-        );
+        endDate = DateTime(now.year, now.month + 1, 1);
         break;
 
       case 'Personnalisé':
@@ -286,9 +242,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           selectedDateRange!.end.year,
           selectedDateRange!.end.month,
           selectedDateRange!.end.day,
-        ).add(
-          const Duration(days: 1),
-        );
+        ).add(const Duration(days: 1));
         break;
 
       default:
@@ -310,8 +264,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
     for (final sale in sales) {
       for (final item in sale.items) {
-        quantities[item.name] =
-            (quantities[item.name] ?? 0) + item.qty;
+        quantities[item.name] = (quantities[item.name] ?? 0) + item.qty;
       }
     }
 
@@ -319,9 +272,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       return 'Aucun';
     }
 
-    final top = quantities.entries.reduce(
-      (a, b) => a.value >= b.value ? a : b,
-    );
+    final top = quantities.entries.reduce((a, b) => a.value >= b.value ? a : b);
 
     return top.key;
   }
@@ -331,8 +282,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   // ---------------------------------------------------------------------------
 
   String _getPeriodLabel() {
-    if (selectedPeriod != 'Personnalisé' ||
-        selectedDateRange == null) {
+    if (selectedPeriod != 'Personnalisé' || selectedDateRange == null) {
       return selectedPeriod;
     }
 
@@ -394,12 +344,8 @@ class _PeriodSelector extends StatelessWidget {
                   : colorScheme.outlineVariant,
             ),
             labelStyle: textTheme.labelSmall?.copyWith(
-              color: selected
-                  ? colorScheme.onPrimary
-                  : colorScheme.onSurface,
-              fontWeight: selected
-                  ? FontWeight.w600
-                  : FontWeight.w400,
+              color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
           );
         },
@@ -431,16 +377,10 @@ class _SelectedDateRangeCard extends StatelessWidget {
         onTap: onChange,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Icon(
-                Icons.date_range_outlined,
-                color: colorScheme.primary,
-              ),
+              Icon(Icons.date_range_outlined, color: colorScheme.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -522,9 +462,7 @@ class _SalesSummaryCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimary.withValues(
-                      alpha: 0.85,
-                    ),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ),
@@ -562,9 +500,7 @@ class _SalesSummaryCard extends StatelessWidget {
               Icon(
                 Icons.star_outline,
                 size: 16,
-                color: colorScheme.onPrimary.withValues(
-                  alpha: 0.85,
-                ),
+                color: colorScheme.onPrimary.withValues(alpha: 0.85),
               ),
               const SizedBox(width: 5),
               Expanded(
@@ -573,9 +509,7 @@ class _SalesSummaryCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onPrimary.withValues(
-                      alpha: 0.85,
-                    ),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ),
@@ -588,9 +522,9 @@ class _SalesSummaryCard extends StatelessWidget {
 
   String _formatAmount(double amount) {
     return amount.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (match) => ' ',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ' ',
+    );
   }
 }
 
@@ -601,9 +535,7 @@ class _SalesSummaryCard extends StatelessWidget {
 class _SaleCard extends StatelessWidget {
   final Sale sale;
 
-  const _SaleCard({
-    required this.sale,
-  });
+  const _SaleCard({required this.sale});
 
   @override
   Widget build(BuildContext context) {
@@ -613,18 +545,12 @@ class _SaleCard extends StatelessWidget {
     final isCancelled = sale.status == 'CANCELLED';
 
     final productSummary = sale.items
-        .map(
-          (item) =>
-              '${_formatQuantity(item.qty)} ${item.name}',
-        )
+        .map((item) => '${_formatQuantity(item.qty)} ${item.name}')
         .join(', ');
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 11,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
           children: [
             Container(
@@ -685,9 +611,7 @@ class _SaleCard extends StatelessWidget {
               '${_formatAmount(sale.total)} F',
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: isCancelled
-                    ? colorScheme.error
-                    : colorScheme.onSurface,
+                color: isCancelled ? colorScheme.error : colorScheme.onSurface,
               ),
             ),
           ],
@@ -711,9 +635,9 @@ class _SaleCard extends StatelessWidget {
 
   String _formatAmount(double amount) {
     return amount.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (match) => ' ',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => ' ',
+    );
   }
 }
 
@@ -725,10 +649,7 @@ class _EmptyState extends StatelessWidget {
   final ColorScheme colorScheme;
   final TextTheme textTheme;
 
-  const _EmptyState({
-    required this.colorScheme,
-    required this.textTheme,
-  });
+  const _EmptyState({required this.colorScheme, required this.textTheme});
 
   @override
   Widget build(BuildContext context) {
@@ -786,11 +707,7 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.cloud_off_outlined,
-              size: 48,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.cloud_off_outlined, size: 48, color: colorScheme.error),
             const SizedBox(height: 16),
             Text(
               'Impossible de charger les ventes.',
@@ -798,10 +715,7 @@ class _ErrorState extends StatelessWidget {
               style: textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Réessayer'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
           ],
         ),
       ),
