@@ -25,7 +25,8 @@ final class _MemoryProductRepo implements ProductRepository {
   Future<void> deleteProduct(String productId) async {}
 
   @override
-  Stream<List<Product>> watchProducts() => Stream<List<Product>>.value(_products);
+  Stream<List<Product>> watchProducts() =>
+      Stream<List<Product>>.value(_products);
 
   @override
   Future<List<Product>> getProducts() async => _products;
@@ -78,101 +79,123 @@ void main() {
       );
     });
 
-    test('real products automatically generate aliases for spoken resolution', () async {
-      final List<ProductSnapshot> snapshots = await reader.readActiveProducts();
-      final ProductResolver resolver = ProductResolver(
-        products: snapshots,
-        config: config,
-        normalizer: normalizer,
-      );
-
-      // 1. "riz" matches "Sac de riz 50kg"
-      final ProductSpan? spanRiz = resolver.matchAt(<String>['riz'], 0);
-      expect(spanRiz, isNotNull);
-      expect(spanRiz!.resolution.product?.id, equals('p_riz_50kg'));
-
-      // 2. "sac de riz" matches "Sac de riz 50kg"
-      final ProductSpan? spanSacRiz = resolver.matchAt(<String>['sac', 'de', 'riz'], 0);
-      expect(spanSacRiz, isNotNull);
-      expect(spanSacRiz!.resolution.product?.id, equals('p_riz_50kg'));
-
-      // 3. "dinor" matches "Huile Dinor 1.5L"
-      final ProductSpan? spanDinor = resolver.matchAt(<String>['dinor'], 0);
-      expect(spanDinor, isNotNull);
-      expect(spanDinor!.resolution.product?.id, equals('p_huile_dinor'));
-
-      // 4. "huile dinor" matches "Huile Dinor 1.5L"
-      final ProductSpan? spanHuileDinor = resolver.matchAt(<String>['huile', 'dinor'], 0);
-      expect(spanHuileDinor, isNotNull);
-      expect(spanHuileDinor!.resolution.product?.id, equals('p_huile_dinor'));
-    });
-
-    test('item extractor identifies product even when quantity is missing or misheard', () async {
-      final List<ProductSnapshot> snapshots = await reader.readActiveProducts();
-      final ProductResolver resolver = ProductResolver(
-        products: snapshots,
-        config: config,
-        normalizer: normalizer,
-      );
-
-      final ItemListExtractor items = ItemListExtractor(
-        resolver: resolver,
-        lines: LineExtractor(
-          numbers: const FrenchNumberParser(),
+    test(
+      'real products automatically generate aliases for spoken resolution',
+      () async {
+        final List<ProductSnapshot> snapshots = await reader
+            .readActiveProducts();
+        final ProductResolver resolver = ProductResolver(
+          products: snapshots,
           config: config,
-        ),
-      );
+          normalizer: normalizer,
+        );
 
-      // Utterance: "vendu du riz" -> product recognized, quantity missing
-      final ItemListReading readingMissingQty = items.read(
-        <String>['vendu', 'du', 'riz'],
-        from: 1,
-        requiresQuantity: true,
-      );
+        // 1. "riz" matches "Sac de riz 50kg"
+        final ProductSpan? spanRiz = resolver.matchAt(<String>['riz'], 0);
+        expect(spanRiz, isNotNull);
+        expect(spanRiz!.resolution.product?.id, equals('p_riz_50kg'));
 
-      // The product IS recognized (not unknown product!)
-      expect(readingMissingQty.products.length, equals(1));
-      expect(readingMissingQty.products.first.id, equals('p_riz_50kg'));
+        // 2. "sac de riz" matches "Sac de riz 50kg"
+        final ProductSpan? spanSacRiz = resolver.matchAt(<String>[
+          'sac',
+          'de',
+          'riz',
+        ], 0);
+        expect(spanSacRiz, isNotNull);
+        expect(spanSacRiz!.resolution.product?.id, equals('p_riz_50kg'));
 
-      // The doubt is missingQuantity ("Combien ?"), NOT unknownProduct ("Quel produit ?")
-      expect(readingMissingQty.doubts.length, equals(1));
-      expect(readingMissingQty.doubts.first.kind, equals(DoubtKind.missingQuantity));
-      expect(
-        ClarificationSlot.forDoubt(
+        // 3. "dinor" matches "Huile Dinor 1.5L"
+        final ProductSpan? spanDinor = resolver.matchAt(<String>['dinor'], 0);
+        expect(spanDinor, isNotNull);
+        expect(spanDinor!.resolution.product?.id, equals('p_huile_dinor'));
+
+        // 4. "huile dinor" matches "Huile Dinor 1.5L"
+        final ProductSpan? spanHuileDinor = resolver.matchAt(<String>[
+          'huile',
+          'dinor',
+        ], 0);
+        expect(spanHuileDinor, isNotNull);
+        expect(spanHuileDinor!.resolution.product?.id, equals('p_huile_dinor'));
+      },
+    );
+
+    test(
+      'item extractor identifies product even when quantity is missing or misheard',
+      () async {
+        final List<ProductSnapshot> snapshots = await reader
+            .readActiveProducts();
+        final ProductResolver resolver = ProductResolver(
+          products: snapshots,
+          config: config,
+          normalizer: normalizer,
+        );
+
+        final ItemListExtractor items = ItemListExtractor(
+          resolver: resolver,
+          lines: LineExtractor(
+            numbers: const FrenchNumberParser(),
+            config: config,
+          ),
+        );
+
+        // Utterance: "vendu du riz" -> product recognized, quantity missing
+        final ItemListReading readingMissingQty = items.read(
+          <String>['vendu', 'du', 'riz'],
+          from: 1,
+          requiresQuantity: true,
+        );
+
+        // The product IS recognized (not unknown product!)
+        expect(readingMissingQty.products.length, equals(1));
+        expect(readingMissingQty.products.first.id, equals('p_riz_50kg'));
+
+        // The doubt is missingQuantity ("Combien ?"), NOT unknownProduct ("Quel produit ?")
+        expect(readingMissingQty.doubts.length, equals(1));
+        expect(
           readingMissingQty.doubts.first.kind,
-          hasItems: false,
-        ),
-        equals(ClarificationSlot.itemQty),
-      );
-    });
+          equals(DoubtKind.missingQuantity),
+        );
+        expect(
+          ClarificationSlot.forDoubt(
+            readingMissingQty.doubts.first.kind,
+            hasItems: false,
+          ),
+          equals(ClarificationSlot.itemQty),
+        );
+      },
+    );
 
-    test('item extractor identifies product and quantity when full line is spoken', () async {
-      final List<ProductSnapshot> snapshots = await reader.readActiveProducts();
-      final ProductResolver resolver = ProductResolver(
-        products: snapshots,
-        config: config,
-        normalizer: normalizer,
-      );
-
-      final ItemListExtractor items = ItemListExtractor(
-        resolver: resolver,
-        lines: LineExtractor(
-          numbers: const FrenchNumberParser(),
+    test(
+      'item extractor identifies product and quantity when full line is spoken',
+      () async {
+        final List<ProductSnapshot> snapshots = await reader
+            .readActiveProducts();
+        final ProductResolver resolver = ProductResolver(
+          products: snapshots,
           config: config,
-        ),
-      );
+          normalizer: normalizer,
+        );
 
-      // Utterance: "vendu deux sacs de riz"
-      final ItemListReading readingComplete = items.read(
-        <String>['vendu', 'deux', 'sacs', 'de', 'riz'],
-        from: 1,
-        requiresQuantity: true,
-      );
+        final ItemListExtractor items = ItemListExtractor(
+          resolver: resolver,
+          lines: LineExtractor(
+            numbers: const FrenchNumberParser(),
+            config: config,
+          ),
+        );
 
-      expect(readingComplete.doubts, isEmpty);
-      expect(readingComplete.items.length, equals(1));
-      expect(readingComplete.items.first.product.id, equals('p_riz_50kg'));
-      expect(readingComplete.items.first.qty, equals(2.0));
-    });
+        // Utterance: "vendu deux sacs de riz"
+        final ItemListReading readingComplete = items.read(
+          <String>['vendu', 'deux', 'sacs', 'de', 'riz'],
+          from: 1,
+          requiresQuantity: true,
+        );
+
+        expect(readingComplete.doubts, isEmpty);
+        expect(readingComplete.items.length, equals(1));
+        expect(readingComplete.items.first.product.id, equals('p_riz_50kg'));
+        expect(readingComplete.items.first.qty, equals(2.0));
+      },
+    );
   });
 }

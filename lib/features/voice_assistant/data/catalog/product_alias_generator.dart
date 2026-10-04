@@ -93,8 +93,12 @@ abstract final class ProductAliasGenerator {
     }
 
     // 3. Strip packaging prefix words (e.g. "sac de riz" -> "riz", "carton de sucre" -> "sucre")
-    final String candidateForPrefix = withoutUnits.isNotEmpty ? withoutUnits : lower;
-    final String baseProduct = candidateForPrefix.replaceFirst(_packagingPrefixes, '').trim();
+    final String candidateForPrefix = withoutUnits.isNotEmpty
+        ? withoutUnits
+        : lower;
+    final String baseProduct = candidateForPrefix
+        .replaceFirst(_packagingPrefixes, '')
+        .trim();
     if (baseProduct.isNotEmpty &&
         baseProduct != lower &&
         baseProduct != withoutUnits) {

@@ -9,7 +9,9 @@ void main() {
     });
 
     test('generates expected aliases for packaged rice with weight', () {
-      final List<String> aliases = ProductAliasGenerator.generate('Sac de riz 50kg');
+      final List<String> aliases = ProductAliasGenerator.generate(
+        'Sac de riz 50kg',
+      );
 
       expect(aliases, contains('sac de riz 50kg'));
       expect(aliases, contains('sac de riz'));
@@ -17,7 +19,9 @@ void main() {
     });
 
     test('generates expected aliases for cooking oil with volume', () {
-      final List<String> aliases = ProductAliasGenerator.generate('Huile Dinor 1.5L');
+      final List<String> aliases = ProductAliasGenerator.generate(
+        'Huile Dinor 1.5L',
+      );
 
       expect(aliases, contains('huile dinor 1.5l'));
       expect(aliases, contains('huile dinor'));
@@ -34,7 +38,9 @@ void main() {
     });
 
     test('generates expected aliases for soap with weight and origin', () {
-      final List<String> aliases = ProductAliasGenerator.generate('Savon de Marseille 200g');
+      final List<String> aliases = ProductAliasGenerator.generate(
+        'Savon de Marseille 200g',
+      );
 
       expect(aliases, contains('savon de marseille 200g'));
       expect(aliases, contains('savon de marseille'));
@@ -43,7 +49,9 @@ void main() {
     });
 
     test('generates expected unaccented aliases', () {
-      final List<String> aliases = ProductAliasGenerator.generate('Riz parfumé');
+      final List<String> aliases = ProductAliasGenerator.generate(
+        'Riz parfumé',
+      );
 
       expect(aliases, contains('riz parfumé'));
       expect(aliases, contains('riz parfume'));
@@ -59,7 +67,9 @@ void main() {
     });
 
     test('orders aliases by descending token length then length', () {
-      final List<String> aliases = ProductAliasGenerator.generate('Sac de riz 50kg');
+      final List<String> aliases = ProductAliasGenerator.generate(
+        'Sac de riz 50kg',
+      );
 
       // First aliases have more tokens than later ones
       final int firstTokenCount = aliases.first.split(' ').length;

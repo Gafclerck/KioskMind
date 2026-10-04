@@ -106,7 +106,9 @@ final class PlatformTts implements TtsPort {
     } on PlatformException catch (e) {
       _supported = false;
       if (kDebugMode) {
-        debugPrint('[PlatformTts] PlatformException during TTS preparation: $e');
+        debugPrint(
+          '[PlatformTts] PlatformException during TTS preparation: $e',
+        );
       }
     }
   }

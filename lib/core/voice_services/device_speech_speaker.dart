@@ -76,11 +76,7 @@ final class PluginDeviceSpeechSpeaker implements DeviceSpeechSpeaker {
       if (languages is List) {
         getLanguagesAttempted = true;
         if (languages.isNotEmpty) {
-          return matchesLanguageList(
-            languages,
-            locale,
-            baseLanguage,
-          );
+          return matchesLanguageList(languages, locale, baseLanguage);
         }
       }
     } on PlatformException catch (e) {

@@ -89,126 +89,172 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PluginDeviceSpeechSpeaker', () {
-    test('supports returns true when direct locale is available as boolean', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR';
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports returns true when direct locale is available as boolean',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR';
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports returns true when direct locale is available as int 1', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR' ? 1 : 0;
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports returns true when direct locale is available as int 1',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR' ? 1 : 0;
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports falls back to base language fr when fr-FR is missing', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => lang == 'fr';
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports falls back to base language fr when fr-FR is missing',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => lang == 'fr';
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports queries getLanguages when isLanguageAvailable throws PlatformException', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => throw PlatformException(code: 'not_implemented');
-      engine.onGetLanguages = () => <String>['en-US', 'fr-FR', 'es-ES'];
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports queries getLanguages when isLanguageAvailable throws PlatformException',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) =>
+            throw PlatformException(code: 'not_implemented');
+        engine.onGetLanguages = () => <String>['en-US', 'fr-FR', 'es-ES'];
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports matches underscored language codes like fr_FR from getLanguages', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => false;
-      engine.onGetLanguages = () => <String>['en_US', 'fr_FR'];
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports matches underscored language codes like fr_FR from getLanguages',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => false;
+        engine.onGetLanguages = () => <String>['en_US', 'fr_FR'];
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports matches prefix language codes like fr-CA from getLanguages', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => false;
-      engine.onGetLanguages = () => <String>['en-US', 'fr-CA'];
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports matches prefix language codes like fr-CA from getLanguages',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => false;
+        engine.onGetLanguages = () => <String>['en-US', 'fr-CA'];
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isTrue);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isTrue);
+      },
+    );
 
-    test('supports returns false when no French variant is available in language list', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onIsLanguageAvailable = (String lang) => false;
-      engine.onGetLanguages = () => <String>['en-US', 'de-DE', 'es-ES'];
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'supports returns false when no French variant is available in language list',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => false;
+        engine.onGetLanguages = () => <String>['en-US', 'de-DE', 'es-ES'];
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      final bool result = await speaker.supports('fr-FR');
-      expect(result, isFalse);
-    });
+        final bool result = await speaker.supports('fr-FR');
+        expect(result, isFalse);
+      },
+    );
 
-    test('matchesLanguageList handles normalized tags and prefixes correctly', () {
-      expect(
-        PluginDeviceSpeechSpeaker.matchesLanguageList(
-          <String>['en-US', 'fr-FR'],
-          'fr-FR',
-          'fr',
-        ),
-        isTrue,
-      );
-      expect(
-        PluginDeviceSpeechSpeaker.matchesLanguageList(
-          <String>['en-US', 'fr_FR'],
-          'fr-FR',
-          'fr',
-        ),
-        isTrue,
-      );
-      expect(
-        PluginDeviceSpeechSpeaker.matchesLanguageList(
-          <String>['en-US', 'fr'],
-          'fr-FR',
-          'fr',
-        ),
-        isTrue,
-      );
-      expect(
-        PluginDeviceSpeechSpeaker.matchesLanguageList(
-          <String>['en-US', 'de-DE'],
-          'fr-FR',
-          'fr',
-        ),
-        isFalse,
-      );
-    });
+    test(
+      'matchesLanguageList handles normalized tags and prefixes correctly',
+      () {
+        expect(
+          PluginDeviceSpeechSpeaker.matchesLanguageList(
+            <String>['en-US', 'fr-FR'],
+            'fr-FR',
+            'fr',
+          ),
+          isTrue,
+        );
+        expect(
+          PluginDeviceSpeechSpeaker.matchesLanguageList(
+            <String>['en-US', 'fr_FR'],
+            'fr-FR',
+            'fr',
+          ),
+          isTrue,
+        );
+        expect(
+          PluginDeviceSpeechSpeaker.matchesLanguageList(
+            <String>['en-US', 'fr'],
+            'fr-FR',
+            'fr',
+          ),
+          isTrue,
+        );
+        expect(
+          PluginDeviceSpeechSpeaker.matchesLanguageList(
+            <String>['en-US', 'de-DE'],
+            'fr-FR',
+            'fr',
+          ),
+          isFalse,
+        );
+      },
+    );
 
-    test('configure falls back to base language if exact locale returns 0', () async {
-      final StubFlutterTts engine = StubFlutterTts();
-      engine.onSetLanguage = (String lang) => lang == 'fr-FR' ? 0 : 1;
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+    test(
+      'configure falls back to base language if exact locale returns 0',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onSetLanguage = (String lang) => lang == 'fr-FR' ? 0 : 1;
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
 
-      await speaker.configure(
-        locale: 'fr-FR',
-        rate: 0.5,
-        pitch: 1.0,
-        volume: 1.0,
-      );
+        await speaker.configure(
+          locale: 'fr-FR',
+          rate: 0.5,
+          pitch: 1.0,
+          volume: 1.0,
+        );
 
-      expect(engine.configuredLanguages, <String>['fr-FR', 'fr']);
-    });
+        expect(engine.configuredLanguages, <String>['fr-FR', 'fr']);
+      },
+    );
 
     test('say and stop delegate directly to engine', () async {
       final StubFlutterTts engine = StubFlutterTts();
-      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(engine: engine);
+      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+        engine: engine,
+      );
 
       await speaker.say('Bonjour le marchand');
       expect(engine.spokenTexts, <String>['Bonjour le marchand']);
