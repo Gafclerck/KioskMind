@@ -7,13 +7,32 @@ import 'text_normalizer.dart';
 /// product is expected: "vendu un truc" has a word where a product should be,
 /// and "vendu deux sachets" has only a unit. Telling those apart needs to know
 /// where the command ended.
+/// Which command an utterance asks for, and where that command starts.
+///
+/// Both the start and end of the trigger are kept so that the parser can inspect
+/// products and arguments both before and after the trigger, supporting flexible
+/// utterance order.
 final class IntentDetection {
-  const IntentDetection({required this.intentId, required this.triggerEnd});
+  const IntentDetection({
+    required this.intentId,
+    required this.triggerEnd,
+    this.triggerStart = 0,
+  });
 
   final String intentId;
 
+  /// Index of the first token of the trigger that matched.
+  final int triggerStart;
+
   /// Index just past the last token of the trigger that matched.
   final int triggerEnd;
+}
+
+final class _TriggerMatch {
+  const _TriggerMatch({required this.start, required this.end});
+
+  final int start;
+  final int end;
 }
 
 /// Which command an utterance asks for, read from the triggers of the catalog.
@@ -56,23 +75,27 @@ final class IntentDetector {
         if (length <= bestLength) {
           continue;
         }
-        final int? end = _matchAt(tokens, trigger);
-        if (end == null) {
+        final _TriggerMatch? match = _matchAt(tokens, trigger);
+        if (match == null) {
           continue;
         }
-        best = IntentDetection(intentId: intent.id, triggerEnd: end);
+        best = IntentDetection(
+          intentId: intent.id,
+          triggerStart: match.start,
+          triggerEnd: match.end,
+        );
         bestLength = length;
       }
     }
     return best;
   }
 
-  /// Index just past the trigger when it appears as consecutive tokens, else null.
-  static int? _matchAt(List<String> tokens, String trigger) {
+  /// Match range when the trigger appears as consecutive tokens, else null.
+  static _TriggerMatch? _matchAt(List<String> tokens, String trigger) {
     final List<String> parts = trigger.split(' ');
     for (int start = 0; start + parts.length <= tokens.length; start++) {
       if (_matchesAt(tokens, start, parts)) {
-        return start + parts.length;
+        return _TriggerMatch(start: start, end: start + parts.length);
       }
     }
     return null;

@@ -93,6 +93,16 @@ void main() {
       expect(triggerEnd('il reste combien de maggi'), 3);
     });
 
+    test('repere le debut et la fin du declencheur en fin de phrase', () {
+      final IntentDetection? detection = detector.detect(
+        harness.normalizer.normalize('deux savon vendu'),
+      );
+      expect(detection, isNotNull);
+      expect(detection!.intentId, 'record_sale');
+      expect(detection.triggerStart, 2);
+      expect(detection.triggerEnd, 3);
+    });
+
     test('reste absent quand rien n est trouve', () {
       expect(triggerEnd('bonjour'), -1);
     });
