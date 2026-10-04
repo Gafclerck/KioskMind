@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/localization/generated/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/widgets/app_toast.dart';
 import 'routing/app_router.dart';
 
@@ -27,6 +28,7 @@ class _KioskMindMaterialApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(appRouterProvider);
+    final ThemeMode themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       routerConfig: router,
@@ -34,7 +36,7 @@ class _KioskMindMaterialApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (BuildContext context, Widget? child) {
