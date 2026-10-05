@@ -3,10 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routing/app_routes.dart';
 import '../../../../features/products_stock/presentation/providers/product_providers.dart';
+import '../../../profile/presentation/providers/user_profile_provider.dart';
 import '../../domain/entities/sale.dart';
 import '../providers/sales_provider.dart';
 
@@ -51,6 +52,10 @@ class _P {
   );
 }
 
+// -----------------------------------------------------------------------------
+// DASHBOARD
+// -----------------------------------------------------------------------------
+
 class SalesDashboardPage extends ConsumerStatefulWidget {
   const SalesDashboardPage({super.key});
 
@@ -78,14 +83,14 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     await _future;
   }
 
-  String _getUserDisplayName() {
-    try {
-      final name = FirebaseAuth.instance.currentUser?.displayName?.trim();
-      if (name != null && name.isNotEmpty) return name;
-    } catch (_) {
-      // Firebase non initialisé ou indisponible (ex: tests widget)
+  String _getUserFirstName(String? fullName) {
+    final name = fullName?.trim() ?? '';
+
+    if (name.isEmpty) {
+      return 'Utilisateur';
     }
-    return 'Utilisateur';
+
+    return name.split(RegExp(r'\s+')).first;
   }
 
   DateTimeRange _currentRange(_Period period) {
@@ -146,7 +151,10 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
   }
 
   double _totalRevenue(List<Sale> sales) {
-    return _validSales(sales).fold<double>(0, (sum, sale) => sum + sale.total);
+    return _validSales(sales).fold<double>(
+      0,
+      (sum, sale) => sum + sale.total,
+    );
   }
 
   double _totalCost(List<Sale> sales) {
@@ -281,7 +289,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
       return 'Aucune donnée';
     }
 
-    final peak = hourly.entries.reduce((a, b) => a.value >= b.value ? a : b);
+    final peak = hourly.entries.reduce(
+      (a, b) => a.value >= b.value ? a : b,
+    );
 
     final startHour = peak.key;
     final endHour = startHour + 1;
@@ -305,11 +315,16 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     return ((currentRevenue - previousRevenue) / previousRevenue) * 100;
   }
 
+  // ---------------------------------------------------------------------------
+  // BUILD
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
     final productsAsync = ref.watch(productsProvider);
+    final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -317,7 +332,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator(color: p.primary));
+              return Center(
+                child: CircularProgressIndicator(color: p.primary),
+              );
             }
 
             if (snap.hasError || !snap.hasData) {
@@ -385,9 +402,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
             final bestProduct = productQuantities.isEmpty
                 ? 'Aucun produit'
                 : (productQuantities.entries.toList()
-                        ..sort((a, b) => b.value.compareTo(a.value)))
-                      .first
-                      .key;
+                      ..sort((a, b) => b.value.compareTo(a.value)))
+                    .first
+                    .key;
 
             final peakHour = _peakHour(currentSales);
 
@@ -398,10 +415,17 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
-                  _Header(name: _getUserDisplayName(), alertCount: alertCount),
+                  // HEADER
+                  _Header(
+                    name: _getUserFirstName(
+                      profileAsync.valueOrNull?.fullName,
+                    ),
+                    alertCount: alertCount,
+                  ),
 
                   const SizedBox(height: 20),
 
+                  // KPI
                   _KpiGrid(
                     revenue: revenue,
                     margin: margin,
@@ -411,12 +435,16 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                     alertCount: alertCount,
                     growth: _growth(
                       todaySales,
-                      _filterSales(allSales, _previousRange(_Period.jour)),
+                      _filterSales(
+                        allSales,
+                        _previousRange(_Period.jour),
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
+                  // ACTIONS RAPIDES
                   _SectionTitle('Actions rapides', p),
 
                   const SizedBox(height: 12),
@@ -443,6 +471,7 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
+                  // STATISTIQUES
                   _SectionTitle('Statistiques', p),
 
                   const SizedBox(height: 12),
@@ -458,18 +487,29 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  _SalesChartCard(labels: labels, values: values),
+                  // GRAPHIQUE
+                  _SalesChartCard(
+                    labels: labels,
+                    values: values,
+                  ),
 
                   const SizedBox(height: 12),
 
-                  _CategoriesCard(quantities: categoryQuantities),
+                  // CATEGORIES
+                  _CategoriesCard(
+                    quantities: categoryQuantities,
+                  ),
 
                   const SizedBox(height: 12),
 
-                  _TopProductsCard(qty: productQuantities),
+                  // TOP PRODUITS
+                  _TopProductsCard(
+                    qty: productQuantities,
+                  ),
 
                   const SizedBox(height: 12),
 
+                  // INSIGHTS
                   _InsightsRow(
                     bestProduct: bestProduct,
                     growth: growth,
@@ -478,14 +518,18 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
+                  // ALERTES STOCK
                   _SectionTitle('Alertes stock', p),
 
                   const SizedBox(height: 12),
 
-                  _StockAlertsCard(products: alertProducts),
+                  _StockAlertsCard(
+                    products: alertProducts,
+                  ),
 
                   const SizedBox(height: 24),
 
+                  // ACTIVITE RECENTE
                   _SectionTitle('Activité récente', p),
 
                   const SizedBox(height: 12),
@@ -504,17 +548,26 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
   }
 }
+
+// -----------------------------------------------------------------------------
+// HEADER
+// -----------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
   final String name;
   final int alertCount;
 
-  const _Header({required this.name, required this.alertCount});
+  const _Header({
+    required this.name,
+    required this.alertCount,
+  });
 
   String _formatDate() {
     final now = DateTime.now();
@@ -550,10 +603,24 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = _P.of(context);
+
+    final headerBackground = p.dark
+        ? p.primary.withValues(alpha: 0.18)
+        : const Color(0xFFE8F4F1);
+
+    final statusBackground = p.dark
+        ? p.accent.withValues(alpha: 0.16)
+        : const Color(0xFFFFF0DD);
+
+    final statusText = p.dark
+        ? p.accent
+        : const Color(0xFFD98228);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F4F1),
+        color: headerBackground,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -569,22 +636,20 @@ class _Header extends StatelessWidget {
                   children: [
                     Text(
                       'Bonjour, ',
-                      style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 13,
+                      style: p.t.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: p.primary,
                       ),
                     ),
                     Flexible(
                       child: Text(
                         name,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 21,
+                        style: p.t.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF164D46),
+                          color: p.dark
+                              ? p.text
+                              : const Color(0xFF164D46),
                         ),
                       ),
                     ),
@@ -599,25 +664,23 @@ class _Header extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0DD),
+                    color: statusBackground,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.check_circle_outline_rounded,
                         size: 14,
-                        color: Color(0xFFE9973E),
+                        color: p.accent,
                       ),
-                      SizedBox(width: 5),
+                      const SizedBox(width: 5),
                       Text(
                         'Votre boutique est sous contrôle',
-                        style: TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 10,
+                        style: p.t.labelSmall?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFD98228),
+                          color: statusText,
                         ),
                       ),
                     ],
@@ -628,11 +691,8 @@ class _Header extends StatelessWidget {
 
                 Text(
                   _formatDate(),
-                  style: const TextStyle(
-                    fontFamily: 'PlusJakartaSans',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF71817D),
+                  style: p.t.labelSmall?.copyWith(
+                    color: p.muted,
                   ),
                 ),
               ],
@@ -648,12 +708,12 @@ class _Header extends StatelessWidget {
                     width: 43,
                     height: 43,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: p.card,
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none_rounded,
-                      color: AppColors.primary,
+                      color: p.primary,
                       size: 22,
                     ),
                   ),
@@ -669,21 +729,20 @@ class _Header extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.secondary,
+                          color: p.accent,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFFE8F4F1),
+                            color: headerBackground,
                             width: 2,
                           ),
                         ),
                         child: Center(
                           child: Text(
                             alertCount > 9 ? '9+' : '$alertCount',
-                            style: const TextStyle(
-                              fontFamily: 'PlusJakartaSans',
+                            style: p.t.labelSmall?.copyWith(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: p.onPrimary,
                             ),
                           ),
                         ),
@@ -693,16 +752,17 @@ class _Header extends StatelessWidget {
               ),
 
               const SizedBox(width: 9),
+
               Container(
                 width: 43,
                 height: 43,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: p.card,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_outline_rounded,
-                  color: AppColors.primary,
+                  color: p.primary,
                   size: 22,
                 ),
               ),
@@ -713,6 +773,10 @@ class _Header extends StatelessWidget {
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// KPI
+// -----------------------------------------------------------------------------
 
 class _KpiGrid extends StatelessWidget {
   final double revenue;
@@ -756,26 +820,25 @@ class _KpiGrid extends StatelessWidget {
           trend: growthText,
           trendUp: growth >= 0,
         ),
-
         _KpiCard(
           title: 'Produits en stock',
           value: '$totalUnits',
           color: p.primary,
           trend: '$categoriesCount catégories',
         ),
-
         _KpiCard(
           title: 'Bénéfice (est.)',
           value: _money(margin),
           color: p.info,
           trend: 'Marge réelle',
         ),
-
         _KpiCard(
           title: 'Alertes',
           value: '$alertCount',
           color: p.error,
-          trend: alertCount > 0 ? 'Stock faible' : 'Stock sous contrôle',
+          trend: alertCount > 0
+              ? 'Stock faible'
+              : 'Stock sous contrôle',
         ),
       ],
     );
@@ -815,7 +878,6 @@ class _KpiCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -827,14 +889,16 @@ class _KpiCard extends StatelessWidget {
               ),
             ),
           ),
-
           Row(
             children: [
               if (trendUp) ...[
-                Icon(Icons.trending_up, size: 14, color: p.success),
+                Icon(
+                  Icons.trending_up,
+                  size: 14,
+                  color: p.success,
+                ),
                 const SizedBox(width: 4),
               ],
-
               Flexible(
                 child: Text(
                   trend,
@@ -852,6 +916,10 @@ class _KpiCard extends StatelessWidget {
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// ACTIONS RAPIDES
+// -----------------------------------------------------------------------------
 
 class _QuickActions extends StatelessWidget {
   final VoidCallback onAddProduct;
@@ -871,22 +939,19 @@ class _QuickActions extends StatelessWidget {
         Expanded(
           child: _ActionChip(
             icon: Icons.add_circle_outline,
-            label: 'Ajouter\nproduit',
+            label: 'Ajouter produit',
             onTap: onAddProduct,
           ),
         ),
-
         const SizedBox(width: 10),
-
         Expanded(
           child: _ActionChip(
             icon: Icons.shopping_bag_outlined,
-            label: 'Nouvelle\nvente',
+            label: 'Nouvelle vente',
             onTap: onNewSale,
             primary: true,
           ),
         ),
-
         const SizedBox(width: 10),
       ],
     );
@@ -910,7 +975,9 @@ class _ActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final bg = primary ? p.accent.withValues(alpha: 0.18) : p.soft;
+    final bg = primary
+        ? p.accent.withValues(alpha: 0.18)
+        : p.soft;
 
     final fg = primary ? p.accent : p.onSoft;
 
@@ -921,17 +988,22 @@ class _ActionChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          padding: const EdgeInsets.symmetric(
+            vertical: 10,
+            horizontal: 8,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: fg, size: 21),
-
+              Icon(
+                icon,
+                color: fg,
+                size: 21,
+              ),
               const SizedBox(width: 7),
-
               Flexible(
                 child: Text(
-                  label.replaceAll('\n', ' '),
+                  label,
                   textAlign: TextAlign.center,
                   style: p.t.labelMedium?.copyWith(
                     color: fg,
@@ -948,11 +1020,18 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// SELECTEUR DE PERIODE
+// -----------------------------------------------------------------------------
+
 class _PeriodSelector extends StatelessWidget {
   final _Period value;
   final ValueChanged<_Period> onChanged;
 
-  const _PeriodSelector({required this.value, required this.onChanged});
+  const _PeriodSelector({
+    required this.value,
+    required this.onChanged,
+  });
 
   static const Map<_Period, String> _labels = {
     _Period.jour: 'Jour',
@@ -1002,17 +1081,26 @@ class _PeriodSelector extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// GRAPHIQUE DES VENTES
+// -----------------------------------------------------------------------------
+
 class _SalesChartCard extends StatelessWidget {
   final List<String> labels;
   final List<double> values;
 
-  const _SalesChartCard({required this.labels, required this.values});
+  const _SalesChartCard({
+    required this.labels,
+    required this.values,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final maxV = values.isEmpty ? 1.0 : values.reduce(math.max);
+    final maxV = values.isEmpty
+        ? 1.0
+        : values.reduce(math.max);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1020,10 +1108,11 @@ class _SalesChartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Évolution des ventes', style: p.t.titleMedium),
-
+          Text(
+            'Évolution des ventes',
+            style: p.t.titleMedium,
+          ),
           const SizedBox(height: 16),
-
           SizedBox(
             height: 130,
             child: Row(
@@ -1040,15 +1129,26 @@ class _SalesChartCard extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: TweenAnimationBuilder<double>(
-                              key: ValueKey('${labels.length}-$i-${values[i]}'),
+                              key: ValueKey(
+                                '${labels.length}-$i-${values[i]}',
+                              ),
                               tween: Tween(
                                 begin: 0,
-                                end: maxV == 0 ? 0 : values[i] / maxV,
+                                end: maxV == 0
+                                    ? 0
+                                    : values[i] / maxV,
                               ),
-                              duration: const Duration(milliseconds: 500),
+                              duration: const Duration(
+                                milliseconds: 500,
+                              ),
                               curve: Curves.easeOutCubic,
-                              builder: (context, factor, child) {
-                                final height = factor.clamp(0.02, 1.0);
+                              builder: (
+                                context,
+                                factor,
+                                child,
+                              ) {
+                                final height =
+                                    factor.clamp(0.02, 1.0);
 
                                 return FractionallySizedBox(
                                   heightFactor: height,
@@ -1056,8 +1156,11 @@ class _SalesChartCard extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: isMax
                                           ? p.primary
-                                          : p.primary.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(6),
+                                          : p.primary.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                      borderRadius:
+                                          BorderRadius.circular(6),
                                     ),
                                   ),
                                 );
@@ -1065,12 +1168,12 @@ class _SalesChartCard extends StatelessWidget {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         Text(
                           labels[i],
-                          style: p.t.labelSmall?.copyWith(color: p.muted),
+                          style: p.t.labelSmall?.copyWith(
+                            color: p.muted,
+                          ),
                         ),
                       ],
                     ),
@@ -1085,10 +1188,16 @@ class _SalesChartCard extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// CATEGORIES
+// -----------------------------------------------------------------------------
+
 class _CategoriesCard extends StatelessWidget {
   final Map<String, double> quantities;
 
-  const _CategoriesCard({required this.quantities});
+  const _CategoriesCard({
+    required this.quantities,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1106,27 +1215,47 @@ class _CategoriesCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Top catégories', style: p.t.titleMedium),
+            Text(
+              'Top catégories',
+              style: p.t.titleMedium,
+            ),
             const SizedBox(height: 12),
             Text(
               'Aucune vente pour le moment.',
-              style: p.t.bodyMedium?.copyWith(color: p.muted),
+              style: p.t.bodyMedium?.copyWith(
+                color: p.muted,
+              ),
             ),
           ],
         ),
       );
     }
 
-    final total = topEntries.fold<double>(0, (sum, item) => sum + item.value);
+    final total = topEntries.fold<double>(
+      0,
+      (sum, item) => sum + item.value,
+    );
 
     final data = <(String, double, Color)>[];
 
-    final colors = [p.primary, p.primary.withValues(alpha: 0.5), p.accent];
+    final colors = [
+      p.primary,
+      p.primary.withValues(alpha: 0.5),
+      p.accent,
+    ];
 
     for (var i = 0; i < topEntries.length; i++) {
-      final percentage = total == 0 ? 0.0 : (topEntries[i].value / total) * 100;
+      final percentage = total == 0
+          ? 0.0
+          : (topEntries[i].value / total) * 100;
 
-      data.add((topEntries[i].key, percentage, colors[i]));
+      data.add(
+        (
+          topEntries[i].key,
+          percentage,
+          colors[i],
+        ),
+      );
     }
 
     return Container(
@@ -1139,21 +1268,22 @@ class _CategoriesCard extends StatelessWidget {
             height: 92,
             child: CustomPaint(
               painter: _DonutPainter(
-                data.map((item) => (item.$2, item.$3)).toList(),
+                data
+                    .map((item) => (item.$2, item.$3))
+                    .toList(),
               ),
             ),
           ),
-
           const SizedBox(width: 20),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Top catégories', style: p.t.titleMedium),
-
+                Text(
+                  'Top catégories',
+                  style: p.t.titleMedium,
+                ),
                 const SizedBox(height: 10),
-
                 for (final item in data)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -1167,13 +1297,10 @@ class _CategoriesCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                         ),
-
                         const SizedBox(width: 8),
-
                         Expanded(
                           child: Text(
-                            '${item.$1} '
-                            '(${item.$2.round()}%)',
+                            '${item.$1} (${item.$2.round()}%)',
                             overflow: TextOverflow.ellipsis,
                             style: p.t.bodySmall,
                           ),
@@ -1201,7 +1328,10 @@ class _DonutPainter extends CustomPainter {
 
     final rect = (Offset.zero & size).deflate(stroke / 2);
 
-    final total = slices.fold<double>(0, (total, slice) => total + slice.$1);
+    final total = slices.fold<double>(
+      0,
+      (total, slice) => total + slice.$1,
+    );
 
     if (total <= 0) {
       return;
@@ -1221,7 +1351,13 @@ class _DonutPainter extends CustomPainter {
         ..strokeWidth = stroke
         ..strokeCap = StrokeCap.butt;
 
-      canvas.drawArc(rect, start, sweep - 0.04, false, paint);
+      canvas.drawArc(
+        rect,
+        start,
+        sweep - 0.04,
+        false,
+        paint,
+      );
 
       start += sweep;
     }
@@ -1233,10 +1369,16 @@ class _DonutPainter extends CustomPainter {
   }
 }
 
+// -----------------------------------------------------------------------------
+// TOP PRODUITS
+// -----------------------------------------------------------------------------
+
 class _TopProductsCard extends StatelessWidget {
   final Map<String, double> qty;
 
-  const _TopProductsCard({required this.qty});
+  const _TopProductsCard({
+    required this.qty,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1255,16 +1397,18 @@ class _TopProductsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Produits les plus vendus', style: p.t.titleMedium),
-
+          Text(
+            'Produits les plus vendus',
+            style: p.t.titleMedium,
+          ),
           const SizedBox(height: 14),
-
           if (top.isEmpty)
             Text(
               'Aucune vente pour le moment.',
-              style: p.t.bodyMedium?.copyWith(color: p.muted),
+              style: p.t.bodyMedium?.copyWith(
+                color: p.muted,
+              ),
             ),
-
           for (final entry in top)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -1272,7 +1416,8 @@ class _TopProductsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
@@ -1283,22 +1428,22 @@ class _TopProductsCard extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(width: 8),
-
                       Text(
                         '${entry.value.round()} vendus',
-                        style: p.t.bodySmall?.copyWith(color: p.muted),
+                        style: p.t.bodySmall?.copyWith(
+                          color: p.muted,
+                        ),
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 6),
-
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
-                      value: maxQ == 0 ? 0 : entry.value / maxQ,
+                      value: maxQ == 0
+                          ? 0
+                          : entry.value / maxQ,
                       minHeight: 8,
                       backgroundColor: p.soft,
                       color: p.primary,
@@ -1312,6 +1457,10 @@ class _TopProductsCard extends StatelessWidget {
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// INSIGHTS
+// -----------------------------------------------------------------------------
 
 class _InsightsRow extends StatelessWidget {
   final String bestProduct;
@@ -1342,37 +1491,37 @@ class _InsightsRow extends StatelessWidget {
                 value: bestProduct,
               ),
             ),
-
             const SizedBox(width: 12),
-
             Expanded(
               child: _InsightCard(
                 label: 'Croissance',
                 value: growthText,
-                valueColor: growth >= 0 ? p.success : p.error,
+                valueColor:
+                    growth >= 0 ? p.success : p.error,
               ),
             ),
           ],
         ),
-
         const SizedBox(height: 12),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: p.cardDecoration,
           child: Row(
             children: [
-              Icon(Icons.schedule_rounded, color: p.primary, size: 20),
-
+              Icon(
+                Icons.schedule_rounded,
+                color: p.primary,
+                size: 20,
+              ),
               const SizedBox(width: 10),
-
               Expanded(
                 child: Text(
                   'Heure de pointe des ventes',
-                  style: p.t.bodyMedium?.copyWith(color: p.muted),
+                  style: p.t.bodyMedium?.copyWith(
+                    color: p.muted,
+                  ),
                 ),
               ),
-
               Text(
                 peakHour,
                 style: p.t.bodyMedium?.copyWith(
@@ -1409,10 +1558,13 @@ class _InsightCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: p.t.bodySmall?.copyWith(color: p.muted)),
-
+          Text(
+            label,
+            style: p.t.bodySmall?.copyWith(
+              color: p.muted,
+            ),
+          ),
           const SizedBox(height: 6),
-
           Text(
             value,
             maxLines: 2,
@@ -1428,10 +1580,16 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// ALERTES STOCK
+// -----------------------------------------------------------------------------
+
 class _StockAlertsCard extends StatelessWidget {
   final List<dynamic> products;
 
-  const _StockAlertsCard({required this.products});
+  const _StockAlertsCard({
+    required this.products,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1471,8 +1629,9 @@ class _StockAlertsCard extends StatelessWidget {
                 ],
               ),
             ),
-
-          for (var i = 0; i < products.length && i < 4; i++) ...[
+          for (var i = 0;
+              i < products.length && i < 4;
+              i++) ...[
             ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
@@ -1493,12 +1652,16 @@ class _StockAlertsCard extends StatelessWidget {
               ),
               title: Text(
                 products[i].name,
-                style: p.t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: p.t.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               subtitle: Text(
                 'Il reste ${products[i].quantity} '
                 'unité${products[i].quantity > 1 ? 's' : ''}',
-                style: p.t.bodySmall?.copyWith(color: p.muted),
+                style: p.t.bodySmall?.copyWith(
+                  color: p.muted,
+                ),
               ),
               trailing: Text(
                 'Réapprovisionner',
@@ -1508,9 +1671,13 @@ class _StockAlertsCard extends StatelessWidget {
                 ),
               ),
             ),
-
             if (i < products.length - 1 && i < 3)
-              Divider(height: 1, indent: 16, endIndent: 16, color: p.border),
+              Divider(
+                height: 1,
+                indent: 16,
+                endIndent: 16,
+                color: p.border,
+              ),
           ],
         ],
       ),
@@ -1518,19 +1685,32 @@ class _StockAlertsCard extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// ACTIVITE RECENTE
+// -----------------------------------------------------------------------------
+
 class _RecentActivity extends StatelessWidget {
   final List<Sale> sales;
   final List<dynamic> alertProducts;
 
-  const _RecentActivity({required this.sales, required this.alertProducts});
+  const _RecentActivity({
+    required this.sales,
+    required this.alertProducts,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
     final validSales =
-        sales.where((sale) => sale.status.toUpperCase() != 'CANCELLED').toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+        sales
+            .where(
+              (sale) => sale.status.toUpperCase() != 'CANCELLED',
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.dateTime.compareTo(a.dateTime),
+          );
 
     final recentSales = validSales.take(3).toList();
 
@@ -1543,12 +1723,17 @@ class _RecentActivity extends StatelessWidget {
           decoration: p.cardDecoration,
           child: Row(
             children: [
-              Icon(Icons.history_rounded, color: p.muted),
+              Icon(
+                Icons.history_rounded,
+                color: p.muted,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Aucune activité récente.',
-                  style: p.t.bodyMedium?.copyWith(color: p.muted),
+                  style: p.t.bodyMedium?.copyWith(
+                    color: p.muted,
+                  ),
                 ),
               ),
             ],
@@ -1559,7 +1744,10 @@ class _RecentActivity extends StatelessWidget {
 
     for (final sale in recentSales) {
       final productSummary = sale.items
-          .map((item) => '${_formatQuantity(item.qty)}x ${item.name}')
+          .map(
+            (item) =>
+                '${_formatQuantity(item.qty)}x ${item.name}',
+          )
           .join(', ');
 
       children.add(
@@ -1576,14 +1764,16 @@ class _RecentActivity extends StatelessWidget {
                   color: p.soft,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.shopping_cart_outlined, color: p.onSoft),
+                child: Icon(
+                  Icons.shopping_cart_outlined,
+                  color: p.onSoft,
+                ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Vente : $productSummary',
@@ -1593,19 +1783,17 @@ class _RecentActivity extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-
                     const SizedBox(height: 2),
-
                     Text(
                       _relativeDate(sale.dateTime),
-                      style: p.t.bodySmall?.copyWith(color: p.muted),
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.muted,
+                      ),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               Text(
                 '+${_money(sale.total)}',
                 style: p.t.bodyMedium?.copyWith(
@@ -1636,14 +1824,16 @@ class _RecentActivity extends StatelessWidget {
                   color: p.errorSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.warning_amber_rounded, color: p.error),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: p.error,
+                ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Stock bas : ${product.name}',
@@ -1655,14 +1845,14 @@ class _RecentActivity extends StatelessWidget {
                     Text(
                       'Il reste ${product.quantity} unité'
                       '${product.quantity > 1 ? 's' : ''}',
-                      style: p.t.bodySmall?.copyWith(color: p.muted),
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.muted,
+                      ),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               Text(
                 'Alerte',
                 style: p.t.bodyMedium?.copyWith(
@@ -1710,11 +1900,18 @@ class _RecentActivity extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// ETAT ERREUR
+// -----------------------------------------------------------------------------
+
 class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1726,21 +1923,32 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: p.error),
-
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: p.error,
+            ),
             const SizedBox(height: 12),
-
-            Text(message, textAlign: TextAlign.center, style: p.t.bodyLarge),
-
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: p.t.bodyLarge,
+            ),
             const SizedBox(height: 16),
-
-            FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// TITRES
+// -----------------------------------------------------------------------------
 
 class _SectionTitle extends StatelessWidget {
   final String text;
@@ -1750,9 +1958,16 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: p.t.titleLarge);
+    return Text(
+      text,
+      style: p.t.titleLarge,
+    );
   }
 }
+
+// -----------------------------------------------------------------------------
+// FORMATAGE
+// -----------------------------------------------------------------------------
 
 String _money(num value) {
   final string = value.round().toString();
@@ -1764,7 +1979,9 @@ String _money(num value) {
 
     buffer.write(string[i]);
 
-    if (fromEnd > 1 && fromEnd % 3 == 1 && string[i] != '-') {
+    if (fromEnd > 1 &&
+        fromEnd % 3 == 1 &&
+        string[i] != '-') {
       buffer.write(' ');
     }
   }
