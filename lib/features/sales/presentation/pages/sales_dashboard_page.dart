@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/formatting/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routing/app_routes.dart';
 import '../../../../features/products_stock/presentation/providers/product_providers.dart';
@@ -1969,22 +1970,4 @@ class _SectionTitle extends StatelessWidget {
 // FORMATAGE
 // -----------------------------------------------------------------------------
 
-String _money(num value) {
-  final string = value.round().toString();
-
-  final buffer = StringBuffer();
-
-  for (var i = 0; i < string.length; i++) {
-    final fromEnd = string.length - i;
-
-    buffer.write(string[i]);
-
-    if (fromEnd > 1 &&
-        fromEnd % 3 == 1 &&
-        string[i] != '-') {
-      buffer.write(' ');
-    }
-  }
-
-  return '${buffer.toString()} F';
-}
+String _money(num value) => formatCfa(value, suffix: 'F');

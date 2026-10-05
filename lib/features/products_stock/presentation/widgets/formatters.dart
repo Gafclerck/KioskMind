@@ -1,20 +1,9 @@
-/// Formatage partagé des montants en FCFA avec séparateurs de milliers.
-///
-/// Le design affiche « 2,500 FCFA » et « +700 FCFA », pas « 2500 ».
-String formatCfa(int amount, {String suffix = 'FCFA'}) =>
-    '${formatThousands(amount)} $suffix';
-
-String formatThousands(int value) {
-  final digits = value.toString();
-  final buffer = StringBuffer(value < 0 ? '-' : '');
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-    buffer.write(digits[i]);
-  }
-  return buffer.toString();
-}
+export '../../../../core/formatting/money.dart';
 
 /// Singulier ou pluriel de l'unité d'un produit : « 12 bouteille », « 3 sacs ».
+///
+/// L'unité est déjà au singulier dans le catalogue ; c'est le nombre qui décide, et
+/// un accord sur « sac » donnerait « sass ».
 String formatUnit(int quantity, String unit) {
   final normalized = unit.toLowerCase();
   if (quantity > 1) {
