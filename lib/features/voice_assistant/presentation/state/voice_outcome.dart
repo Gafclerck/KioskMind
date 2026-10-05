@@ -59,6 +59,121 @@ final class SaleCancelled extends VoiceOutcome {
   final List<VoiceRecapLine> lines;
 }
 
+/// Daily sales stats outcome.
+final class DailyStatsRead extends VoiceOutcome {
+  const DailyStatsRead({
+    required this.salesCount,
+    required this.totalRevenue,
+    required this.totalProfit,
+    required this.itemsSold,
+  });
+
+  final int salesCount;
+  final double totalRevenue;
+  final double totalProfit;
+  final int itemsSold;
+}
+
+/// Low stock alerts outcome.
+final class LowStockRead extends VoiceOutcome {
+  const LowStockRead(this.products);
+
+  final List<LowStockItemResult> products;
+}
+
+/// Product price query outcome.
+final class ProductPriceRead extends VoiceOutcome {
+  const ProductPriceRead({
+    required this.product,
+    required this.price,
+    this.purchasePrice,
+    required this.unit,
+  });
+
+  final String product;
+  final double price;
+  final double? purchasePrice;
+  final String unit;
+}
+
+/// Stock out recorded outcome.
+final class StockOutRecorded extends VoiceOutcome {
+  const StockOutRecorded({
+    required this.product,
+    required this.qty,
+    required this.reason,
+    required this.resultingStock,
+  });
+
+  final String product;
+  final double qty;
+  final String reason;
+  final double resultingStock;
+}
+
+/// Page navigated outcome.
+final class PageNavigated extends VoiceOutcome {
+  const PageNavigated(this.label);
+
+  final String label;
+}
+
+/// Report exported outcome.
+final class ReportExported extends VoiceOutcome {
+  const ReportExported({required this.format, required this.salesCount});
+
+  final String format;
+  final int salesCount;
+}
+
+/// Product created outcome.
+final class ProductCreated extends VoiceOutcome {
+  const ProductCreated({
+    required this.name,
+    required this.price,
+    required this.initialQuantity,
+    required this.unit,
+  });
+
+  final String name;
+  final double price;
+  final double initialQuantity;
+  final String unit;
+}
+
+/// Product price updated outcome.
+final class ProductPriceUpdated extends VoiceOutcome {
+  const ProductPriceUpdated({
+    required this.product,
+    required this.oldPrice,
+    required this.newPrice,
+  });
+
+  final String product;
+  final double oldPrice;
+  final double newPrice;
+}
+
+/// Sales history read outcome.
+final class SalesHistoryRead extends VoiceOutcome {
+  const SalesHistoryRead(this.sales);
+
+  final List<SaleHistoryItemResult> sales;
+}
+
+/// Business info read outcome.
+final class BusinessInfoRead extends VoiceOutcome {
+  const BusinessInfoRead({
+    required this.storeName,
+    required this.activeProductsCount,
+    required this.totalSalesCount,
+  });
+
+  final String storeName;
+  final int activeProductsCount;
+  final int totalSalesCount;
+}
+
 /// What [execution] did, or null when it did not run a handler.
 ///
 /// Null covers both "held" and "failed": in those two cases what the merchant is
@@ -95,6 +210,47 @@ VoiceOutcome? outcomeOfValue(Object value) {
     ),
     final CancelLastSaleResult result => SaleCancelled(
       _saleLines(result.restored),
+    ),
+    final QueryDailyStatsResult result => DailyStatsRead(
+      salesCount: result.salesCount,
+      totalRevenue: result.totalRevenue,
+      totalProfit: result.totalProfit,
+      itemsSold: result.itemsSold,
+    ),
+    final QueryLowStockResult result => LowStockRead(result.products),
+    final QueryProductPriceResult result => ProductPriceRead(
+      product: result.productName,
+      price: result.price,
+      purchasePrice: result.purchasePrice,
+      unit: result.unit,
+    ),
+    final RecordStockOutResult result => StockOutRecorded(
+      product: result.productName,
+      qty: result.qty,
+      reason: result.reason,
+      resultingStock: result.resultingStock,
+    ),
+    final NavigateToPageResult result => PageNavigated(result.label),
+    final ExportSalesReportResult result => ReportExported(
+      format: result.format,
+      salesCount: result.salesCount,
+    ),
+    final CreateProductResult result => ProductCreated(
+      name: result.name,
+      price: result.price,
+      initialQuantity: result.initialQuantity,
+      unit: result.unit,
+    ),
+    final UpdateProductPriceResult result => ProductPriceUpdated(
+      product: result.productName,
+      oldPrice: result.oldPrice,
+      newPrice: result.newPrice,
+    ),
+    final QuerySalesHistoryResult result => SalesHistoryRead(result.sales),
+    final QueryBusinessInfoResult result => BusinessInfoRead(
+      storeName: result.storeName,
+      activeProductsCount: result.activeProductsCount,
+      totalSalesCount: result.totalSalesCount,
     ),
     _ => null,
   };

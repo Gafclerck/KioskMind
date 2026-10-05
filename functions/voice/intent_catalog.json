@@ -168,6 +168,392 @@
         "je me trompe, annule"
       ],
       "slots": []
+    },
+    {
+      "id": "query_daily_stats",
+      "handler": "query_daily_stats",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les statistiques ou le bilan des ventes d'une journée (chiffre d'affaires, nombre de ventes, bénéfice). Ne modifie aucune donnée.",
+      "triggers": [
+        "chiffre d'affaires",
+        "chiffre daffaires",
+        "bilan du jour",
+        "ventes du jour",
+        "combien j'ai vendu aujourd'hui",
+        "combien jai vendu aujourdhui",
+        "point des ventes",
+        "bilan d'aujourd'hui",
+        "bilan daujourdhui",
+        "bilan quotidien",
+        "chiffre du jour",
+        "mes ventes aujourd'hui",
+        "mes ventes aujourdhui"
+      ],
+      "examples": [
+        "quel est mon chiffre d'affaires aujourd'hui",
+        "combien j'ai vendu aujourd'hui",
+        "fais-moi le point des ventes du jour"
+      ],
+      "slots": [
+        {
+          "name": "date",
+          "type": "string",
+          "required": false,
+          "description": "Date cible (par exemple 'today' ou 'yesterday').",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_low_stock",
+      "handler": "query_low_stock",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter la liste des produits en alerte stock ou en rupture de stock. Ne modifie aucune donnée.",
+      "triggers": [
+        "produits en rupture",
+        "rupture de stock",
+        "alertes stock",
+        "alertes de stock",
+        "produits a recommander",
+        "produits a reapprovisionner",
+        "bientot fini",
+        "stock faible",
+        "qu'est ce qui manque",
+        "quest ce qui manque"
+      ],
+      "examples": [
+        "quels sont les produits en rupture",
+        "qu'est-ce qui est presque fini",
+        "qu'est-ce que je dois réapprovisionner"
+      ],
+      "slots": [
+        {
+          "name": "level",
+          "type": "string",
+          "required": false,
+          "description": "Niveau de filtrage: out_of_stock, critical, all.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_product_price",
+      "handler": "query_product_price",
+      "onlineOnly": true,
+      "risk": "READ",
+      "referencePrice": "sale_price",
+      "description": "Consulter le prix de vente et d'achat d'un produit du catalogue.",
+      "triggers": [
+        "combien coute",
+        "quel est le prix",
+        "prix de",
+        "prix du",
+        "a combien",
+        "tarif de",
+        "tarif du",
+        "prix de vente"
+      ],
+      "examples": [
+        "combien coûte le lait",
+        "quel est le prix du sucre",
+        "à combien je vends le savon"
+      ],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_name",
+          "required": true,
+          "description": "Nom ou alias du produit.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "record_stock_out",
+      "handler": "record_stock_out",
+      "onlineOnly": true,
+      "risk": "WRITE_REVERSIBLE",
+      "description": "Enregistrer une diminution de stock manuelle pour perte, casse, don, avarie ou ajustement.",
+      "triggers": [
+        "perte de",
+        "perte du",
+        "casse de",
+        "casse du",
+        "avarie",
+        "perime",
+        "jete",
+        "donne",
+        "don de",
+        "sortie de stock",
+        "retire du stock",
+        "abime",
+        "produit casse"
+      ],
+      "examples": [
+        "deux bouteilles d'huile sont cassées",
+        "j'ai jeté trois yaourts périmés",
+        "j'ai donné un paquet de savon"
+      ],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_name",
+          "required": true,
+          "description": "Nom ou alias du produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "qty",
+          "type": "quantity",
+          "required": true,
+          "description": "Quantité retirée du stock.",
+          "lineSlots": []
+        },
+        {
+          "name": "reason",
+          "type": "string",
+          "required": false,
+          "description": "Motif: breakage, loss, donation, manualAdjustment.",
+          "lineSlots": []
+        },
+        {
+          "name": "note",
+          "type": "string",
+          "required": false,
+          "description": "Note textuelle explicative.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "navigate_to_page",
+      "handler": "navigate_to_page",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Naviguer vers un écran ou onglet de l'application (dashboard, stock, sales_history, profile, export, create_sale, add_product).",
+      "triggers": [
+        "va a",
+        "va sur",
+        "ouvre la page",
+        "ouvre lecran",
+        "ouvre l'ecran",
+        "montre moi lecran",
+        "aller a",
+        "aller sur",
+        "affiche la page",
+        "bascule sur"
+      ],
+      "examples": [
+        "va à l'accueil",
+        "ouvre l'écran de stock",
+        "montre-moi l'historique",
+        "va dans mon profil"
+      ],
+      "slots": [
+        {
+          "name": "destination",
+          "type": "string",
+          "required": true,
+          "description": "Page cible: dashboard, stock, sales_history, profile, export, create_sale, add_product.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "export_sales_report",
+      "handler": "export_sales_report",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Générer et partager un rapport d'export des ventes en PDF ou CSV.",
+      "triggers": [
+        "exporter les ventes",
+        "exporte les ventes",
+        "partage le rapport",
+        "rapport des ventes",
+        "generer export",
+        "envoie le bilan en pdf",
+        "partager les ventes",
+        "exporte en pdf",
+        "exporte en csv",
+        "telecharge le rapport"
+      ],
+      "examples": [
+        "exporte mes ventes en PDF",
+        "partage le rapport des ventes",
+        "génère un export de mes ventes"
+      ],
+      "slots": [
+        {
+          "name": "format",
+          "type": "string",
+          "required": true,
+          "description": "Format du document: pdf ou csv.",
+          "lineSlots": []
+        },
+        {
+          "name": "period",
+          "type": "string",
+          "required": false,
+          "description": "Période concernée: day, week, month, all.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "create_product",
+      "handler": "create_product",
+      "onlineOnly": true,
+      "risk": "WRITE_SENSITIVE",
+      "description": "Créer un nouvel article dans le catalogue de la boutique.",
+      "triggers": [
+        "creer produit",
+        "ajoute produit",
+        "nouveau produit",
+        "ajouter un article",
+        "cree l'article",
+        "cree larticle",
+        "nouveau article",
+        "ajouter produit"
+      ],
+      "examples": [
+        "ajoute un nouveau produit Savon Omo à cinq cents francs",
+        "crée le produit Coca Cola 33cl vendu à quatre cents francs"
+      ],
+      "slots": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "Nom du produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "price",
+          "type": "money",
+          "required": true,
+          "description": "Prix de vente unitaire.",
+          "lineSlots": []
+        },
+        {
+          "name": "purchasePrice",
+          "type": "money",
+          "required": false,
+          "description": "Prix d'achat unitaire.",
+          "lineSlots": []
+        },
+        {
+          "name": "initialQty",
+          "type": "quantity",
+          "required": false,
+          "description": "Quantité initiale en stock.",
+          "lineSlots": []
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "required": false,
+          "description": "Catégorie du produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "unit",
+          "type": "unit",
+          "required": false,
+          "description": "Unité de vente.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "update_product_price",
+      "handler": "update_product_price",
+      "onlineOnly": true,
+      "risk": "WRITE_SENSITIVE",
+      "referencePrice": "sale_price",
+      "description": "Mettre à jour le prix de vente d'un produit existant.",
+      "triggers": [
+        "change le prix",
+        "modifie le prix",
+        "passe a",
+        "passe le prix",
+        "nouveau prix",
+        "mettre a jour le prix",
+        "mise a jour du prix"
+      ],
+      "examples": [
+        "le sucre passe à sept cents francs",
+        "change le prix de l'huile à mille deux cents francs"
+      ],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_name",
+          "required": true,
+          "description": "Nom ou alias du produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "newPrice",
+          "type": "money",
+          "required": true,
+          "description": "Nouveau prix de vente unitaire.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_sales_history",
+      "handler": "query_sales_history",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les dernières ventes ou l'historique récent.",
+      "triggers": [
+        "dernieres ventes",
+        "historique des ventes",
+        "dernieres transactions",
+        "qu'est ce qu'on a vendu",
+        "quest ce quon a vendu",
+        "journal des ventes",
+        "historique recent"
+      ],
+      "examples": [
+        "quelles sont les dernières ventes",
+        "montre-moi l'historique des ventes",
+        "dernières transactions"
+      ],
+      "slots": [
+        {
+          "name": "limit",
+          "type": "number",
+          "required": false,
+          "description": "Nombre de ventes à remonter.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_business_info",
+      "handler": "query_business_info",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les informations récapitulatives de la boutique (nombre d'articles actifs, nom du commerce).",
+      "triggers": [
+        "infos boutique",
+        "infos de ma boutique",
+        "combien de produits",
+        "nombre de produits",
+        "resume de mon kiosque",
+        "statistiques boutique",
+        "mon kiosque"
+      ],
+      "examples": [
+        "quelles sont les informations de ma boutique",
+        "combien de produits j'ai au catalogue",
+        "résumé de mon kiosque"
+      ],
+      "slots": []
     }
   ]
 }

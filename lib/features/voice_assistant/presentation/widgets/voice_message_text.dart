@@ -65,7 +65,145 @@ String _outcomeText(
       _qtyWithUnit(l10n, stock.stock, stock.unit, amounts),
     ),
     SaleCancelled() => l10n.voiceSaleCancelled,
+    final DailyStatsRead stats => _dailyStatsText(l10n, stats, amounts),
+    final LowStockRead lowStock => _lowStockText(l10n, lowStock, amounts),
+    final ProductPriceRead price => _productPriceText(l10n, price, amounts),
+    final StockOutRecorded stockOut => _stockOutText(l10n, stockOut, amounts),
+    final PageNavigated nav => _pageNavigatedText(l10n, nav),
+    final ReportExported report => _reportExportedText(l10n, report),
+    final ProductCreated created => _productCreatedText(l10n, created, amounts),
+    final ProductPriceUpdated updated => _productPriceUpdatedText(
+      l10n,
+      updated,
+      amounts,
+    ),
+    final SalesHistoryRead history => _salesHistoryText(l10n, history, amounts),
+    final BusinessInfoRead info => _businessInfoText(l10n, info),
   };
+}
+
+String _dailyStatsText(
+  AppLocalizations l10n,
+  DailyStatsRead stats,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  if (stats.salesCount == 0) {
+    return "Aucune vente enregistrée aujourd'hui.";
+  }
+  final String countStr = stats.salesCount == 1
+      ? '1 vente'
+      : '${stats.salesCount} ventes';
+  final String revStr = '${amounts(stats.totalRevenue)} $currency';
+  final String profStr = '${amounts(stats.totalProfit)} $currency';
+  return "Aujourd'hui : $countStr, total $revStr, bénéfice $profStr.";
+}
+
+String _lowStockText(
+  AppLocalizations l10n,
+  LowStockRead lowStock,
+  SpokenAmountFormatter amounts,
+) {
+  if (lowStock.products.isEmpty) {
+    return 'Aucun produit en rupture ou stock bas.';
+  }
+  final int count = lowStock.products.length;
+  final String header = count == 1
+      ? '1 produit en alerte de stock'
+      : '$count produits en alerte de stock';
+  final String details = lowStock.products
+      .map((p) => '${p.name} (reste ${_quantity(p.stock, amounts)})')
+      .join(', ');
+  return '$header : $details.';
+}
+
+String _productPriceText(
+  AppLocalizations l10n,
+  ProductPriceRead price,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String base =
+      'Le prix de ${price.product} est de ${amounts(price.price)} $currency';
+  if (price.purchasePrice != null && price.purchasePrice! > 0) {
+    return '$base (prix d\'achat : ${amounts(price.purchasePrice!)} $currency).';
+  }
+  return '$base.';
+}
+
+String _stockOutText(
+  AppLocalizations l10n,
+  StockOutRecorded stockOut,
+  SpokenAmountFormatter amounts,
+) {
+  final String qtyStr = _quantity(stockOut.qty, amounts);
+  final String remainingStr = _quantity(stockOut.resultingStock, amounts);
+  return 'Sortie de $qtyStr ${stockOut.product} (${stockOut.reason}) enregistrée. Stock restant : $remainingStr.';
+}
+
+String _pageNavigatedText(AppLocalizations l10n, PageNavigated nav) {
+  return 'Navigation vers ${nav.label}.';
+}
+
+String _reportExportedText(AppLocalizations l10n, ReportExported report) {
+  final String countStr = report.salesCount == 1
+      ? '1 vente'
+      : '${report.salesCount} ventes';
+  return 'Rapport des ventes ($countStr) généré et partagé au format ${report.format.toUpperCase()}.';
+}
+
+String _productCreatedText(
+  AppLocalizations l10n,
+  ProductCreated created,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String priceStr = '${amounts(created.price)} $currency';
+  final String qtyStr = _quantity(created.initialQuantity, amounts);
+  return 'Produit ${created.name} créé à $priceStr avec un stock initial de $qtyStr.';
+}
+
+String _productPriceUpdatedText(
+  AppLocalizations l10n,
+  ProductPriceUpdated updated,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String newPriceStr = '${amounts(updated.newPrice)} $currency';
+  final String oldPriceStr = '${amounts(updated.oldPrice)} $currency';
+  return 'Le prix de ${updated.product} a été mis à jour à $newPriceStr (ancien prix : $oldPriceStr).';
+}
+
+String _salesHistoryText(
+  AppLocalizations l10n,
+  SalesHistoryRead history,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  if (history.sales.isEmpty) {
+    return 'Aucune vente récente trouvée.';
+  }
+  final int count = history.sales.length;
+  final String header = count == 1 ? 'Dernière vente' : 'Dernières ventes';
+  final String details = history.sales
+      .map((s) {
+        final String itemsStr = s.itemsCount == 1
+            ? '1 article'
+            : '${s.itemsCount} articles';
+        return '$itemsStr pour ${amounts(s.total)} $currency';
+      })
+      .join(', ');
+  return '$header : $details.';
+}
+
+String _businessInfoText(AppLocalizations l10n, BusinessInfoRead info) {
+  final String prodStr = info.activeProductsCount == 1
+      ? '1 produit actif'
+      : '${info.activeProductsCount} produits actifs';
+  final String salesStr = info.totalSalesCount == 1
+      ? '1 vente'
+      : '${info.totalSalesCount} ventes';
+  return '${info.storeName} : $prodStr, $salesStr enregistrées.';
 }
 
 /// A sale, its lines and its total in words.

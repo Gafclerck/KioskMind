@@ -9,6 +9,8 @@ import '../../../core/voice_services/platform_tts.dart';
 import '../../../core/voice_services/speech_recognizer_port.dart';
 import '../../../core/voice_services/tts_port.dart';
 import '../../../core/voice_services/voice_service_settings.dart';
+import '../../../features/export_reporting/presentation/providers/export_providers.dart';
+import '../../../features/navigation/navigation_index_provider.dart';
 import '../../../features/products_stock/presentation/providers/product_providers.dart';
 import '../../../features/sales/presentation/providers/sales_provider.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
@@ -27,9 +29,19 @@ import '../data/handlers/call_journal.dart';
 import '../data/handlers/journaling_intent_handler.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
+import '../data/handlers/real/real_create_product_handler.dart';
+import '../data/handlers/real/real_export_report_handler.dart';
+import '../data/handlers/real/real_navigate_handler.dart';
+import '../data/handlers/real/real_query_business_info_handler.dart';
+import '../data/handlers/real/real_query_daily_stats_handler.dart';
+import '../data/handlers/real/real_query_low_stock_handler.dart';
+import '../data/handlers/real/real_query_product_price_handler.dart';
+import '../data/handlers/real/real_query_sales_history_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
+import '../data/handlers/real/real_record_stock_out_handler.dart';
+import '../data/handlers/real/real_update_product_price_handler.dart';
 import '../data/parsers/direct_gemini_caller.dart';
 import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rodium_ai_caller.dart';
@@ -150,6 +162,94 @@ voiceRealRecordRestockHandlerProvider = FutureProvider<RecordRestockHandler>((
   );
 });
 
+final FutureProvider<QueryDailyStatsHandler>
+voiceRealQueryDailyStatsHandlerProvider =
+    FutureProvider<QueryDailyStatsHandler>((Ref ref) async {
+      return RealQueryDailyStatsHandler(ref.watch(getSalesDashboardProvider));
+    });
+
+final FutureProvider<QueryLowStockHandler>
+voiceRealQueryLowStockHandlerProvider = FutureProvider<QueryLowStockHandler>((
+  Ref ref,
+) async {
+  return RealQueryLowStockHandler(
+    await ref.watch(voiceCatalogReaderProvider.future),
+  );
+});
+
+final FutureProvider<QueryProductPriceHandler>
+voiceRealQueryProductPriceHandlerProvider =
+    FutureProvider<QueryProductPriceHandler>((Ref ref) async {
+      return RealQueryProductPriceHandler(
+        await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
+
+final FutureProvider<RecordStockOutHandler>
+voiceRealRecordStockOutHandlerProvider = FutureProvider<RecordStockOutHandler>((
+  Ref ref,
+) async {
+  return RealRecordStockOutHandler(
+    recordStockOut: ref.watch(recordStockOutProvider),
+    catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+  );
+});
+
+final Provider<NavigateToPageHandler> voiceRealNavigateHandlerProvider =
+    Provider<NavigateToPageHandler>((Ref ref) {
+      return RealNavigateHandler(
+        navigator: (int tabIndex, String destination) {
+          ref.read(navigationIndexProvider.notifier).goTo(tabIndex);
+        },
+      );
+    });
+
+final FutureProvider<ExportSalesReportHandler>
+voiceRealExportReportHandlerProvider = FutureProvider<ExportSalesReportHandler>(
+  (Ref ref) async {
+    return RealExportReportHandler(
+      exportGenerator: ref.watch(salesExportGeneratorProvider),
+      shareGateway: ref.watch(shareExportGatewayProvider),
+      getSalesHistory: ref.watch(getSalesHistoryProvider),
+      productRepository: ref.watch(productRepositoryProvider),
+    );
+  },
+);
+
+final FutureProvider<CreateProductHandler>
+voiceRealCreateProductHandlerProvider = FutureProvider<CreateProductHandler>((
+  Ref ref,
+) async {
+  return RealCreateProductHandler(
+    createProduct: ref.watch(createProductProvider),
+  );
+});
+
+final FutureProvider<UpdateProductPriceHandler>
+voiceRealUpdateProductPriceHandlerProvider =
+    FutureProvider<UpdateProductPriceHandler>((Ref ref) async {
+      return RealUpdateProductPriceHandler(
+        updateProduct: ref.watch(updateProductProvider),
+        productRepository: ref.watch(productRepositoryProvider),
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
+
+final FutureProvider<QuerySalesHistoryHandler>
+voiceRealQuerySalesHistoryHandlerProvider =
+    FutureProvider<QuerySalesHistoryHandler>((Ref ref) async {
+      return RealQuerySalesHistoryHandler(ref.watch(getSalesHistoryProvider));
+    });
+
+final FutureProvider<QueryBusinessInfoHandler>
+voiceRealQueryBusinessInfoHandlerProvider =
+    FutureProvider<QueryBusinessInfoHandler>((Ref ref) async {
+      return RealQueryBusinessInfoHandler(
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+        getSalesHistory: ref.watch(getSalesHistoryProvider),
+      );
+    });
+
 /// The handlers the executor will call.
 ///
 /// Dispatches to real feature handlers when VOICE_USE_MOCKS=false, or to
@@ -175,6 +275,71 @@ voiceHandlersProvider = FutureProvider<VoiceHandlers>((Ref ref) async {
       cancelLastSale:
           JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
             await ref.watch(voiceRealCancelLastSaleHandlerProvider.future),
+            journal,
+          ),
+      queryDailyStats:
+          JournalingIntentHandler<QueryDailyStatsInput, QueryDailyStatsResult>(
+            await ref.watch(voiceRealQueryDailyStatsHandlerProvider.future),
+            journal,
+          ),
+      queryLowStock:
+          JournalingIntentHandler<QueryLowStockInput, QueryLowStockResult>(
+            await ref.watch(voiceRealQueryLowStockHandlerProvider.future),
+            journal,
+          ),
+      queryProductPrice:
+          JournalingIntentHandler<
+            QueryProductPriceInput,
+            QueryProductPriceResult
+          >(
+            await ref.watch(voiceRealQueryProductPriceHandlerProvider.future),
+            journal,
+          ),
+      recordStockOut:
+          JournalingIntentHandler<RecordStockOutInput, RecordStockOutResult>(
+            await ref.watch(voiceRealRecordStockOutHandlerProvider.future),
+            journal,
+          ),
+      navigateToPage:
+          JournalingIntentHandler<NavigateToPageInput, NavigateToPageResult>(
+            ref.watch(voiceRealNavigateHandlerProvider),
+            journal,
+          ),
+      exportSalesReport:
+          JournalingIntentHandler<
+            ExportSalesReportInput,
+            ExportSalesReportResult
+          >(
+            await ref.watch(voiceRealExportReportHandlerProvider.future),
+            journal,
+          ),
+      createProduct:
+          JournalingIntentHandler<CreateProductInput, CreateProductResult>(
+            await ref.watch(voiceRealCreateProductHandlerProvider.future),
+            journal,
+          ),
+      updateProductPrice:
+          JournalingIntentHandler<
+            UpdateProductPriceInput,
+            UpdateProductPriceResult
+          >(
+            await ref.watch(voiceRealUpdateProductPriceHandlerProvider.future),
+            journal,
+          ),
+      querySalesHistory:
+          JournalingIntentHandler<
+            QuerySalesHistoryInput,
+            QuerySalesHistoryResult
+          >(
+            await ref.watch(voiceRealQuerySalesHistoryHandlerProvider.future),
+            journal,
+          ),
+      queryBusinessInfo:
+          JournalingIntentHandler<
+            QueryBusinessInfoInput,
+            QueryBusinessInfoResult
+          >(
+            await ref.watch(voiceRealQueryBusinessInfoHandlerProvider.future),
             journal,
           ),
     );

@@ -23,7 +23,9 @@ enum SlotType {
   quantity('quantity'),
   unit('unit'),
   money('money'),
-  itemList('item_list');
+  itemList('item_list'),
+  string('string'),
+  number('number');
 
   const SlotType(this.code);
 
@@ -85,6 +87,7 @@ final class IntentDefinition {
     required this.examples,
     required this.slots,
     this.referencePrice = ReferencePrice.none,
+    this.onlineOnly = false,
   });
 
   final String id;
@@ -105,6 +108,9 @@ final class IntentDefinition {
 
   /// Which product price an announced amount is compared against.
   final ReferencePrice referencePrice;
+
+  /// Whether this intent is strictly reserved for the online LLM mode.
+  final bool onlineOnly;
 
   /// Whether running this command takes a list of lines, from the declared shape.
   bool get takesItems => slots.any((SlotDefinition slot) => slot.isItemList);
@@ -133,4 +139,15 @@ final class IntentCatalog {
   List<String> get ids => <String>[
     for (final IntentDefinition intent in intents) intent.id,
   ];
+
+  /// Intents available offline.
+  List<IntentDefinition> get offlineIntents =>
+      intents.where((IntentDefinition intent) => !intent.onlineOnly).toList();
+
+  /// Intents available online (all 14 intents).
+  List<IntentDefinition> get onlineIntents => intents;
+
+  /// Intents restricted to online-only execution (10 tools).
+  List<IntentDefinition> get onlineOnlyIntents =>
+      intents.where((IntentDefinition intent) => intent.onlineOnly).toList();
 }
