@@ -14,6 +14,9 @@ const String kItemsSlot = 'items';
 /// disagreement between what was heard and what was recorded.
 const String kProductIdSlot = 'productId';
 
+/// Name of the slot recording that explicit user confirmation was granted.
+const String kConfirmedSlot = 'confirmed';
+
 /// A value read from an utterance for one slot of an intent.
 ///
 /// A slot is either present with a value or absent. It never carries a guess:

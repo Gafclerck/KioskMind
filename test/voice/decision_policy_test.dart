@@ -325,6 +325,25 @@ void main() {
         );
       }
     });
+
+    test('une écriture sensible avec kConfirmedSlot=true produit EXECUTE au lieu de redemander confirmation', () {
+      final DecisionPolicy policy = policyFor(IntentRisk.writeSensitive);
+      final CommandProposal unconfirmed = CommandProposal(
+        intentId: 'record_sale',
+        slots: const <Slot>[],
+        doubts: const <Doubt>[],
+        origin: ProposalOrigin.rules,
+      );
+      expect(policy.decide(unconfirmed).outcome, DecisionOutcome.askConfirmation);
+
+      final CommandProposal confirmed = CommandProposal(
+        intentId: 'record_sale',
+        slots: const <Slot>[Slot(name: kConfirmedSlot, value: true)],
+        doubts: const <Doubt>[],
+        origin: ProposalOrigin.rules,
+      );
+      expect(policy.decide(confirmed).outcome, DecisionOutcome.execute);
+    });
   });
 }
 

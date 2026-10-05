@@ -2,6 +2,7 @@ import '../entities/command_proposal.dart';
 import '../entities/decision_outcome.dart';
 import '../entities/doubt.dart';
 import '../entities/intent_definition.dart';
+import '../entities/slot.dart';
 
 /// Doubts that mean the command must not run, whatever else the proposal says.
 ///
@@ -87,7 +88,8 @@ final class DecisionPolicy {
     if (confirming != null) {
       return _confirmationOrQuestion(intent, confirming);
     }
-    return _cleanIssue(intent);
+    final bool isConfirmed = proposal.valueOf<bool>(kConfirmedSlot) ?? false;
+    return _cleanIssue(intent, isConfirmed: isConfirmed);
   }
 
   /// A doubt about a stated value becomes a confirmation on a write, and a
@@ -108,15 +110,15 @@ final class DecisionPolicy {
   ///
   /// The risk alone decides: a read runs, a reversible write runs with an undo
   /// window, and a sensitive write is confirmed before it happens.
-  Decision _cleanIssue(IntentDefinition intent) {
+  Decision _cleanIssue(IntentDefinition intent, {bool isConfirmed = false}) {
     return switch (intent.risk) {
       IntentRisk.read => const Decision(DecisionOutcome.execute),
       IntentRisk.writeReversible => const Decision(
         DecisionOutcome.executeWithUndo,
       ),
-      IntentRisk.writeSensitive => const Decision(
-        DecisionOutcome.askConfirmation,
-      ),
+      IntentRisk.writeSensitive => isConfirmed
+          ? const Decision(DecisionOutcome.execute)
+          : const Decision(DecisionOutcome.askConfirmation),
     };
   }
 
