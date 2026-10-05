@@ -31,15 +31,22 @@ final class RealNavigateHandler implements NavigateToPageHandler {
   (int, String) _resolveDestination(String dest) {
     if (dest.contains('stock') ||
         dest.contains('produit') ||
-        dest.contains('inventaire')) {
+        dest.contains('inventaire') ||
+        dest.contains('catalogue')) {
       return (1, 'Mon Stock');
     }
-    if (dest.contains('historique') || dest.contains('journal')) {
+    if (dest.contains('historique') ||
+        dest.contains('journal') ||
+        dest.contains('rapport') ||
+        dest.contains('export') ||
+        dest.contains('bilan')) {
       return (2, 'Historique des Ventes');
     }
     if (dest.contains('profil') ||
         dest.contains('parametre') ||
-        dest.contains('compte')) {
+        dest.contains('compte') ||
+        dest.contains('reglage') ||
+        dest.contains('configuration')) {
       return (3, 'Mon Profil');
     }
     return (0, 'Accueil');

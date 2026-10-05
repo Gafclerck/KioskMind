@@ -162,9 +162,10 @@ final class DialogManager {
       return;
     }
     final DoubtKind? reason = decision.reason;
-    if (reason == null) {
+    if (reason == null && decision.outcome != DecisionOutcome.askConfirmation) {
       return;
     }
+    final DoubtKind effectiveReason = reason ?? DoubtKind.amountMismatch;
     _touch();
     _closeUndoWindow();
     if (_turns >= config.maxClarificationTurns) {
@@ -173,13 +174,16 @@ final class DialogManager {
     }
     _awaiting = proposal;
     if (decision.outcome == DecisionOutcome.askConfirmation) {
-      _ask(ClarificationSlot.confirmed, reason);
+      _ask(ClarificationSlot.confirmed, effectiveReason);
       return;
     }
     _turns += 1;
     _ask(
-      ClarificationSlot.forDoubt(reason, hasItems: _hasItems(proposal)),
-      reason,
+      ClarificationSlot.forDoubt(
+        effectiveReason,
+        hasItems: _hasItems(proposal),
+      ),
+      effectiveReason,
     );
   }
 

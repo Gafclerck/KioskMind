@@ -256,7 +256,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     }
     final DoubtKind? doubt = turn.decision.reason;
     return doubt == null
-        ? const MicUnavailableMessage(SpeechFault.unavailable)
+        ? const RefusalMessage(DoubtKind.outOfDomain)
         : RefusalMessage(doubt);
   }
 

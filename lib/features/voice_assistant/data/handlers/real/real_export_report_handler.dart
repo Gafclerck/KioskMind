@@ -1,3 +1,4 @@
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/usecase/result.dart';
 import '../../../../export_reporting/domain/models/export_file.dart';
 import '../../../../export_reporting/domain/models/export_format.dart';
@@ -38,21 +39,25 @@ final class RealExportReportHandler implements ExportSalesReportHandler {
         ? ExportFormat.csv
         : ExportFormat.pdf;
 
-    final List<Sale> sales = await getSalesHistory();
-    final List<Product> products = await productRepository.getProducts();
+    try {
+      final List<Sale> sales = await getSalesHistory();
+      final List<Product> products = await productRepository.getProducts();
 
-    final ExportFile file = await exportGenerator.generateSalesExport(
-      sales: sales,
-      products: products,
-      format: format,
-    );
+      final ExportFile file = await exportGenerator.generateSalesExport(
+        sales: sales,
+        products: products,
+        format: format,
+      );
 
-    await shareGateway.share(file);
+      await shareGateway.share(file);
 
-    return Success<ExportSalesReportResult>((
-      format: format.label,
-      filePath: file.filename,
-      salesCount: sales.length,
-    ));
+      return Success<ExportSalesReportResult>((
+        format: format.label,
+        filePath: file.filename,
+        salesCount: sales.length,
+      ));
+    } catch (e) {
+      return Failed<ExportSalesReportResult>(ExportFailed(e.toString()));
+    }
   }
 }

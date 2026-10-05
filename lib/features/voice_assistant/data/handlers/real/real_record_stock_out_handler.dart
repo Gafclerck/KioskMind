@@ -58,12 +58,16 @@ final class RealRecordStockOutHandler implements RecordStockOutHandler {
     final StockMovementReason reason = _mapReason(input.reason);
     final String movementId = '${context.commandId}-out';
 
+    final int movementQty = input.qty < 1
+        ? input.qty.ceil()
+        : input.qty.round();
+
     final StockMovement movement = StockMovement(
       id: movementId,
       productId: product.id,
       type: StockMovementType.manualOut,
       reason: reason,
-      quantity: input.qty.toInt(),
+      quantity: movementQty,
       createdAt: context.dateTime,
       note: input.note ?? 'Sortie vocale ${context.commandId}',
     );

@@ -57,12 +57,14 @@ final class RealRecordRestockHandler implements RecordRestockHandler {
       final String movementId = '${context.commandId}-$index';
       movementIds.add(movementId);
 
+      final int movementQty = item.qty < 1 ? item.qty.ceil() : item.qty.round();
+
       final movement = StockMovement(
         id: movementId,
         productId: item.productId,
         type: StockMovementType.purchase,
         reason: StockMovementReason.purchase,
-        quantity: item.qty.toInt(),
+        quantity: movementQty,
         createdAt: context.dateTime,
         note: 'Commande vocale ${context.commandId}',
       );
