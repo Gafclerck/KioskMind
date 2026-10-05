@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kiosk_mind/features/profile/data/cloudinary/cloudinary_config.dart';
+import 'package:kiosk_mind/core/network/cloudinary_config.dart';
 
 void main() {
   group('CloudinaryConfig.isUsable', () {
