@@ -72,6 +72,28 @@ String voiceRecapText(
       : '$operation : ${parts.join(', ')}';
 }
 
+/// The values of a recap alone, as one phrase.
+///
+/// The panel draws the products of a recap as cards, so printing the same products
+/// again as a sentence would put every line of a sale twice on one screen. What a
+/// card cannot carry is the values the merchant announced, and those are the whole
+/// reason a confirmation is being asked, so they are drawn on their own.
+///
+/// Empty when the recap names no value, so a confirmation about a quantity shows its
+/// cards and nothing else.
+String voiceRecapDetailsText(
+  AppLocalizations l10n,
+  VoiceRecap recap,
+  SpokenAmountFormatter amounts,
+) {
+  return recap.details
+      .map(
+        (VoiceRecapDetail detail) => _recapDetail(l10n, recap, detail, amounts),
+      )
+      .whereType<String>()
+      .join(', ');
+}
+
 /// The name of the operation, as the locale names it.
 ///
 /// Keyed by the catalog identifier rather than by a word, so renaming an intent in
@@ -135,9 +157,10 @@ String? _recapDetail(
   if (amount != null) {
     final String spoken = '${amounts(amount)} ${l10n.voiceCurrency}';
     return switch (detail.key) {
-      'spokenAmount' => detail.text == null
-          ? spoken
-          : l10n.voiceRecapAmountFor(detail.text!, spoken),
+      'spokenAmount' =>
+        detail.text == null
+            ? spoken
+            : l10n.voiceRecapAmountFor(detail.text!, spoken),
       'newPrice' => l10n.voiceRecapNewPrice(spoken),
       'price' => l10n.voiceRecapPrice(spoken),
       'purchasePrice' => l10n.voiceRecapPurchasePrice(spoken),
@@ -174,8 +197,12 @@ String? _recapDetail(
 String _reasonText(AppLocalizations l10n, String reason) {
   return switch (reason.toLowerCase()) {
     'breakage' || 'casse' || 'abime' => l10n.voiceReasonBreakage,
-    'loss' || 'perte' || 'perime' || 'peremption' || 'expired' || 'avarie' =>
-      l10n.voiceReasonLoss,
+    'loss' ||
+    'perte' ||
+    'perime' ||
+    'peremption' ||
+    'expired' ||
+    'avarie' => l10n.voiceReasonLoss,
     'donation' || 'don' => l10n.voiceReasonDonation,
     'manualadjustment' || 'ajustement' => l10n.voiceReasonAdjustment,
     _ => reason,
@@ -186,12 +213,20 @@ String _reasonText(AppLocalizations l10n, String reason) {
 String _destinationText(AppLocalizations l10n, String destination) {
   return switch (destination.toLowerCase()) {
     'dashboard' || 'accueil' => l10n.voiceDestinationDashboard,
-    'stock' || 'produit' || 'produits' || 'inventaire' || 'catalogue' =>
-      l10n.voiceDestinationStock,
-    'sales_history' || 'historique' || 'journal' || 'ventes' =>
-      l10n.voiceDestinationSalesHistory,
-    'profile' || 'profil' || 'compte' || 'parametre' || 'parametres' =>
-      l10n.voiceDestinationProfile,
+    'stock' ||
+    'produit' ||
+    'produits' ||
+    'inventaire' ||
+    'catalogue' => l10n.voiceDestinationStock,
+    'sales_history' ||
+    'historique' ||
+    'journal' ||
+    'ventes' => l10n.voiceDestinationSalesHistory,
+    'profile' ||
+    'profil' ||
+    'compte' ||
+    'parametre' ||
+    'parametres' => l10n.voiceDestinationProfile,
     _ => destination,
   };
 }
@@ -474,6 +509,26 @@ String _digits(double qty) {
 /// every other code falls back to the piece: a recap that says "piece" where the shop
 /// says "lot" is a word wrong, and a recap that leaves the unit out is a sentence
 /// broken.
+/// The unit a quantity is counted in, as the locale writes it.
+///
+/// The bare noun, with no count and no article: "5 bouteilles × 2,500 F" is what a
+/// card shows, and an article in front of it would give "5 de bouteilles". The count
+/// is in front of it, so the plural still agrees with the quantity.
+String voiceUnitLabel(AppLocalizations l10n, double qty, String? code) {
+  if (code == null) {
+    return l10n.voiceUnitPiece(qty.round());
+  }
+  final int count = qty.round();
+  return switch (_canonicalUnit(code)) {
+    'KG' => l10n.voiceUnitKg(count),
+    'LITRE' => l10n.voiceUnitLitre(count),
+    'SACHET' => l10n.voiceUnitSachet(count),
+    'SAC' => l10n.voiceUnitSac(count),
+    'BOITE' => l10n.voiceUnitBoite(count),
+    _ => l10n.voiceUnitPiece(count),
+  };
+}
+
 String _qtyWithUnit(
   AppLocalizations l10n,
   double qty,

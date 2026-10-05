@@ -59,6 +59,42 @@
     }
   },
   "voiceCurrency": "francs",
+  "voiceSheetTitle": "Copilote vocal",
+  "@voiceSheetTitle": {
+    "description": "Titre de la feuille de session vocale."
+  },
+  "voiceClose": "Fermer l'assistant vocal",
+  "@voiceClose": {
+    "description": "Libellé du bouton qui ferme la session vocale."
+  },
+  "voiceWaveformLabel": "Niveau du micro",
+  "@voiceWaveformLabel": {
+    "description": "Libellé de l'onde audio, lu par les lecteurs d'écran."
+  },
+  "voiceDetectedProducts": "Produits détectés",
+  "@voiceDetectedProducts": {
+    "description": "Titre de la liste, quand une confirmation est en attente."
+  },
+  "voiceRecordedProducts": "Ce qui a été enregistré",
+  "@voiceRecordedProducts": {
+    "description": "Titre de la liste, quand la commande a déjà été exécutée."
+  },
+  "voiceTotalLabel": "Montant total",
+  "@voiceTotalLabel": {
+    "description": "Libellé du montant total d'une vente."
+  },
+  "voiceRetry": "Réessayer",
+  "@voiceRetry": {
+    "description": "Bouton qui rouvre le microphone pour redire la commande."
+  },
+  "voiceConfirm": "Confirmer",
+  "@voiceConfirm": {
+    "description": "Bouton qui accepte une confirmation en attente."
+  },
+  "voiceNewCommand": "Nouvelle commande",
+  "@voiceNewCommand": {
+    "description": "Bouton qui enchaîne sur une nouvelle commande."
+  },
   "voiceSaleCancelled": "Vente annulée",
   "voiceNothingToUndo": "Rien à annuler",
   "voiceUndoFailed": "Annulation impossible",
