@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../data/cloudinary/cloudinary_config.dart';
+import '../../../../core/network/cloudinary_config.dart';
 import '../../data/services/cloudinary_avatar_upload_service.dart';
 import '../../domain/services/avatar_upload_service.dart';
 
