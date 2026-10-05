@@ -19,6 +19,7 @@ dependencies:
   cloud_functions: ^6.5.0
   firebase_messaging: ^16.7.0
   flutter_riverpod: ^2.6.1
+  flutter_svg: ^2.2.1
   flutter_localizations:
     sdk: flutter
   speech_to_text: 7.5.0
@@ -58,3 +59,5 @@ flutter:
     - assets/images/onboarding/
     - voice/intent_catalog.json
     - voice/golden/catalog_fixture.json
+    - assets/images/KioskMind_logo.svg
+    
