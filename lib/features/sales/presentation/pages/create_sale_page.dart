@@ -17,7 +17,6 @@ class CreateSalePage extends ConsumerStatefulWidget {
 
 class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   final TextEditingController _searchController = TextEditingController();
-
   final List<_SaleLine> _saleLines = [];
 
   String _searchQuery = '';
@@ -57,7 +56,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       final line = _saleLines[existingIndex];
 
       if (line.quantity >= product.quantity) {
-        _showMessage('Stock insuffisant pour ${product.name}.', isError: true);
+        _showMessage(
+          'Stock insuffisant pour ${product.name}.',
+          isError: true,
+        );
         return;
       }
 
@@ -69,7 +71,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     }
 
     if (product.quantity <= 0) {
-      _showMessage('${product.name} est en rupture de stock.', isError: true);
+      _showMessage(
+        '${product.name} est en rupture de stock.',
+        isError: true,
+      );
       return;
     }
 
@@ -110,7 +115,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
 
   Future<void> _confirmSale() async {
     if (_saleLines.isEmpty) {
-      _showMessage('Ajoutez au moins un produit à la vente.', isError: true);
+      _showMessage(
+        'Ajoutez au moins un produit à la vente.',
+        isError: true,
+      );
       return;
     }
 
@@ -150,7 +158,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
     } catch (e) {
       if (!mounted) return;
 
-      _showMessage('Impossible d’enregistrer la vente.', isError: true);
+      _showMessage(
+        'Impossible d’enregistrer la vente.',
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -161,47 +172,51 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   void _showMessage(String message, {bool isError = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: isError
-              ? Colors.red.shade700
-              : const Color(0xFF156C61),
+          backgroundColor:
+              isError ? colorScheme.error : colorScheme.primary,
         ),
       );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final productsAsync = ref.watch(productsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F5),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF9F5),
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF1F2937),
+            color: colorScheme.onSurface,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Créer une vente',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
         ),
       ),
       body: productsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF156C61)),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            color: colorScheme.primary,
+          ),
         ),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -209,22 +224,26 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline_rounded,
                   size: 48,
-                  color: Colors.redAccent,
+                  color: colorScheme.error,
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Impossible de charger les produits.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '$error',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey),
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -257,11 +276,8 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                           'Produits sélectionnés',
                           '${_saleLines.length}',
                         ),
-
                         const SizedBox(height: 12),
-
                         ..._saleLines.map((line) => _buildSaleLine(line)),
-
                         const SizedBox(height: 28),
                       ],
 
@@ -282,7 +298,6 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                   ),
                 ),
               ),
-
               _buildBottomSummary(),
             ],
           );
@@ -292,20 +307,26 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildSearchField() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
       ),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Rechercher un produit...',
-          hintStyle: const TextStyle(color: Colors.grey),
-          prefixIcon: const Icon(
+          hintStyle: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          prefixIcon: Icon(
             Icons.search_rounded,
-            color: Color(0xFF156C61),
+            color: colorScheme.primary,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -326,27 +347,31 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildSectionTitle(String title, String count) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1F2937),
-          ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
         ),
         const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 9,
+            vertical: 4,
+          ),
           decoration: BoxDecoration(
-            color: const Color(0xFFE8F3F1),
+            color: colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             count,
-            style: const TextStyle(
-              color: Color(0xFF156C61),
+            style: TextStyle(
+              color: colorScheme.onPrimaryContainer,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -357,6 +382,8 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildProductCard(Product product) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final selectedIndex = _saleLines.indexWhere(
       (line) => line.product.id == product.id,
     );
@@ -373,10 +400,12 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isSelected ? const Color(0xFF3FBFA9) : Colors.grey.shade200,
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outlineVariant,
         ),
       ),
       child: Row(
@@ -385,12 +414,12 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F3F1),
+              color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.inventory_2_outlined,
-              color: Color(0xFF156C61),
+              color: colorScheme.primary,
             ),
           ),
 
@@ -404,18 +433,19 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                   product.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
 
                 const SizedBox(height: 5),
 
                 Text(
                   product.category,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                      ),
                 ),
 
                 const SizedBox(height: 5),
@@ -424,10 +454,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                   children: [
                     Text(
                       '${product.salePrice} FCFA',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF156C61),
+                        color: colorScheme.primary,
                       ),
                     ),
 
@@ -437,7 +467,9 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                       'Stock : ${product.quantity}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isOutOfStock ? Colors.red : Colors.grey.shade600,
+                        color: isOutOfStock
+                            ? colorScheme.error
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -450,15 +482,18 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
 
           if (isSelected)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 9,
+                vertical: 6,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F3F1),
+                color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '$selectedQuantity',
-                style: const TextStyle(
-                  color: Color(0xFF156C61),
+                style: TextStyle(
+                  color: colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -467,15 +502,19 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
           const SizedBox(width: 6),
 
           IconButton(
-            onPressed: isOutOfStock ? null : () => _addProduct(product),
+            onPressed: isOutOfStock
+                ? null
+                : () => _addProduct(product),
             style: IconButton.styleFrom(
               backgroundColor: isOutOfStock
-                  ? Colors.grey.shade100
-                  : const Color(0xFF156C61),
+                  ? colorScheme.surfaceContainerHighest
+                  : colorScheme.primary,
             ),
             icon: Icon(
               Icons.add_rounded,
-              color: isOutOfStock ? Colors.grey : Colors.white,
+              color: isOutOfStock
+                  ? colorScheme.onSurfaceVariant
+                  : colorScheme.onPrimary,
             ),
           ),
         ],
@@ -484,13 +523,17 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildSaleLine(_SaleLine line) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE3E8E6)),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
       ),
       child: Column(
         children: [
@@ -499,19 +542,18 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
               Expanded(
                 child: Text(
                   line.product.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1F2937),
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
               ),
 
               IconButton(
                 onPressed: () => _removeLine(line),
-                icon: const Icon(
+                icon: Icon(
                   Icons.delete_outline_rounded,
-                  color: Colors.redAccent,
+                  color: colorScheme.error,
                 ),
               ),
             ],
@@ -523,7 +565,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
             children: [
               Text(
                 '${line.product.salePrice} FCFA / ${line.product.unit}',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
 
               const Spacer(),
@@ -531,13 +576,13 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
               IconButton(
                 onPressed: () => _decreaseQuantity(line),
                 style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFFF1F3F2),
+                  backgroundColor: colorScheme.surfaceContainerHighest,
                   minimumSize: const Size(36, 36),
                 ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.remove_rounded,
                   size: 18,
-                  color: Color(0xFF156C61),
+                  color: colorScheme.primary,
                 ),
               ),
 
@@ -546,10 +591,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                 child: Center(
                   child: Text(
                     '${line.quantity}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                 ),
               ),
@@ -557,13 +602,13 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
               IconButton(
                 onPressed: () => _increaseQuantity(line),
                 style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFFE8F3F1),
+                  backgroundColor: colorScheme.primaryContainer,
                   minimumSize: const Size(36, 36),
                 ),
-                icon: const Icon(
+                icon: Icon(
                   Icons.add_rounded,
                   size: 18,
-                  color: Color(0xFF156C61),
+                  color: colorScheme.onPrimaryContainer,
                 ),
               ),
             ],
@@ -573,18 +618,21 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
 
           Row(
             children: [
-              const Text(
+              Text(
                 'Sous-total',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
               ),
 
               const Spacer(),
 
               Text(
                 '${line.total.toStringAsFixed(0)} FCFA',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF156C61),
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -595,20 +643,29 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildEmptyProducts() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.search_off_rounded, size: 42, color: Colors.grey),
-          SizedBox(height: 12),
+          Icon(
+            Icons.search_off_rounded,
+            size: 42,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 12),
           Text(
             'Aucun produit trouvé',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),
@@ -616,13 +673,19 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
   }
 
   Widget _buildBottomSummary() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SafeArea(
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          color: colorScheme.surfaceContainer,
+          border: Border(
+            top: BorderSide(
+              color: colorScheme.outlineVariant,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
               blurRadius: 15,
@@ -635,19 +698,22 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
           children: [
             Row(
               children: [
-                const Text(
+                Text(
                   'Total',
-                  style: TextStyle(fontSize: 15, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
 
                 const Spacer(),
 
                 Text(
                   '${total.toStringAsFixed(0)} FCFA',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF156C61),
+                    color: colorScheme.primary,
                   ),
                 ),
               ],
@@ -659,7 +725,10 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 '$totalProducts article${totalProducts > 1 ? 's' : ''}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
 
@@ -673,33 +742,38 @@ class _CreateSalePageState extends ConsumerState<CreateSalePage> {
                     ? null
                     : _confirmSale,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF156C61),
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  disabledBackgroundColor:
+                      colorScheme.surfaceContainerHighest,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 0,
                 ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.check_circle_outline_rounded),
-                          SizedBox(width: 8),
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: colorScheme.onPrimary,
+                          ),
+                          const SizedBox(width: 8),
                           Text(
                             'Confirmer la vente',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
+                              color: colorScheme.onPrimary,
                             ),
                           ),
                         ],
@@ -717,7 +791,10 @@ class _SaleLine {
   final Product product;
   int quantity;
 
-  _SaleLine({required this.product, required this.quantity});
+  _SaleLine({
+    required this.product,
+    required this.quantity,
+  });
 
   double get total {
     return quantity.toDouble() * product.salePrice.toDouble();

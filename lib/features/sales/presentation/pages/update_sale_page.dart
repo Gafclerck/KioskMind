@@ -46,7 +46,10 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
   }
 
   double _parse(String value) {
-    return double.tryParse(value.replaceAll(' ', '').replaceAll(',', '.')) ?? 0;
+    return double.tryParse(
+          value.replaceAll(' ', '').replaceAll(',', '.'),
+        ) ??
+        0;
   }
 
   String _formatNumber(double value) {
@@ -88,7 +91,9 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
       }
 
       if (price < 0) {
-        _showError('Le prix de ${item.item.name} ne peut pas être négatif.');
+        _showError(
+          'Le prix de ${item.item.name} ne peut pas être négatif.',
+        );
         return;
       }
 
@@ -126,7 +131,10 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
       ref.invalidate(getSalesHistoryProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vente modifiée avec succès')),
+        SnackBar(
+          content: const Text('Vente modifiée avec succès'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
       );
 
       Navigator.of(context).pop(true);
@@ -144,30 +152,38 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    final colorScheme = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: colorScheme.error,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF156C61);
-    const background = Color(0xFFFAF9F5);
-    const secondary = Color(0xFFE9973E);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: _isLoading
+              ? null
+              : () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back),
-          color: primary,
+          color: colorScheme.primary,
         ),
-        title: const Text(
+        title: Text(
           'Modifier la vente',
-          style: TextStyle(color: primary, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
       ),
@@ -181,8 +197,11 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceContainer,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -190,22 +209,26 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(
-                            color: primary.withValues(alpha: 0.1),
+                            color: colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.receipt_long_rounded,
-                            color: primary,
+                            color: colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Vente',
                                 style: TextStyle(
+                                  color: colorScheme.onSurface,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -214,7 +237,7 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                               Text(
                                 _formatDate(widget.sale.dateTime),
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: colorScheme.onSurfaceVariant,
                                   fontSize: 13,
                                 ),
                               ),
@@ -225,9 +248,13 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Produits',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ..._items.map(
@@ -240,16 +267,16 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: primary,
+                      color: colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Total',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
                             ),
@@ -257,8 +284,8 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                         ),
                         Text(
                           '${_formatNumber(_total)} FCFA',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
                           ),
@@ -270,15 +297,18 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: secondary.withValues(alpha: 0.12),
+                      color: colorScheme.secondary.withValues(
+                        alpha: 0.12,
+                      ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.info_outline_rounded,
-                          color: secondary,
+                          color: colorScheme.secondary,
                           size: 21,
                         ),
                         const SizedBox(width: 10),
@@ -286,7 +316,7 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                           child: Text(
                             'La modification ajustera automatiquement le stock et les statistiques de vente.',
                             style: TextStyle(
-                              color: Colors.grey.shade800,
+                              color: colorScheme.onSurface,
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -301,7 +331,12 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surfaceContainer,
+                border: Border(
+                  top: BorderSide(
+                    color: colorScheme.outlineVariant,
+                  ),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.06),
@@ -316,27 +351,32 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _updateSale,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primary,
-                    foregroundColor: Colors.white,
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    disabledBackgroundColor:
+                        colorScheme.surfaceContainerHighest,
+                    disabledForegroundColor:
+                        colorScheme.onSurfaceVariant,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Enregistrer les modifications',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
+                            color: colorScheme.onPrimary,
                           ),
                         ),
                 ),
@@ -376,18 +416,24 @@ class _SaleItemCard extends StatelessWidget {
   final _SaleItemForm item;
   final VoidCallback onChanged;
 
-  const _SaleItemCard({required this.item, required this.onChanged});
+  const _SaleItemCard({
+    required this.item,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF156C61);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,16 +444,22 @@ class _SaleItemCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: primary.withValues(alpha: 0.1),
+                  color: colorScheme.primary.withValues(
+                    alpha: 0.1,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.inventory_2_outlined, color: primary),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  color: colorScheme.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   item.item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -457,25 +509,34 @@ class _NumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF156C61);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return TextField(
       controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(
+        decimal: true,
+      ),
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         suffixText: suffix,
         filled: true,
-        fillColor: const Color(0xFFFAF9F5),
-        labelStyle: TextStyle(color: Colors.grey.shade600),
+        fillColor: colorScheme.surfaceContainerLow,
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: primary, width: 1.5),
+          borderSide: BorderSide(
+            color: colorScheme.primary,
+            width: 1.5,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: colorScheme.outlineVariant,
+          ),
         ),
       ),
     );
