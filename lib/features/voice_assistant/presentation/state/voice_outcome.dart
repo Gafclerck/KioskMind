@@ -317,6 +317,98 @@ extension VoiceOutcomeToFactResult on VoiceOutcome {
           ],
         },
       ),
+      final DailyStatsRead stats => FactResult(
+        operation: 'query_daily_stats',
+        data: <String, dynamic>{
+          'salesCount': stats.salesCount,
+          'totalRevenue': stats.totalRevenue,
+          'totalProfit': stats.totalProfit,
+          'itemsSold': stats.itemsSold,
+        },
+      ),
+      final LowStockRead lowStock => FactResult(
+        operation: 'query_low_stock',
+        data: <String, dynamic>{
+          'products': <Map<String, dynamic>>[
+            for (final LowStockItemResult p in lowStock.products)
+              <String, dynamic>{
+                'productId': p.productId,
+                'name': p.name,
+                'stock': p.stock,
+                'alertThreshold': p.alertThreshold,
+                'unit': p.unit,
+              },
+          ],
+        },
+      ),
+      final ProductPriceRead price => FactResult(
+        operation: 'query_product_price',
+        data: <String, dynamic>{
+          'product': price.product,
+          'price': price.price,
+          if (price.purchasePrice != null) 'purchasePrice': price.purchasePrice,
+          'unit': price.unit,
+        },
+      ),
+      final StockOutRecorded stockOut => FactResult(
+        operation: 'record_stock_out',
+        data: <String, dynamic>{
+          'product': stockOut.product,
+          'qty': stockOut.qty,
+          'reason': stockOut.reason,
+          'resultingStock': stockOut.resultingStock,
+        },
+      ),
+      final PageNavigated nav => FactResult(
+        operation: 'navigate_to_page',
+        data: <String, dynamic>{'label': nav.label},
+      ),
+      final ReportExported rep => FactResult(
+        operation: 'export_sales_report',
+        data: <String, dynamic>{
+          'format': rep.format,
+          'salesCount': rep.salesCount,
+        },
+      ),
+      final ProductCreated prod => FactResult(
+        operation: 'create_product',
+        data: <String, dynamic>{
+          'name': prod.name,
+          'price': prod.price,
+          'initialQuantity': prod.initialQuantity,
+          'unit': prod.unit,
+        },
+      ),
+      final ProductPriceUpdated pupd => FactResult(
+        operation: 'update_product_price',
+        data: <String, dynamic>{
+          'product': pupd.product,
+          'oldPrice': pupd.oldPrice,
+          'newPrice': pupd.newPrice,
+        },
+      ),
+      final SalesHistoryRead hist => FactResult(
+        operation: 'query_sales_history',
+        data: <String, dynamic>{
+          'sales': <Map<String, dynamic>>[
+            for (final SaleHistoryItemResult s in hist.sales)
+              <String, dynamic>{
+                'saleId': s.saleId,
+                'dateTime': s.dateTime.toIso8601String(),
+                'itemsCount': s.itemsCount,
+                'total': s.total,
+              },
+          ],
+        },
+      ),
+      final BusinessInfoRead info => FactResult(
+        operation: 'query_business_info',
+        data: <String, dynamic>{
+          'storeName': info.storeName,
+          'activeProductsCount': info.activeProductsCount,
+          'totalSalesCount': info.totalSalesCount,
+        },
+      ),
     };
   }
 }
