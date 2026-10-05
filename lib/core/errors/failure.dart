@@ -62,3 +62,9 @@ final class AlreadyCancelled extends Failure {
 final class NothingToUndo extends Failure {
   const NothingToUndo() : super('NOTHING_TO_UNDO');
 }
+
+final class ExportFailed extends Failure {
+  const ExportFailed([this.message]) : super('EXPORT_FAILED');
+
+  final String? message;
+}

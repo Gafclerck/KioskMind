@@ -99,6 +99,7 @@ IntentDefinition _parseIntent(Map<String, Object?> json, int index) {
     examples: _parseStringList(json['examples'], '$id.examples'),
     slots: _parseSlots(json['slots'], id),
     referencePrice: _parseReferencePrice(json['referencePrice'], id),
+    onlineOnly: json['onlineOnly'] as bool? ?? false,
   );
 }
 

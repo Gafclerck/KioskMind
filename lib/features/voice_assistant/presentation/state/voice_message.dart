@@ -37,7 +37,8 @@ final class QuestionMessage extends VoiceMessage {
 
   /// The question can be settled by a yes or a no rather than by naming
   /// something.
-  bool get isYesOrNo => doubt.answersByYesOrNo;
+  bool get isYesOrNo =>
+      slot == ClarificationSlot.confirmed || doubt.answersByYesOrNo;
 }
 
 /// The command was understood and refused, and naming something would not change
@@ -50,16 +51,22 @@ final class RefusalMessage extends VoiceMessage {
 
 /// The command ran, with what it did.
 final class DoneMessage extends VoiceMessage {
-  const DoneMessage(this.outcome);
+  const DoneMessage(this.outcome, {this.customSpeechText});
 
   final VoiceOutcome outcome;
+
+  /// Optional AI or natural formulated response overriding static concatenation.
+  final String? customSpeechText;
 }
 
 /// The sale of the undo window was taken back.
 final class UndoneMessage extends VoiceMessage {
-  const UndoneMessage(this.outcome);
+  const UndoneMessage(this.outcome, {this.customSpeechText});
 
   final VoiceOutcome outcome;
+
+  /// Optional AI or natural formulated response overriding static concatenation.
+  final String? customSpeechText;
 }
 
 /// There was nothing to take back, which is an answer and not a failure.

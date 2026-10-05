@@ -17,7 +17,10 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<void> createProduct(Product product) {
-    return _products.doc().set(ProductModel.toFirestore(product));
+    final docRef = product.id.isNotEmpty
+        ? _products.doc(product.id)
+        : _products.doc();
+    return docRef.set(ProductModel.toFirestore(product));
   }
 
   @override

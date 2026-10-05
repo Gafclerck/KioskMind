@@ -45,7 +45,7 @@ final class _TriggerMatch {
 final class IntentDetector {
   IntentDetector({required this.catalog, required TextNormalizer normalizer})
     : _triggers = <String, List<String>>{
-        for (final IntentDefinition intent in catalog.intents)
+        for (final IntentDefinition intent in catalog.offlineIntents)
           intent.id: <String>[
             for (final String trigger in intent.triggers)
               normalizer.normalize(trigger).text,
@@ -66,7 +66,7 @@ final class IntentDetector {
     final List<String> tokens = text.tokens;
     IntentDetection? best;
     int bestLength = 0;
-    for (final IntentDefinition intent in catalog.intents) {
+    for (final IntentDefinition intent in catalog.offlineIntents) {
       for (final String trigger in _triggers[intent.id] ?? const <String>[]) {
         if (trigger.isEmpty) {
           continue;

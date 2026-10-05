@@ -43,15 +43,75 @@ List<IntentBinding> buildVoiceBindings({
       ),
     IntentBinding.ofCall(
       intentId: kCancelLastSaleIntent,
-      // The identifier comes from the undo window, so an utterance can only ever
-      // target the sale just made (contract A12). Running it here rather than in the
-      // executor is what keeps it identical to the undo button: both call
-      // UndoLastCommand, and a cancellation the shop refused gives the window back
-      // whichever way it was asked for.
       call: (CommandProposal proposal, CommandContext context) =>
           undo.run(source: context.source),
       undoTarget: (Object result) => null,
     ),
+    if (handlers.queryDailyStats case final QueryDailyStatsHandler dailyStats)
+      IntentBinding.bind<QueryDailyStatsInput, QueryDailyStatsResult>(
+        intentId: dailyStats.intentId,
+        handler: dailyStats,
+        input: _dailyStatsInput,
+      ),
+    if (handlers.queryLowStock case final QueryLowStockHandler lowStock)
+      IntentBinding.bind<QueryLowStockInput, QueryLowStockResult>(
+        intentId: lowStock.intentId,
+        handler: lowStock,
+        input: _lowStockInput,
+      ),
+    if (handlers.queryProductPrice
+        case final QueryProductPriceHandler productPrice)
+      IntentBinding.bind<QueryProductPriceInput, QueryProductPriceResult>(
+        intentId: productPrice.intentId,
+        handler: productPrice,
+        input: _productPriceInput,
+      ),
+    if (handlers.recordStockOut case final RecordStockOutHandler stockOut)
+      IntentBinding.bind<RecordStockOutInput, RecordStockOutResult>(
+        intentId: stockOut.intentId,
+        handler: stockOut,
+        input: _stockOutInput,
+      ),
+    if (handlers.navigateToPage case final NavigateToPageHandler nav)
+      IntentBinding.bind<NavigateToPageInput, NavigateToPageResult>(
+        intentId: nav.intentId,
+        handler: nav,
+        input: _navigateInput,
+      ),
+    if (handlers.exportSalesReport
+        case final ExportSalesReportHandler exportReport)
+      IntentBinding.bind<ExportSalesReportInput, ExportSalesReportResult>(
+        intentId: exportReport.intentId,
+        handler: exportReport,
+        input: _exportReportInput,
+      ),
+    if (handlers.createProduct case final CreateProductHandler createProduct)
+      IntentBinding.bind<CreateProductInput, CreateProductResult>(
+        intentId: createProduct.intentId,
+        handler: createProduct,
+        input: _createProductInput,
+      ),
+    if (handlers.updateProductPrice
+        case final UpdateProductPriceHandler updatePrice)
+      IntentBinding.bind<UpdateProductPriceInput, UpdateProductPriceResult>(
+        intentId: updatePrice.intentId,
+        handler: updatePrice,
+        input: _updatePriceInput,
+      ),
+    if (handlers.querySalesHistory
+        case final QuerySalesHistoryHandler salesHistory)
+      IntentBinding.bind<QuerySalesHistoryInput, QuerySalesHistoryResult>(
+        intentId: salesHistory.intentId,
+        handler: salesHistory,
+        input: _salesHistoryInput,
+      ),
+    if (handlers.queryBusinessInfo
+        case final QueryBusinessInfoHandler businessInfo)
+      IntentBinding.bind<QueryBusinessInfoInput, QueryBusinessInfoResult>(
+        intentId: businessInfo.intentId,
+        handler: businessInfo,
+        input: _businessInfoInput,
+      ),
   ];
 }
 
@@ -106,4 +166,109 @@ Result<QueryStockInput> _queryInput(CommandProposal proposal) {
 List<ItemMention> _items(CommandProposal proposal) {
   return proposal.valueOf<List<ItemMention>>(kItemsSlot) ??
       const <ItemMention>[];
+}
+
+Result<QueryDailyStatsInput> _dailyStatsInput(CommandProposal proposal) {
+  return Success<QueryDailyStatsInput>(
+    QueryDailyStatsInput(date: proposal.valueOf<String>('date')),
+  );
+}
+
+Result<QueryLowStockInput> _lowStockInput(CommandProposal proposal) {
+  return Success<QueryLowStockInput>(
+    QueryLowStockInput(level: proposal.valueOf<String>('level')),
+  );
+}
+
+Result<QueryProductPriceInput> _productPriceInput(CommandProposal proposal) {
+  final String? productId = proposal.valueOf<String>(kProductIdSlot);
+  if (productId == null || productId.isEmpty) {
+    return Failed<QueryProductPriceInput>(
+      UnknownProduct(productId: '', productName: null),
+    );
+  }
+  return Success<QueryProductPriceInput>(
+    QueryProductPriceInput(productId: productId),
+  );
+}
+
+Result<RecordStockOutInput> _stockOutInput(CommandProposal proposal) {
+  final String? productId = proposal.valueOf<String>(kProductIdSlot);
+  if (productId == null || productId.isEmpty) {
+    return Failed<RecordStockOutInput>(
+      UnknownProduct(productId: '', productName: null),
+    );
+  }
+  final double qty = proposal.valueOf<double>('qty') ?? 1.0;
+  final String reason = proposal.valueOf<String>('reason') ?? 'breakage';
+  final String? note = proposal.valueOf<String>('note');
+  return Success<RecordStockOutInput>(
+    RecordStockOutInput(
+      productId: productId,
+      qty: qty,
+      reason: reason,
+      note: note,
+    ),
+  );
+}
+
+Result<NavigateToPageInput> _navigateInput(CommandProposal proposal) {
+  final String destination =
+      proposal.valueOf<String>('destination') ?? 'dashboard';
+  return Success<NavigateToPageInput>(
+    NavigateToPageInput(destination: destination),
+  );
+}
+
+Result<ExportSalesReportInput> _exportReportInput(CommandProposal proposal) {
+  final String format = proposal.valueOf<String>('format') ?? 'pdf';
+  final String? period = proposal.valueOf<String>('period');
+  return Success<ExportSalesReportInput>(
+    ExportSalesReportInput(format: format, period: period),
+  );
+}
+
+Result<CreateProductInput> _createProductInput(CommandProposal proposal) {
+  final String? name = proposal.valueOf<String>('name');
+  if (name == null || name.isEmpty) {
+    return Failed<CreateProductInput>(const EmptyItems('create_product'));
+  }
+  final double price = proposal.valueOf<double>('price') ?? 0.0;
+  final double? purchasePrice = proposal.valueOf<double>('purchasePrice');
+  final double? initialQty = proposal.valueOf<double>('initialQty');
+  final String? category = proposal.valueOf<String>('category');
+  final String? unit = proposal.valueOf<String>('unit');
+
+  return Success<CreateProductInput>(
+    CreateProductInput(
+      name: name,
+      price: price,
+      purchasePrice: purchasePrice,
+      initialQty: initialQty,
+      category: category,
+      unit: unit,
+    ),
+  );
+}
+
+Result<UpdateProductPriceInput> _updatePriceInput(CommandProposal proposal) {
+  final String? productId = proposal.valueOf<String>(kProductIdSlot);
+  if (productId == null || productId.isEmpty) {
+    return Failed<UpdateProductPriceInput>(
+      UnknownProduct(productId: '', productName: null),
+    );
+  }
+  final double newPrice = proposal.valueOf<double>('newPrice') ?? 0.0;
+  return Success<UpdateProductPriceInput>(
+    UpdateProductPriceInput(productId: productId, newPrice: newPrice),
+  );
+}
+
+Result<QuerySalesHistoryInput> _salesHistoryInput(CommandProposal proposal) {
+  final int? limit = proposal.valueOf<int>('limit');
+  return Success<QuerySalesHistoryInput>(QuerySalesHistoryInput(limit: limit));
+}
+
+Result<QueryBusinessInfoInput> _businessInfoInput(CommandProposal proposal) {
+  return const Success<QueryBusinessInfoInput>(QueryBusinessInfoInput());
 }
