@@ -7,6 +7,7 @@ void main() {
       int postCount = 0;
       final caller = RodiumAiCaller(
         apiKey: '',
+        systemPrompt: 'PROMPT_DE_TEST',
         httpPoster:
             (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
               postCount++;
@@ -33,6 +34,7 @@ void main() {
         final caller = RodiumAiCaller(
           apiKey: 'rd_sk_test_12345',
           model: 'google/gemini-1.5-flash',
+          systemPrompt: 'PROMPT_DE_TEST',
           httpPoster:
               (
                 uri,
@@ -97,6 +99,7 @@ void main() {
     test('strips markdown code fences from choices content', () async {
       final caller = RodiumAiCaller(
         apiKey: 'rd_sk_test_12345',
+        systemPrompt: 'PROMPT_DE_TEST',
         httpPoster:
             (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
               return {
@@ -129,6 +132,7 @@ void main() {
       () async {
         final caller = RodiumAiCaller(
           apiKey: 'rd_sk_test_12345',
+          systemPrompt: 'PROMPT_DE_TEST',
           httpPoster:
               (
                 uri,
@@ -157,6 +161,7 @@ void main() {
         apiKey: 'rd_sk_custom',
         baseUrl: 'https://custom-gateway.local/v1',
         model: 'rodiumai/smart',
+        systemPrompt: 'PROMPT_DE_TEST',
         httpPoster:
             (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
               capturedUri = uri;
@@ -185,6 +190,39 @@ void main() {
       );
       expect(capturedBody?['model'], equals('rodiumai/smart'));
       expect(result['intentId'], equals('cancel_last_sale'));
+    });
+
+    test('passes custom dynamic systemPrompt into messages payload', () async {
+      Map<String, dynamic>? capturedBody;
+
+      final caller = RodiumAiCaller(
+        apiKey: 'rd_sk_custom',
+        systemPrompt: 'CUSTOM_SYSTEM_PROMPT_FROM_RODIUM',
+        httpPoster:
+            (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
+              capturedBody = body;
+              return {
+                'choices': [
+                  {
+                    'message': {
+                      'role': 'assistant',
+                      'content': '{"intentId": "custom_intent"}',
+                    },
+                  },
+                ],
+              };
+            },
+      );
+
+      await caller.call('interpretUtterance', {
+        'utterance': 'test',
+        'catalog': [],
+      });
+
+      expect(capturedBody, isNotNull);
+      final messages = capturedBody!['messages'] as List<dynamic>;
+      expect(messages[0]['role'], equals('system'));
+      expect(messages[0]['content'], equals('CUSTOM_SYSTEM_PROMPT_FROM_RODIUM'));
     });
   });
 }

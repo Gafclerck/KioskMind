@@ -41,17 +41,18 @@ final class AnswerApplication {
     required DoubtKind asked,
     required Object? value,
   }) {
+    if (asked.answersByYesOrNo) {
+      if (value == true) {
+        final CommandProposal settled = _settle(proposal, _confirming);
+        return _withSlot(settled, kConfirmedSlot, true);
+      }
+      return proposal;
+    }
     if (!_asks(proposal, asked)) {
       // The session asked a question this proposal does not carry, so there is no
       // line for the answer to complete. Reading one anyway would take the first
       // line of the utterance for the one that was asked about.
       return proposal;
-    }
-    if (asked.answersByYesOrNo) {
-      // Only an explicit yes settles a confirmation. An answer that is not a yes,
-      // whatever its shape, leaves the doubt standing: recording a sale the
-      // merchant did not agree to is the one outcome the dialogue must not reach.
-      return value == true ? _settle(proposal, _confirming) : proposal;
     }
     final IntentDefinition? definition = intents.byId(proposal.intentId);
     if (definition == null) {

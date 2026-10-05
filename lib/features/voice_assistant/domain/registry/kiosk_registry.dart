@@ -1,82 +1,128 @@
+import '../entities/intent_definition.dart';
 import 'kiosk_tool_spec.dart';
 
-/// Registry of tools/actions available in the KioskMind assistant.
+/// The commands a language model is offered, projected from the catalog.
 ///
-/// Ported from assistantv3 `Registry`:
-/// Extensibility port allowing new business actions (sales, restock, stock query,
-/// customer debt, alerts) to be plugged in without modifying the engine.
+/// The catalog is the only description of a command in the module: this class holds
+/// a catalog and derives everything else from it. That is the whole point of it. The
+/// registry used to restate fourteen commands in Dart, next to a JSON file that
+/// already said the same thing, and the two could disagree about what the shop
+/// sells without anything failing until a merchant asked for the command one of
+/// them had dropped.
+///
+/// Three forms come out of it, for the three ways a model is given a command:
+///
+///  * [buildSystemPrompt] for the prompt mode the app uses today, where the answer
+///    is JSON inside a text response;
+///  * [toGeminiTools] for native function calling, where the answer is a call the
+///    gateway parses;
+///  * [toResponseFormatPrompt] and [toPromptDescription], the two sections of the
+///    first, kept apart because a caller may want one without the other.
 final class KioskRegistry {
-  final Map<String, KioskToolSpec> _tools = <String, KioskToolSpec>{};
+  KioskRegistry.fromCatalog(IntentCatalog catalog)
+    : _catalog = catalog,
+      _tools = <KioskToolSpec>[
+        for (final IntentDefinition intent in catalog.intents)
+          KioskToolSpec(intent),
+      ];
 
-  /// Registers a tool spec into the registry.
-  /// Throws [StateError] if a tool with the same name is already registered.
-  void register(KioskToolSpec spec) {
-    if (_tools.containsKey(spec.name)) {
-      throw StateError('Outil déjà enregistré dans le registre: ${spec.name}');
-    }
-    _tools[spec.name] = spec;
-  }
+  final IntentCatalog _catalog;
+  final List<KioskToolSpec> _tools;
 
-  /// Gets a tool by its unique name.
-  KioskToolSpec? get(String name) => _tools[name];
+  /// The catalog the commands are read from.
+  IntentCatalog get catalog => _catalog;
 
-  /// Returns all registered tools.
-  List<KioskToolSpec> allTools() =>
-      List<KioskToolSpec>.unmodifiable(_tools.values);
-
-  /// Converts all registered tools into a standard Gemini Function Calling declarations list.
-  List<Map<String, dynamic>> toGeminiTools() => _tools.values
-      .map((KioskToolSpec s) => s.toFunctionDeclaration())
-      .toList();
-
-  /// Converts all registered tools into a concise prompt description for LLM system instructions.
-  String toPromptDescription() {
-    final StringBuffer buffer = StringBuffer();
-    for (final KioskToolSpec spec in _tools.values) {
-      buffer.writeln('- \'${spec.name}\' : ${spec.label}.');
-    }
-    return buffer.toString().trim();
-  }
-
-  /// Generates the formatted JSON response examples section for LLM system prompts.
-  String toResponseFormatPrompt() {
-    final StringBuffer buffer = StringBuffer();
-    for (final KioskToolSpec spec in _tools.values) {
-      buffer.writeln('- Pour \'${spec.name}\' :');
-      buffer.writeln('  ${spec.formatExample()}');
-    }
-    return buffer.toString().trim();
-  }
-
-  /// Builds a complete grounded system prompt for LLM intent interpretation.
-  String buildSystemPrompt() {
-    return "Tu es l'assistant de caisse de KioskMind pour les commerçants d'Afrique de l'Ouest.\n"
-        "Analyse la phrase prononcée par le commerçant et identifie son intention parmi :\n"
-        "${toPromptDescription()}\n\n"
-        "RÈGLE D'ANCRAGE STRICTE (D5) :\n"
-        "Tu dois OBLIGATOIREMENT et UNIQUEMENT utiliser les 'id' des produits qui figurent explicitement dans le catalogue fourni.\n"
-        "N'invente JAMAIS d'identifiant de produit qui n'est pas dans le catalogue.\n\n"
-        "FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR :\n"
-        "${toResponseFormatPrompt()}";
-  }
-
-  /// Fallback detector (DeclarationSpec from assistantv3):
-  /// If the NLU fails to match, inspects utterance tokens for declared tool keywords.
-  KioskToolSpec? detectDeclaration(String utterance) {
-    final String clean = utterance.toLowerCase();
-    for (final KioskToolSpec spec in _tools.values) {
-      if (spec.declarationKeywords.isEmpty) continue;
-      for (final String keyword in spec.declarationKeywords) {
-        if (clean.contains(keyword.toLowerCase())) {
-          return spec;
-        }
+  /// The tool of that name, or null when the catalog has no such command.
+  KioskToolSpec? get(String name) {
+    for (final KioskToolSpec tool in _tools) {
+      if (tool.name == name) {
+        return tool;
       }
     }
     return null;
   }
 
-  /// Clears the registry (useful for testing and hot reload).
-  void clear() {
-    _tools.clear();
+  /// Every command, in catalog order, which is the order they are offered in.
+  List<KioskToolSpec> allTools() =>
+      List<KioskToolSpec>.unmodifiable(_tools);
+
+  /// The commands as Gemini / OpenAI compatible function declarations.
+  List<Map<String, dynamic>> toGeminiTools() => _tools
+      .map((KioskToolSpec tool) => tool.toFunctionDeclaration())
+      .toList(growable: false);
+
+  /// One line per command: what it is called and what it does.
+  ///
+  /// The descriptions come from the catalog and already end in a full stop, so the
+  /// separator is added only when one is missing: a doubled stop in a prompt is
+  /// noise the model reads as a typo, and a prompt full of typos is a prompt read
+  /// less carefully.
+  String toPromptDescription() {
+    return _tools
+        .map((KioskToolSpec tool) => "- '${tool.name}' : ${_sentenceOf(tool)}")
+        .join('\n');
+  }
+
+  String _sentenceOf(KioskToolSpec tool) {
+    final String label = tool.label.trim();
+    return label.endsWith('.') ? label : '$label.';
+  }
+
+  /// One worked answer per command, shaped by the slots the catalog declares.
+  String toResponseFormatPrompt() {
+    final StringBuffer buffer = StringBuffer();
+    for (final KioskToolSpec tool in _tools) {
+      buffer.writeln("- Pour '${tool.name}' :");
+      buffer.writeln('  ${tool.formatExample()}');
+    }
+    return buffer.toString().trim();
+  }
+
+  /// The system prompt of the prompt mode: the commands, the grounding rule and
+  /// the shape of the answer.
+  ///
+  /// The grounding rule names the commands it applies to rather than listing them
+  /// by hand, because a hand-written list is exactly the copy that goes stale: an
+  /// intent added to the catalog would be offered to the model with no instruction
+  /// about how to refer to its products.
+  String buildSystemPrompt() {
+    final List<String> grounded = <String>[
+      for (final KioskToolSpec tool in _tools)
+        if (tool.referencesExistingProducts) "'${tool.name}'",
+    ];
+    final StringBuffer prompt = StringBuffer()
+      ..writeln(
+        "Tu es l'assistant de caisse de KioskMind pour les commerçants "
+        "d'Afrique de l'Ouest.",
+      )
+      ..writeln(
+        'Analyse la phrase prononcée par le commerçant et identifie son intention '
+        'parmi :',
+      )
+      ..writeln(toPromptDescription())
+      ..writeln()
+      ..writeln('RÈGLE D\'ANCRAGE STRICTE (D5) :');
+    if (grounded.isNotEmpty) {
+      prompt
+        ..writeln(
+          "Pour les intentions manipulant des produits existants "
+          "(${grounded.join(', ')}), tu dois OBLIGATOIREMENT et UNIQUEMENT "
+          "utiliser les 'id' des produits qui figurent explicitement dans le "
+          'catalogue fourni.',
+        )
+        ..writeln(
+          "N'invente JAMAIS d'identifiant de produit qui n'est pas dans le "
+          'catalogue.',
+        );
+    }
+    prompt
+      ..writeln(
+        "Pour toute autre intention, recopie dans 'name' le nom prononcé par le "
+        'commerçant.',
+      )
+      ..writeln()
+      ..writeln('FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR :')
+      ..writeln(toResponseFormatPrompt());
+    return prompt.toString().trim();
   }
 }

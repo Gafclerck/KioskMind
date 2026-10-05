@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/core/voice_services/speech_recognizer_port.dart';
@@ -7,10 +5,8 @@ import 'package:kiosk_mind/core/voice_services/speech_service_error.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/dialog/dialog_manager.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/clarification_slot.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_message.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_session_controller.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_session_state.dart';
@@ -181,6 +177,42 @@ void main() {
         await session.controller.submit('cinq');
         expect(session.state.awaitingManualEntry, isFalse);
         expect(session.journal.calls.single.intentId, equals('record_sale'));
+      },
+    );
+
+    test(
+      'Saying "non" to a confirmation asks again without executing or dropping to manual entry',
+      () async {
+        final _RobustnessSessionHarness session = _RobustnessSessionHarness();
+        addTearDown(session.dispose);
+
+        await session.controller.submit('j ai vendu un riz a mille cinq cents');
+        expect(session.state.message, isA<QuestionMessage>());
+        expect(session.dialog.pending, isNotNull);
+        expect(session.dialog.pending!.slot, equals(ClarificationSlot.confirmed));
+
+        await session.controller.submit('non');
+        expect(session.dialog.pending, isNotNull);
+        expect(session.state.message, isA<QuestionMessage>());
+        expect(session.state.awaitingManualEntry, isFalse);
+        expect(session.journal.calls, isEmpty);
+      },
+    );
+
+    test(
+      'Switching intent during a pending clarification cancels old question and executes new intent',
+      () async {
+        final _RobustnessSessionHarness session = _RobustnessSessionHarness();
+        addTearDown(session.dispose);
+
+        await session.controller.submit('vendu du sucre');
+        expect(session.state.message, isA<QuestionMessage>());
+        expect(session.dialog.pending, isNotNull);
+
+        await session.controller.submit('combien de riz en stock');
+        expect(session.dialog.pending, isNull);
+        expect(session.state.awaitingManualEntry, isFalse);
+        expect(session.journal.calls.single.intentId, equals('query_stock'));
       },
     );
   });

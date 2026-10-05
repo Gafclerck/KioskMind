@@ -11,13 +11,16 @@ import '../../di/voice_dependencies.dart';
 import '../../domain/dialog/dialog_manager.dart';
 import '../../domain/entities/clarification_slot.dart';
 import '../../domain/entities/doubt.dart';
+import '../../domain/entities/command_proposal.dart';
 import '../../domain/entities/fact_result.dart';
 import '../../domain/entities/intent_result.dart';
 import '../../domain/ports/message_formulator.dart';
+import '../../domain/ports/product_catalog_reader.dart';
 import '../../domain/usecases/execute_command.dart';
 import '../../domain/usecases/handle_utterance.dart';
 import 'voice_message.dart';
 import 'voice_outcome.dart';
+import 'voice_recap.dart';
 import 'voice_session_state.dart';
 
 /// The voice session of one container.
@@ -114,7 +117,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
           .then((HandleUtterance handle) => handle.run(words));
-      _afterTurn(turn, userUtterance: words);
+      await _afterTurn(turn, userUtterance: words);
     } finally {
       _busy = false;
     }
@@ -142,7 +145,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
             (HandleUtterance handle) =>
                 handle.applyAnswer(asked: asked, value: value),
           );
-      _afterTurn(turn);
+      await _afterTurn(turn);
     } finally {
       _busy = false;
     }
@@ -223,7 +226,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// Turns a finished turn into what the panel shows and the speaker reads.
-  void _afterTurn(VoiceTurn turn, {String userUtterance = ''}) {
+  Future<void> _afterTurn(VoiceTurn turn, {String userUtterance = ''}) async {
     final DialogManager dialog = ref.read(voiceDialogProvider);
     final PendingQuestion? pending = dialog.pending;
     VoiceMessage message;
@@ -262,7 +265,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         }
       }
     } else {
-      message = _messageOfQuestion(turn, pending);
+      message = await _messageOfQuestion(turn, pending);
     }
     _set(
       state.copyWith(
@@ -296,7 +299,20 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// The question the session is now waiting on, and what it already knows.
-  VoiceMessage _messageOfQuestion(VoiceTurn turn, PendingQuestion pending) {
+  ///
+  /// A confirmation carries the recap of the command it is about: the merchant is
+  /// asked to authorise a product creation or a price change, and agreeing to a
+  /// transcript is not agreeing to either. The recap is read from the proposal the
+  /// session kept, so it names the command the same way whether the confirmation
+  /// was reached by speech or by a tap.
+  ///
+  /// It reads the catalog for the name of a product the utterance gave as an
+  /// identifier, which is why this is asynchronous. A name the catalog cannot
+  /// supply leaves the recap without that line rather than showing the identifier.
+  Future<VoiceMessage> _messageOfQuestion(
+    VoiceTurn turn,
+    PendingQuestion pending,
+  ) async {
     final ClarificationSlot? slot = pending.slot;
     final DoubtKind doubt = pending.reason;
     if (slot == null) {
@@ -306,7 +322,27 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       doubt: doubt,
       slot: slot,
       candidates: turn.proposal.doubtOf(doubt)?.candidates ?? const [],
+      recap: await _recapOf(turn.proposal),
     );
+  }
+
+  /// The recap of [proposal], or null when it names nothing to authorise.
+  Future<VoiceRecap?> _recapOf(CommandProposal proposal) async {
+    try {
+      final ProductCatalogReader catalog = await ref.read(
+        voiceCatalogReaderProvider.future,
+      );
+      final VoiceRecap? recap = await pendingRecapOf(
+        proposal,
+        catalog.findById,
+      );
+      return (recap != null && recap.hasContent) ? recap : null;
+    } catch (_) {
+      // The catalog is what turns an identifier into a name. Without it the
+      // confirmation still stands and the transcript is still there to read, so a
+      // recap is an addition here and never the reason a question is lost.
+      return null;
+    }
   }
 
   void _afterUndo(Result<CancelLastSaleResult> result) {

@@ -122,6 +122,13 @@ final class HandleUtterance {
       asked: waiting.reason,
       slot: waiting.slot,
     );
+    if (value == null) {
+      final CommandProposal alternative = await _understood(utterance);
+      if (alternative.intentId != kNoIntent) {
+        dialog.reset();
+        return _decideAndAct(alternative);
+      }
+    }
     return _decideAndAct(
       answers.apply(asked, asked: waiting.reason, value: value),
     );

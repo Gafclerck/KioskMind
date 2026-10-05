@@ -143,6 +143,34 @@ void main() {
         contains(DoubtKind.missingProduct),
       );
     });
+
+    test('enregistre kConfirmedSlot=true quand la confirmation est acceptée', () {
+      final CommandProposal proposal = parse('reçu du riz à cinq cent soixante');
+      final CommandProposal answered = application.apply(
+        proposal,
+        asked: DoubtKind.amountMismatch,
+        value: true,
+      );
+
+      expect(answered.valueOf<bool>(kConfirmedSlot), isTrue);
+    });
+
+    test('un refus avec false ne confirme rien et laisse le doute intact', () {
+      final CommandProposal proposal = CommandProposal(
+        intentId: 'record_sale',
+        slots: const <Slot>[],
+        doubts: const <Doubt>[Doubt(kind: DoubtKind.amountMismatch)],
+        origin: ProposalOrigin.rules,
+      );
+      final CommandProposal answered = application.apply(
+        proposal,
+        asked: DoubtKind.amountMismatch,
+        value: false,
+      );
+
+      expect(answered.valueOf<bool>(kConfirmedSlot), isNull);
+      expect(answered.doubts.map((d) => d.kind), contains(DoubtKind.amountMismatch));
+    });
   });
 
   group('ce qu une réponse ne peut pas recevoir', () {

@@ -52,8 +52,6 @@ import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/ports/message_formulator.dart';
 import '../domain/registry/kiosk_registry.dart';
-import '../domain/registry/kiosk_tool_spec.dart';
-import '../domain/entities/fact_result.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/intent_input.dart';
 import '../domain/entities/intent_result.dart';
@@ -583,6 +581,9 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   final ProductCatalogReader catalogReader = await ref.watch(
     voiceCatalogReaderProvider.future,
   );
+  final String systemPrompt = (await ref.watch(
+    kioskRegistryProvider.future,
+  )).buildSystemPrompt();
 
   // 1. Explicit Rodium AI key provided
   if (rodiumApiKey.isNotEmpty) {
@@ -590,6 +591,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
       apiKey: rodiumApiKey,
       model: ref.watch(voiceRodiumModelProvider),
       baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
@@ -604,6 +606,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
         apiKey: geminiApiKey,
         model: ref.watch(voiceRodiumModelProvider),
         baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+        systemPrompt: systemPrompt,
       );
       return RemoteCloudIntentParser(
         catalogReader: catalogReader,
@@ -613,7 +616,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
 
     final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
       apiKey: geminiApiKey,
-      systemPrompt: ref.watch(kioskRegistryProvider).buildSystemPrompt(),
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
@@ -752,81 +755,14 @@ voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
   );
 });
 
-/// Extensible tool registry for the KioskMind assistant.
-final Provider<KioskRegistry> kioskRegistryProvider = Provider<KioskRegistry>((
-  Ref ref,
-) {
-  final KioskRegistry registry = KioskRegistry();
-
-  // Default core kiosk tools
-  registry.register(
-    KioskToolSpec(
-      name: 'record_sale',
-      label: 'Enregistrer une vente',
-      example: 'vends deux savons',
-      paramLabels: const <String, String>{
-        'items':
-            'Liste des articles avec productId, qty et spokenUnitPrice optionnel',
-      },
-      jsonFormatExample:
-          '{"intentId": "record_sale", "items": [{"productId": "<id_catalogue>", "qty": 2.0, "spokenUnitPrice": 500}]}',
-      declarationKeywords: const <String>{'vends', 'vente', 'acheter', 'prend'},
-      handler: (params) async =>
-          const FactResult(operation: 'record_sale', data: {}),
-    ),
-  );
-  registry.register(
-    KioskToolSpec(
-      name: 'record_restock',
-      label: 'Réapprovisionnement du stock',
-      example: 'ajoute 10 sacs de riz',
-      paramLabels: const <String, String>{
-        'items':
-            'Liste des articles avec productId, qty et spokenUnitCost optionnel',
-      },
-      jsonFormatExample:
-          '{"intentId": "record_restock", "items": [{"productId": "<id_catalogue>", "qty": 5.0, "spokenUnitCost": 400}]}',
-      declarationKeywords: const <String>{
-        'ajoute',
-        'entree',
-        'recu',
-        'stocker',
-        'reappro',
-        'reassort',
-        'achat',
-        'livraison',
-        'restock',
-      },
-      handler: (params) async =>
-          const FactResult(operation: 'record_restock', data: {}),
-    ),
-  );
-  registry.register(
-    KioskToolSpec(
-      name: 'query_stock',
-      label: 'Consulter le stock',
-      example: 'combien de sucre en stock',
-      paramLabels: const <String, String>{
-        'productId': 'Identifiant du produit dans le catalogue',
-      },
-      jsonFormatExample:
-          '{"intentId": "query_stock", "productId": "<id_catalogue>"}',
-      declarationKeywords: const <String>{'stock', 'combien', 'reste'},
-      handler: (params) async =>
-          const FactResult(operation: 'query_stock', data: {}),
-    ),
-  );
-  registry.register(
-    KioskToolSpec(
-      name: 'cancel_last_sale',
-      label: 'Annuler la dernière vente',
-      example: 'annule la vente',
-      jsonFormatExample: '{"intentId": "cancel_last_sale"}',
-      declarationKeywords: const <String>{'annuler', 'annule', 'retour'},
-      handler: (params) async =>
-          const FactResult(operation: 'cancel_last_sale', data: {}),
-    ),
-  );
-
-  return registry;
-});
+/// The commands offered to the language model, read from the shipped catalog.
+///
+/// Asynchronous because the catalog is an asset: the registry has no list of its
+/// own to fall back on, so there is nothing to build it from until the asset is
+/// read, and a prompt built before then would describe commands the app does not
+/// have.
+final FutureProvider<KioskRegistry> kioskRegistryProvider =
+    FutureProvider<KioskRegistry>(
+      (Ref ref) async =>
+          KioskRegistry.fromCatalog(await ref.watch(voiceIntentsProvider.future)),
+    );
