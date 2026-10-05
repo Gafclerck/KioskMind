@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import '../../domain/registry/kiosk_registry.dart';
 import 'direct_gemini_caller.dart';
 
 /// Direct caller to Rodium AI OpenAI-compatible API gateway for Cloud NLU interpretation.
@@ -21,20 +20,24 @@ import 'direct_gemini_caller.dart';
 final class RodiumAiCaller {
   RodiumAiCaller({
     required this.apiKey,
+    required this.systemPrompt,
     this.baseUrl = 'https://api.rodiumai.io/v1',
     this.model = 'google/gemini-1.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
-    String? systemPrompt,
     HttpJsonPoster? httpPoster,
-  })  : _systemPrompt = systemPrompt ??
-            KioskRegistry.withAllKioskTools().buildSystemPrompt(),
-        _httpPoster = httpPoster ?? _defaultHttpPoster;
+  }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
 
   final String apiKey;
   final String baseUrl;
   final String model;
   final Duration timeout;
-  final String _systemPrompt;
+
+  /// What the model is told the shop can do, built from the catalog by
+  /// [KioskRegistry.buildSystemPrompt]. Required rather than defaulted: a caller
+  /// that forgot it would otherwise reach the network with a prompt describing a
+  /// different list of commands than the app has, and nothing would say so.
+  final String systemPrompt;
+
   final HttpJsonPoster _httpPoster;
 
   Future<Map<String, dynamic>> call(
@@ -54,7 +57,7 @@ final class RodiumAiCaller {
     final Map<String, dynamic> requestBody = <String, dynamic>{
       'model': model,
       'messages': <Map<String, String>>[
-        <String, String>{'role': 'system', 'content': _systemPrompt},
+        <String, String>{'role': 'system', 'content': systemPrompt},
         <String, String>{
           'role': 'user',
           'content':

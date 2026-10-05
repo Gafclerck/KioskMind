@@ -52,8 +52,6 @@ import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
 import '../domain/ports/message_formulator.dart';
 import '../domain/registry/kiosk_registry.dart';
-import '../domain/registry/kiosk_tool_spec.dart';
-import '../domain/entities/fact_result.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/intent_input.dart';
 import '../domain/entities/intent_result.dart';
@@ -583,6 +581,9 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   final ProductCatalogReader catalogReader = await ref.watch(
     voiceCatalogReaderProvider.future,
   );
+  final String systemPrompt = (await ref.watch(
+    kioskRegistryProvider.future,
+  )).buildSystemPrompt();
 
   // 1. Explicit Rodium AI key provided
   if (rodiumApiKey.isNotEmpty) {
@@ -590,7 +591,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
       apiKey: rodiumApiKey,
       model: ref.watch(voiceRodiumModelProvider),
       baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
-      systemPrompt: ref.watch(kioskRegistryProvider).buildSystemPrompt(),
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
@@ -605,7 +606,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
         apiKey: geminiApiKey,
         model: ref.watch(voiceRodiumModelProvider),
         baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
-        systemPrompt: ref.watch(kioskRegistryProvider).buildSystemPrompt(),
+        systemPrompt: systemPrompt,
       );
       return RemoteCloudIntentParser(
         catalogReader: catalogReader,
@@ -615,7 +616,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
 
     final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
       apiKey: geminiApiKey,
-      systemPrompt: ref.watch(kioskRegistryProvider).buildSystemPrompt(),
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
@@ -754,9 +755,14 @@ voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
   );
 });
 
-/// Extensible tool registry for the KioskMind assistant.
-final Provider<KioskRegistry> kioskRegistryProvider = Provider<KioskRegistry>((
-  Ref ref,
-) {
-  return KioskRegistry.withAllKioskTools();
-});
+/// The commands offered to the language model, read from the shipped catalog.
+///
+/// Asynchronous because the catalog is an asset: the registry has no list of its
+/// own to fall back on, so there is nothing to build it from until the asset is
+/// read, and a prompt built before then would describe commands the app does not
+/// have.
+final FutureProvider<KioskRegistry> kioskRegistryProvider =
+    FutureProvider<KioskRegistry>(
+      (Ref ref) async =>
+          KioskRegistry.fromCatalog(await ref.watch(voiceIntentsProvider.future)),
+    );

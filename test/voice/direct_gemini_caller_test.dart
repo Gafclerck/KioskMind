@@ -7,6 +7,7 @@ void main() {
       int postCount = 0;
       final caller = DirectGeminiCaller(
         apiKey: '',
+        systemPrompt: 'PROMPT_DE_TEST',
         httpPoster:
             (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
               postCount++;
@@ -29,6 +30,7 @@ void main() {
 
       final caller = DirectGeminiCaller(
         apiKey: 'test-api-key-123',
+        systemPrompt: 'PROMPT_DE_TEST',
         httpPoster:
             (uri, headers, body, {timeout = const Duration(seconds: 2)}) async {
               capturedUri = uri;
@@ -76,6 +78,7 @@ void main() {
       () async {
         final caller = DirectGeminiCaller(
           apiKey: 'test-api-key-123',
+          systemPrompt: 'PROMPT_DE_TEST',
           httpPoster:
               (
                 uri,
@@ -101,6 +104,7 @@ void main() {
       () async {
         final caller = DirectGeminiCaller(
           apiKey: 'test-api-key-123',
+          systemPrompt: 'PROMPT_DE_TEST',
           httpPoster:
               (
                 uri,
@@ -136,6 +140,7 @@ void main() {
       () async {
         final caller = DirectGeminiCaller(
           apiKey: 'test-api-key-123',
+          systemPrompt: 'PROMPT_DE_TEST',
           httpPoster:
               (
                 uri,

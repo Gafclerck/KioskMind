@@ -92,9 +92,22 @@ final class RealRecordStockOutHandler implements RecordStockOutHandler {
     }
   }
 
+  /// The reason as the movement stores it.
+  ///
+  /// A word the module does not know becomes an adjustment rather than an error,
+  /// and expiry is a loss: the merchant says "périmé" and the catalog advertises
+  /// `loss`, so an LLM answering `expired` or `peremption` has to land on the same
+  /// loss rather than on an adjustment nobody asked for.
   StockMovementReason _mapReason(String reasonStr) {
     return switch (reasonStr.toLowerCase()) {
-      'loss' || 'perte' || 'perime' || 'avarie' => StockMovementReason.loss,
+      'loss' ||
+      'perte' ||
+      'perime' ||
+      'peremption' ||
+      'expired' ||
+      'expiration' ||
+      'avarie' =>
+        StockMovementReason.loss,
       'breakage' || 'casse' || 'abime' => StockMovementReason.breakage,
       'donation' || 'don' => StockMovementReason.donation,
       _ => StockMovementReason.manualAdjustment,

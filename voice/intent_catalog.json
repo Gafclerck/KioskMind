@@ -33,10 +33,10 @@
           "description": "Les lignes de la vente, dans l'ordre où elles sont dites.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
-              "description": "Nom ou alias du produit, tel que le commerçant l'a pronuncié. Ne jamais produire d'identifiant de produit."
+              "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant."
             },
             {
               "name": "qty",
@@ -51,7 +51,7 @@
               "description": "Unité prononcée, seulement si elle diffère de celle du produit."
             },
             {
-              "name": "unitPrice",
+              "name": "spokenUnitPrice",
               "type": "money",
               "required": false,
               "description": "Prix unitaire annoncé par le commerçant. Sert de signal de doute : le prix du catalogue fait foi."
@@ -114,10 +114,10 @@
           "description": "Les lignes de l'approvisionnement, dans l'ordre où elles sont dites.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
-              "description": "Nom ou alias du produit, tel que le commerçant l'a pronuncié. Ne jamais produire d'identifiant de produit."
+              "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant."
             },
             {
               "name": "qty",
@@ -132,7 +132,7 @@
               "description": "Unité prononcée, seulement si elle diffère de celle du produit."
             },
             {
-              "name": "unitCost",
+              "name": "spokenUnitCost",
               "type": "money",
               "required": false,
               "description": "Coût d'achat unitaire annoncé par le commerçant. Absent si le prix n'a pas été dit."
@@ -165,10 +165,10 @@
       ],
       "slots": [
         {
-          "name": "productName",
-          "type": "product_name",
+          "name": "productId",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom ou alias du produit concerné. Ne jamais produire d'identifiant de produit.",
+          "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant.",
           "lineSlots": []
         }
       ]
@@ -288,9 +288,9 @@
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom ou alias du produit.",
+          "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant.",
           "lineSlots": []
         }
       ]
@@ -324,9 +324,9 @@
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom ou alias du produit.",
+          "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant.",
           "lineSlots": []
         },
         {
@@ -514,9 +514,9 @@
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom ou alias du produit.",
+          "description": "Identifiant du produit, repris tel quel du catalogue fourni. Ne jamais inventer d'identifiant.",
           "lineSlots": []
         },
         {

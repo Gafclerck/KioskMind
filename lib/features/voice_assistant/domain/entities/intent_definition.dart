@@ -18,8 +18,12 @@ enum IntentRisk {
 
 /// What a slot holds. The set is closed: an unknown type is a catalog error, not
 /// something to pass through to the LLM.
+///
+/// [productReference] is named after what it points at rather than after the field
+/// that carries it, because the field is `productId` for every intent that takes
+/// one and the type says nothing about a name.
 enum SlotType {
-  productName('product_name'),
+  productReference('product_reference'),
   quantity('quantity'),
   unit('unit'),
   money('money'),
@@ -30,6 +34,10 @@ enum SlotType {
   const SlotType(this.code);
 
   final String code;
+
+  /// Whether the slot refers to a product the shop already sells, which is what
+  /// the grounding rule (D5) is about.
+  bool get referencesProduct => this == SlotType.productReference;
 }
 
 /// Which price of the product a spoken amount is compared against.
@@ -114,6 +122,18 @@ final class IntentDefinition {
 
   /// Whether running this command takes a list of lines, from the declared shape.
   bool get takesItems => slots.any((SlotDefinition slot) => slot.isItemList);
+
+  /// Whether this command works on a product the shop already sells.
+  ///
+  /// Read off the declared slots rather than off the identifier: a slot of type
+  /// [SlotType.productReference] is a reference into the catalog, and its presence
+  /// is exactly what the grounding rule has to mention. Deriving it keeps the rule
+  /// true when a command is added instead of quietly leaving it out of the prompt.
+  bool get referencesExistingProducts => slots.any(
+    (SlotDefinition slot) =>
+        slot.type.referencesProduct ||
+        slot.lineSlots.any((SlotDefinition line) => line.type.referencesProduct),
+  );
 }
 
 /// The validated contents of `voice/intent_catalog.json`.

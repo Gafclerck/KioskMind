@@ -178,7 +178,6 @@ String _reasonText(AppLocalizations l10n, String reason) {
       l10n.voiceReasonLoss,
     'donation' || 'don' => l10n.voiceReasonDonation,
     'manualadjustment' || 'ajustement' => l10n.voiceReasonAdjustment,
-    'personal_use' || 'usage_personnel' => l10n.voiceReasonPersonalUse,
     _ => reason,
   };
 }

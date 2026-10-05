@@ -4,8 +4,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import '../../domain/registry/kiosk_registry.dart';
-
 typedef HttpJsonPoster =
     Future<Map<String, dynamic>> Function(
       Uri uri,
@@ -26,18 +24,22 @@ typedef HttpJsonPoster =
 final class DirectGeminiCaller {
   DirectGeminiCaller({
     required this.apiKey,
+    required this.systemPrompt,
     this.model = 'gemini-1.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
-    String? systemPrompt,
     HttpJsonPoster? httpPoster,
-  }) : _systemPrompt = systemPrompt ??
-           KioskRegistry.withAllKioskTools().buildSystemPrompt(),
-       _httpPoster = httpPoster ?? _defaultHttpPoster;
+  }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
 
   final String apiKey;
   final String model;
   final Duration timeout;
-  final String _systemPrompt;
+
+  /// What the model is told the shop can do, built from the catalog by
+  /// [KioskRegistry.buildSystemPrompt]. Required rather than defaulted: a caller
+  /// that forgot it would otherwise reach the network with a prompt describing a
+  /// different list of commands than the app has, and nothing would say so.
+  final String systemPrompt;
+
   final HttpJsonPoster _httpPoster;
 
   Future<Map<String, dynamic>> call(
@@ -59,7 +61,7 @@ final class DirectGeminiCaller {
     final Map<String, dynamic> requestBody = <String, dynamic>{
       'system_instruction': <String, dynamic>{
         'parts': <Map<String, dynamic>>[
-          <String, dynamic>{'text': _systemPrompt},
+          <String, dynamic>{'text': systemPrompt},
         ],
       },
       'contents': <Map<String, dynamic>>[

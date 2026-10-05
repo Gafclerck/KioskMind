@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/core/voice_services/speech_recognizer_port.dart';
@@ -7,10 +5,8 @@ import 'package:kiosk_mind/core/voice_services/speech_service_error.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/dialog/dialog_manager.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/clarification_slot.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utterance.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_message.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_session_controller.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_session_state.dart';

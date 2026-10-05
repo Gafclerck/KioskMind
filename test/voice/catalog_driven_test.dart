@@ -95,7 +95,7 @@ IntentDefinition _checkExpiry() {
     slots: <SlotDefinition>[
       SlotDefinition(
         name: 'productName',
-        type: SlotType.productName,
+        type: SlotType.productReference,
         required: true,
         description: 'Produit dont la peremption est demandee.',
         lineSlots: const <SlotDefinition>[],
@@ -119,7 +119,7 @@ IntentDefinition _countLines() {
         lineSlots: <SlotDefinition>[
           SlotDefinition(
             name: 'productName',
-            type: SlotType.productName,
+            type: SlotType.productReference,
             required: true,
             description: 'Produit compte.',
             lineSlots: const <SlotDefinition>[],

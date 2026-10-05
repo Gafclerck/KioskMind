@@ -26,8 +26,8 @@ const String valid = '''
           "description": "Lignes de la vente.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
               "description": "Nom prononce."
             },
@@ -56,8 +56,8 @@ const String valid = '''
           "description": "Lignes de l approvisionnement.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
               "description": "Nom prononce."
             },
@@ -80,10 +80,10 @@ const String valid = '''
       "examples": ["stock du sucre"],
       "slots": [
         {
-          "name": "productName",
-          "type": "product_name",
+          "name": "productId",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom du produit.",
+          "description": "Identifiant du produit.",
           "lineSlots": []
         }
       ]
@@ -136,7 +136,7 @@ const String valid = '''
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
           "description": "Nom du produit.",
           "lineSlots": []
@@ -154,7 +154,7 @@ const String valid = '''
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
           "description": "Produit.",
           "lineSlots": []
@@ -240,7 +240,7 @@ const String valid = '''
       "slots": [
         {
           "name": "productId",
-          "type": "product_name",
+          "type": "product_reference",
           "required": true,
           "description": "Produit.",
           "lineSlots": []
@@ -330,9 +330,9 @@ void main() {
       expect(items.required, isTrue);
       expect(
         items.lineSlots.map((SlotDefinition s) => s.name).toList(),
-        <String>['productName', 'qty'],
+        <String>['productId', 'qty'],
       );
-      expect(items.lineSlots.first.type, SlotType.productName);
+      expect(items.lineSlots.first.type, SlotType.productReference);
     });
 
     test('keeps triggers and examples apart', () {
@@ -560,8 +560,8 @@ void main() {
           for (final SlotDefinition line in slot.lineSlots) line.name,
       ];
 
-      expect(lineNames('record_sale'), contains('unitPrice'));
-      expect(lineNames('record_restock'), contains('unitCost'));
+      expect(lineNames('record_sale'), contains('spokenUnitPrice'));
+      expect(lineNames('record_restock'), contains('spokenUnitCost'));
       expect(
         catalog.byId('cancel_last_sale')!.slots,
         isEmpty,
@@ -586,7 +586,7 @@ void main() {
           for (final SlotDefinition line in lines) {
             expect(
               line.required,
-              line.name == 'productName' || line.name == 'qty',
+              line.name == 'productId' || line.name == 'qty',
               reason: '$intentId.${line.name}',
             );
           }
