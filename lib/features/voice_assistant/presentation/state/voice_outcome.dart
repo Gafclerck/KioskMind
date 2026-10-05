@@ -1,4 +1,5 @@
 import '../../../../core/usecase/result.dart';
+import '../../domain/entities/fact_result.dart';
 import '../../domain/entities/intent_result.dart';
 import '../../domain/usecases/execute_command.dart';
 
@@ -261,4 +262,61 @@ List<VoiceRecapLine> _saleLines(List<SaleLineResult> lines) {
     for (final SaleLineResult line in lines)
       (name: line.name, qty: line.qty, unit: line.unit),
   ];
+}
+
+extension VoiceOutcomeToFactResult on VoiceOutcome {
+  /// Converts this presentation outcome to verifiable structured facts.
+  FactResult toFactResult() {
+    return switch (this) {
+      final SaleRecorded sale => FactResult(
+        operation: 'record_sale',
+        data: <String, dynamic>{
+          'items': <Map<String, dynamic>>[
+            for (final VoiceRecapLine line in sale.lines)
+              <String, dynamic>{
+                'product': line.name,
+                'qty': line.qty,
+                'unit': line.unit,
+              },
+          ],
+          'total': sale.total,
+          'currency': 'francs',
+        },
+      ),
+      final RestockRecorded restock => FactResult(
+        operation: 'record_restock',
+        data: <String, dynamic>{
+          'items': <Map<String, dynamic>>[
+            for (final VoiceRecapLine line in restock.lines)
+              <String, dynamic>{
+                'product': line.name,
+                'qty': line.qty,
+                'unit': line.unit,
+              },
+          ],
+        },
+      ),
+      final StockRead stock => FactResult(
+        operation: 'query_stock',
+        data: <String, dynamic>{
+          'product': stock.product,
+          'stock': stock.stock,
+          'unit': stock.unit,
+        },
+      ),
+      final SaleCancelled cancelled => FactResult(
+        operation: 'cancel_last_sale',
+        data: <String, dynamic>{
+          'restored': <Map<String, dynamic>>[
+            for (final VoiceRecapLine line in cancelled.lines)
+              <String, dynamic>{
+                'product': line.name,
+                'qty': line.qty,
+                'unit': line.unit,
+              },
+          ],
+        },
+      ),
+    };
+  }
 }

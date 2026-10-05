@@ -41,7 +41,7 @@ final class AnswerReading {
       return null;
     }
     if (asked.answersByYesOrNo) {
-      return _readsAgreement(text.tokens);
+      return _readsAgreement(text);
     }
     if (asked.answersByQuantity) {
       return _readsQuantity(text.tokens);
@@ -54,11 +54,23 @@ final class AnswerReading {
 
   /// Whether the answer accepts what was read back.
   ///
-  /// Only a yes settles a confirmation. A refusal and words that mean nothing here
-  /// are the same thing to the session, which is right: neither of them is consent
-  /// to record a sale, and treating gibberish as a no is the safe reading.
-  bool _readsAgreement(List<String> tokens) =>
-      tokens.any(kAffirmativeWords.contains);
+  /// Only an affirmative answer settles a confirmation. A refusal or words that
+  /// contain negative markers are safely treated as non-agreement so that no sale
+  /// is recorded without consent.
+  bool _readsAgreement(NormalizedText text) {
+    final List<String> tokens = text.tokens;
+    if (tokens.any(kNegativeWords.contains)) {
+      return false;
+    }
+    if (tokens.any(kAffirmativeWords.contains)) {
+      return true;
+    }
+    final String flat = text.text;
+    if (flat.contains('cest bon') || flat.contains('vas y')) {
+      return true;
+    }
+    return false;
+  }
 
   /// The first number said, wherever it comes in the answer.
   ///

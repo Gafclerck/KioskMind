@@ -20,6 +20,7 @@ final class VoiceTurn {
     required this.proposal,
     required this.decision,
     required this.execution,
+    this.secondaryExecutions = const <CommandExecution>[],
   });
 
   /// The utterance as it was decided, after the answer completed it.
@@ -30,6 +31,9 @@ final class VoiceTurn {
   /// What the handler answered, or null when the turn asked or refused rather than
   /// ran.
   final CommandExecution? execution;
+
+  /// Subsequent executions when the turn carried a batch of commands (multi-action support).
+  final List<CommandExecution> secondaryExecutions;
 
   /// Whether a handler ran and accepted the command.
   bool get executed => execution?.isExecuted ?? false;
@@ -128,10 +132,26 @@ final class HandleUtterance {
     final CommandExecution? execution = decision.executes
         ? await executor.run(decision: decision, proposal: proposal)
         : null;
+
+    final List<CommandExecution> secondaryExecutions = <CommandExecution>[];
+    if (decision.executes && proposal.nextProposals.isNotEmpty) {
+      for (final CommandProposal next in proposal.nextProposals) {
+        final Decision nextDecision = policy.decide(next);
+        if (nextDecision.executes) {
+          final CommandExecution nextExec = await executor.run(
+            decision: nextDecision,
+            proposal: next,
+          );
+          secondaryExecutions.add(nextExec);
+        }
+      }
+    }
+
     return VoiceTurn(
       proposal: proposal,
       decision: decision,
       execution: execution,
+      secondaryExecutions: secondaryExecutions,
     );
   }
 
@@ -155,6 +175,7 @@ final class HandleUtterance {
       slots: parsed.slots,
       doubts: doubts,
       origin: parsed.origin,
+      nextProposals: parsed.nextProposals,
     );
   }
 }

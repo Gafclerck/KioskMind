@@ -39,12 +39,14 @@ final class CommandProposal {
     required this.slots,
     required this.doubts,
     required this.origin,
+    this.nextProposals = const <CommandProposal>[],
   });
 
   const CommandProposal.rules({
     required this.intentId,
     required this.slots,
     this.doubts = const <Doubt>[],
+    this.nextProposals = const <CommandProposal>[],
   }) : origin = ProposalOrigin.rules;
 
   /// One of the ids of the intent catalog.
@@ -56,6 +58,9 @@ final class CommandProposal {
   final List<Doubt> doubts;
 
   final ProposalOrigin origin;
+
+  /// Subsequent actions queued in the same multi-request turn (ported from assistantv3 pending_calls).
+  final List<CommandProposal> nextProposals;
 
   bool get isComplete => doubts.isEmpty;
 

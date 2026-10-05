@@ -161,29 +161,31 @@ final class DialogManager {
     if (!decision.isQuestion) {
       return;
     }
-    final DoubtKind? reason = decision.reason;
-    if (reason == null && decision.outcome != DecisionOutcome.askConfirmation) {
-      return;
-    }
-    final DoubtKind effectiveReason = reason ?? DoubtKind.amountMismatch;
     _touch();
     _closeUndoWindow();
+    _awaiting = proposal;
+    if (decision.outcome == DecisionOutcome.askConfirmation) {
+      _ask(
+        ClarificationSlot.confirmed,
+        decision.reason ?? DoubtKind.amountMismatch,
+      );
+      return;
+    }
     if (_turns >= config.maxClarificationTurns) {
       _offerManualEntry();
       return;
     }
-    _awaiting = proposal;
-    if (decision.outcome == DecisionOutcome.askConfirmation) {
-      _ask(ClarificationSlot.confirmed, effectiveReason);
+    final DoubtKind? reason = decision.reason;
+    if (reason == null) {
       return;
     }
     _turns += 1;
     _ask(
       ClarificationSlot.forDoubt(
-        effectiveReason,
+        reason,
         hasItems: _hasItems(proposal),
       ),
-      effectiveReason,
+      reason,
     );
   }
 
@@ -258,8 +260,16 @@ final class DialogManager {
   /// Whether the pending question went past its deadline.
   bool get _questionExpired {
     final DateTime? asked = _askedAt;
-    return asked != null &&
-        clock.now().difference(asked) >= config.questionTimeout;
+    if (asked == null) {
+      return false;
+    }
+    final bool isConfirmation =
+        _pending?.slot == ClarificationSlot.confirmed ||
+        _state == VoiceDialogState.waitingForConfirmation;
+    final Duration timeout = isConfirmation
+        ? config.confirmationTimeout
+        : config.questionTimeout;
+    return clock.now().difference(asked) >= timeout;
   }
 
   /// A question in progress takes precedence over the undo banner, so a merchant

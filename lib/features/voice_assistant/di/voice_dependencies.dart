@@ -25,6 +25,9 @@ import '../data/connectivity/data_connection_probe.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
+import '../data/formulator/ai_message_formulator.dart';
+import '../data/formulator/cascading_message_formulator.dart';
+import '../data/formulator/offline_natural_formulator.dart';
 import '../data/handlers/call_journal.dart';
 import '../data/handlers/journaling_intent_handler.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
@@ -47,6 +50,10 @@ import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rodium_ai_caller.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
+import '../domain/ports/message_formulator.dart';
+import '../domain/registry/kiosk_registry.dart';
+import '../domain/registry/kiosk_tool_spec.dart';
+import '../domain/entities/fact_result.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/intent_input.dart';
 import '../domain/entities/intent_result.dart';
@@ -606,6 +613,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
 
     final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
       apiKey: geminiApiKey,
+      systemPrompt: ref.watch(kioskRegistryProvider).buildSystemPrompt(),
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
@@ -706,3 +714,119 @@ Future<List<String>> _shopVocabulary(Ref ref) async {
       .take(ref.watch(voiceServiceSettingsProvider).vocabularyLimit)
       .toList();
 }
+
+/// The natural response formulator (Cascading Cloud AI & Offline Natural).
+final Provider<MessageFormulator>
+voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
+  final ConnectivityProbe connectivity = ref.watch(
+    voiceConnectivityProbeProvider,
+  );
+  final CircuitBreaker circuitBreaker = ref.watch(voiceCircuitBreakerProvider);
+  final String rodiumApiKey = ref.watch(voiceRodiumApiKeyProvider);
+  final String geminiApiKey = ref.watch(voiceGeminiApiKeyProvider);
+
+  final MessageFormulator aiFormulator;
+  if (rodiumApiKey.isNotEmpty) {
+    aiFormulator = AiMessageFormulator(
+      apiKey: rodiumApiKey,
+      endpointUrl: '${ref.watch(voiceRodiumBaseUrlProvider)}/chat/completions',
+    );
+  } else if (geminiApiKey.isNotEmpty) {
+    if (geminiApiKey.startsWith('rd_')) {
+      aiFormulator = AiMessageFormulator(
+        apiKey: geminiApiKey,
+        endpointUrl:
+            '${ref.watch(voiceRodiumBaseUrlProvider)}/chat/completions',
+      );
+    } else {
+      aiFormulator = AiMessageFormulator(apiKey: geminiApiKey);
+    }
+  } else {
+    aiFormulator = const OfflineNaturalFormulator();
+  }
+
+  return CascadingMessageFormulator(
+    aiFormulator: aiFormulator,
+    connectivity: connectivity,
+    circuitBreaker: circuitBreaker,
+  );
+});
+
+/// Extensible tool registry for the KioskMind assistant.
+final Provider<KioskRegistry> kioskRegistryProvider = Provider<KioskRegistry>((
+  Ref ref,
+) {
+  final KioskRegistry registry = KioskRegistry();
+
+  // Default core kiosk tools
+  registry.register(
+    KioskToolSpec(
+      name: 'record_sale',
+      label: 'Enregistrer une vente',
+      example: 'vends deux savons',
+      paramLabels: const <String, String>{
+        'items':
+            'Liste des articles avec productId, qty et spokenUnitPrice optionnel',
+      },
+      jsonFormatExample:
+          '{"intentId": "record_sale", "items": [{"productId": "<id_catalogue>", "qty": 2.0, "spokenUnitPrice": 500}]}',
+      declarationKeywords: const <String>{'vends', 'vente', 'acheter', 'prend'},
+      handler: (params) async =>
+          const FactResult(operation: 'record_sale', data: {}),
+    ),
+  );
+  registry.register(
+    KioskToolSpec(
+      name: 'record_restock',
+      label: 'Réapprovisionnement du stock',
+      example: 'ajoute 10 sacs de riz',
+      paramLabels: const <String, String>{
+        'items':
+            'Liste des articles avec productId, qty et spokenUnitCost optionnel',
+      },
+      jsonFormatExample:
+          '{"intentId": "record_restock", "items": [{"productId": "<id_catalogue>", "qty": 5.0, "spokenUnitCost": 400}]}',
+      declarationKeywords: const <String>{
+        'ajoute',
+        'entree',
+        'recu',
+        'stocker',
+        'reappro',
+        'reassort',
+        'achat',
+        'livraison',
+        'restock',
+      },
+      handler: (params) async =>
+          const FactResult(operation: 'record_restock', data: {}),
+    ),
+  );
+  registry.register(
+    KioskToolSpec(
+      name: 'query_stock',
+      label: 'Consulter le stock',
+      example: 'combien de sucre en stock',
+      paramLabels: const <String, String>{
+        'productId': 'Identifiant du produit dans le catalogue',
+      },
+      jsonFormatExample:
+          '{"intentId": "query_stock", "productId": "<id_catalogue>"}',
+      declarationKeywords: const <String>{'stock', 'combien', 'reste'},
+      handler: (params) async =>
+          const FactResult(operation: 'query_stock', data: {}),
+    ),
+  );
+  registry.register(
+    KioskToolSpec(
+      name: 'cancel_last_sale',
+      label: 'Annuler la dernière vente',
+      example: 'annule la vente',
+      jsonFormatExample: '{"intentId": "cancel_last_sale"}',
+      declarationKeywords: const <String>{'annuler', 'annule', 'retour'},
+      handler: (params) async =>
+          const FactResult(operation: 'cancel_last_sale', data: {}),
+    ),
+  );
+
+  return registry;
+});

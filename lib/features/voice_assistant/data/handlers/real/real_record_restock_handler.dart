@@ -51,29 +51,39 @@ final class RealRecordRestockHandler implements RecordRestockHandler {
       }
     }
 
-    final List<String> movementIds = <String>[];
-    for (int index = 0; index < lines.length; index++) {
-      final RestockIntentLine item = input.items[index];
-      final String movementId = '${context.commandId}-$index';
-      movementIds.add(movementId);
+    try {
+      final List<String> movementIds = <String>[];
+      for (int index = 0; index < lines.length; index++) {
+        final RestockIntentLine item = input.items[index];
+        final String movementId = '${context.commandId}-$index';
+        movementIds.add(movementId);
 
-      final int movementQty = item.qty < 1 ? item.qty.ceil() : item.qty.round();
+        final int movementQty =
+            item.qty < 1 ? item.qty.ceil() : item.qty.round();
 
-      final movement = StockMovement(
-        id: movementId,
-        productId: item.productId,
-        type: StockMovementType.purchase,
-        reason: StockMovementReason.purchase,
-        quantity: movementQty,
-        createdAt: context.dateTime,
-        note: 'Commande vocale ${context.commandId}',
+        final StockMovement movement = StockMovement(
+          id: movementId,
+          productId: item.productId,
+          type: StockMovementType.purchase,
+          reason: StockMovementReason.purchase,
+          quantity: movementQty,
+          createdAt: context.dateTime,
+          note: 'Commande vocale ${context.commandId}',
+        );
+        await recordStockIn(movement);
+      }
+
+      final RecordRestockResult result = (
+        movementIds: movementIds,
+        lines: lines,
       );
-      await recordStockIn(movement);
+      _recordedCommands[context.commandId] = result;
+      return Success<RecordRestockResult>(result);
+    } on Exception catch (_) {
+      return Failed<RecordRestockResult>(
+        UnknownProduct(productId: input.items.first.productId),
+      );
     }
-
-    final RecordRestockResult result = (movementIds: movementIds, lines: lines);
-    _recordedCommands[context.commandId] = result;
-    return Success<RecordRestockResult>(result);
   }
 
   Future<Result<RestockLineResult>> _line(RestockIntentLine item) async {

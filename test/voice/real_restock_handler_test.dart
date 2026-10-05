@@ -26,6 +26,18 @@ final class _FakeStockMovementRepository implements StockMovementRepository {
       );
 }
 
+final class _FakeThrowingStockMovementRepository
+    implements StockMovementRepository {
+  @override
+  Future<void> recordMovement(StockMovement movement) async {
+    throw Exception('Firestore write failure');
+  }
+
+  @override
+  Stream<List<StockMovement>> watchMovements(String productId) =>
+      Stream<List<StockMovement>>.empty();
+}
+
 ProductSnapshot _product(
   String id, {
   required String name,
@@ -237,6 +249,28 @@ void main() {
         (result as Failed<RecordRestockResult>).failure,
         isA<InvalidQuantity>(),
       );
+    });
+
+    test('returns Failed when RecordStockIn throws Exception', () async {
+      final failingRepo = _FakeThrowingStockMovementRepository();
+      final failingHandler = RealRecordRestockHandler(
+        recordStockIn: RecordStockIn(failingRepo),
+        catalogReader: catalog,
+      );
+
+      const input = RestockIntentInput(
+        items: [
+          RestockIntentLine(
+            productId: 'p_sucre',
+            productName: 'Sucre roux',
+            qty: 2,
+          ),
+        ],
+      );
+
+      final result = await failingHandler.execute(context, input);
+
+      expect(result, isA<Failed<RecordRestockResult>>());
     });
   });
 }

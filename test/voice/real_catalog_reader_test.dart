@@ -96,7 +96,7 @@ void main() {
       expect(snapshot.stock, equals(15.0));
       expect(snapshot.alertThreshold, equals(3.0));
       expect(snapshot.unit, equals('SAC'));
-      expect(snapshot.aliases, isEmpty);
+      expect(snapshot.aliases, containsAll(<String>['riz parfume', 'riz']));
       expect(snapshot.isArchived, isFalse);
       expect(snapshot.averageDailyQty, equals(0.0));
     });

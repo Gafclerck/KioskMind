@@ -50,16 +50,22 @@ final class RefusalMessage extends VoiceMessage {
 
 /// The command ran, with what it did.
 final class DoneMessage extends VoiceMessage {
-  const DoneMessage(this.outcome);
+  const DoneMessage(this.outcome, {this.customSpeechText});
 
   final VoiceOutcome outcome;
+
+  /// Optional AI or natural formulated response overriding static concatenation.
+  final String? customSpeechText;
 }
 
 /// The sale of the undo window was taken back.
 final class UndoneMessage extends VoiceMessage {
-  const UndoneMessage(this.outcome);
+  const UndoneMessage(this.outcome, {this.customSpeechText});
 
   final VoiceOutcome outcome;
+
+  /// Optional AI or natural formulated response overriding static concatenation.
+  final String? customSpeechText;
 }
 
 /// There was nothing to take back, which is an answer and not a failure.

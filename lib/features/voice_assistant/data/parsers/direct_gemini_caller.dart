@@ -26,15 +26,18 @@ final class DirectGeminiCaller {
     required this.apiKey,
     this.model = 'gemini-1.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
+    String? systemPrompt,
     HttpJsonPoster? httpPoster,
-  }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
+  }) : _systemPrompt = systemPrompt ?? _defaultSystemPrompt,
+       _httpPoster = httpPoster ?? _defaultHttpPoster;
 
   final String apiKey;
   final String model;
   final Duration timeout;
+  final String _systemPrompt;
   final HttpJsonPoster _httpPoster;
 
-  static const String _systemPrompt =
+  static const String _defaultSystemPrompt =
       "Tu es l'assistant de caisse et de gestion de KioskMind pour les commerçants d'Afrique de l'Ouest.\n"
       "Analyse la phrase prononcée par le commerçant et identifie son intention parmi :\n"
       "- 'record_sale' : vente d'un ou plusieurs produits.\n"
