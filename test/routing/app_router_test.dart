@@ -8,10 +8,43 @@ import 'package:kiosk_mind/features/auth/presentation/pages/login_page.dart';
 import 'package:kiosk_mind/features/auth/presentation/providers/auth_state_provider.dart';
 import 'package:kiosk_mind/features/navigation/main_navigation_page.dart';
 import 'package:kiosk_mind/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:kiosk_mind/features/products_stock/domain/entities/product.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/pages/add_product_page.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
+import 'package:kiosk_mind/features/sales/domain/entities/sale.dart';
+import 'package:kiosk_mind/features/sales/domain/repositories/sales_repository.dart';
 import 'package:kiosk_mind/features/sales/presentation/pages/create_sale_page.dart';
+import 'package:kiosk_mind/features/sales/presentation/providers/sales_provider.dart';
 
 import '../core/fake_app_preferences.dart';
+
+final class _FakeSalesRepo implements SalesRepository {
+  @override
+  Future<Sale> recordSale(Sale sale) async => sale;
+
+  @override
+  Future<Sale> updateSale(Sale sale) async => sale;
+
+  @override
+  Future<Sale> cancelSale(String saleId) async => Sale(
+    id: saleId,
+    dateTime: DateTime(2026, 3, 1),
+    createdAt: DateTime(2026, 3, 1),
+    total: 0,
+    items: const <SaleItem>[],
+    source: 'TEST',
+    status: 'CANCELLED',
+  );
+
+  @override
+  Future<List<Sale>> getSalesHistory() async => const <Sale>[];
+
+  @override
+  Future<List<Sale>> getSalesByDateRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async => const <Sale>[];
+}
 
 void main() {
   testWidgets(
@@ -65,6 +98,8 @@ void main() {
             authStateProvider.overrideWith(
               (ref) => Stream<String?>.value('user_123'),
             ),
+            productsProvider.overrideWith((ref) => Stream.value(<Product>[])),
+            salesRepositoryProvider.overrideWithValue(_FakeSalesRepo()),
           ],
         ),
       );
@@ -88,6 +123,8 @@ void main() {
           overrides: [
             onboardingSeenProvider.overrideWith((ref) => true),
             authStateProvider.overrideWith((ref) => authController.stream),
+            productsProvider.overrideWith((ref) => Stream.value(<Product>[])),
+            salesRepositoryProvider.overrideWithValue(_FakeSalesRepo()),
           ],
         ),
       );
@@ -156,6 +193,8 @@ void main() {
           authStateProvider.overrideWith(
             (ref) => Stream<String?>.value('user_123'),
           ),
+          productsProvider.overrideWith((ref) => Stream.value(<Product>[])),
+          salesRepositoryProvider.overrideWithValue(_FakeSalesRepo()),
         ],
       ),
     );
@@ -186,6 +225,8 @@ void main() {
           authStateProvider.overrideWith(
             (ref) => Stream<String?>.value('user_123'),
           ),
+          productsProvider.overrideWith((ref) => Stream.value(<Product>[])),
+          salesRepositoryProvider.overrideWithValue(_FakeSalesRepo()),
         ],
       ),
     );
