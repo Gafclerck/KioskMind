@@ -133,5 +133,44 @@ void main() {
         );
       },
     );
+
+    test('withAllKioskTools registers all 14 tools and compiles complete prompt', () {
+      final KioskRegistry allRegistry = KioskRegistry.withAllKioskTools();
+      final List<KioskToolSpec> tools = allRegistry.allTools();
+      expect(tools.length, equals(14));
+
+      const List<String> expectedIntents = <String>[
+        'record_sale',
+        'record_restock',
+        'query_stock',
+        'cancel_last_sale',
+        'query_daily_stats',
+        'query_low_stock',
+        'query_product_price',
+        'record_stock_out',
+        'navigate_to_page',
+        'export_sales_report',
+        'create_product',
+        'update_product_price',
+        'query_sales_history',
+        'query_business_info',
+      ];
+
+      for (final String intent in expectedIntents) {
+        expect(allRegistry.get(intent), isNotNull, reason: 'Missing $intent in registry');
+      }
+
+      final String prompt = allRegistry.buildSystemPrompt();
+      expect(prompt, contains("Tu es l'assistant de caisse de KioskMind"));
+      expect(prompt, contains("RÈGLE D'ANCRAGE STRICTE (D5)"));
+      expect(prompt, contains("FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR"));
+
+      final String desc = allRegistry.toPromptDescription();
+      final String format = allRegistry.toResponseFormatPrompt();
+      for (final String intent in expectedIntents) {
+        expect(desc, contains("'$intent'"));
+        expect(format, contains("Pour '$intent'"));
+      }
+    });
   });
 }
