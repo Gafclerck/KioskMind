@@ -1,12 +1,16 @@
 import '../dialog/dialog_manager.dart';
+import '../entities/clarification_slot.dart';
 import '../entities/command_proposal.dart';
 import '../entities/decision_outcome.dart';
 import '../entities/doubt.dart';
+import '../entities/slot.dart';
+import '../entities/voice_lexicon.dart';
 import '../ports/intent_parser.dart';
 import '../services/answer_application.dart';
 import '../services/answer_reading.dart';
 import '../services/command_validator.dart';
 import '../services/decision_policy.dart';
+import '../services/text_normalizer.dart';
 import 'execute_command.dart';
 
 /// What one utterance did to the session.
@@ -89,9 +93,35 @@ final class HandleUtterance {
     if (waiting == null || dialog.awaitsManualEntry) {
       return _decideAndAct(await _understood(utterance));
     }
+
+    if (waiting.slot != ClarificationSlot.confirmed) {
+      final NormalizedText normalized = reading.normalizer.normalize(utterance);
+      if (normalized.tokens.length <= 2 &&
+          normalized.tokens.any(kNegativeWords.contains)) {
+        dialog.reset();
+        return const VoiceTurn(
+          proposal: CommandProposal(
+            intentId: kNoIntent,
+            slots: <Slot>[],
+            doubts: <Doubt>[Doubt(kind: DoubtKind.outOfDomain)],
+            origin: ProposalOrigin.rules,
+          ),
+          decision: Decision(
+            DecisionOutcome.reject,
+            reason: DoubtKind.outOfDomain,
+          ),
+          execution: null,
+        );
+      }
+    }
+
     final CommandProposal asked =
         dialog.awaiting ?? await _understood(utterance);
-    final Object? value = reading.read(utterance, asked: waiting.reason);
+    final Object? value = reading.read(
+      utterance,
+      asked: waiting.reason,
+      slot: waiting.slot,
+    );
     return _decideAndAct(
       answers.apply(asked, asked: waiting.reason, value: value),
     );

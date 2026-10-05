@@ -248,7 +248,15 @@ final class DialogManager {
     _manualEntry = true;
   }
 
-  void _touch() => _lastActivity = clock.now();
+  /// Records activity against the clock, resetting session and question deadlines.
+  void touch() {
+    _lastActivity = clock.now();
+    if (_askedAt != null) {
+      _askedAt = clock.now();
+    }
+  }
+
+  void _touch() => touch();
 
   /// A session nobody has spoken into has not expired: it has not started.
   bool get _sessionExpired {

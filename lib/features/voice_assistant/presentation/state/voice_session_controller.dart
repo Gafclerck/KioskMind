@@ -59,6 +59,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     _busy = true;
     try {
       await _stopSpeech();
+      ref.read(voiceDialogProvider).touch();
       _set(
         state.copyWith(
           status: VoiceSessionStatus.preparing,
@@ -88,6 +89,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     final SpeechRecognizerPort? recognizer = _recognizer();
     await recognizer?.stop();
     await recognizer?.cancel();
+    await _stopSpeech();
     if (!_disposed && state.status == VoiceSessionStatus.listening) {
       _set(state.copyWith(status: VoiceSessionStatus.idle, lastHeard: ''));
     }
@@ -132,6 +134,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     }
     _busy = true;
     try {
+      await _stopSpeech();
       _set(state.copyWith(status: VoiceSessionStatus.thinking));
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
@@ -335,6 +338,15 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   /// The microphone is unusable: say why and offer the screens.
   void _microphoneLost(SpeechServiceError fault) {
     final DialogManager dialog = ref.read(voiceDialogProvider);
+    if (!fault.isTerminal && dialog.pending != null) {
+      _set(
+        state.copyWith(
+          status: VoiceSessionStatus.idle,
+          lastHeard: '',
+        ),
+      );
+      return;
+    }
     dialog.reset();
     _set(
       state.copyWith(

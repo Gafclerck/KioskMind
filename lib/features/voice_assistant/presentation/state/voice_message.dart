@@ -37,7 +37,8 @@ final class QuestionMessage extends VoiceMessage {
 
   /// The question can be settled by a yes or a no rather than by naming
   /// something.
-  bool get isYesOrNo => doubt.answersByYesOrNo;
+  bool get isYesOrNo =>
+      slot == ClarificationSlot.confirmed || doubt.answersByYesOrNo;
 }
 
 /// The command was understood and refused, and naming something would not change

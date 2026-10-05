@@ -1,3 +1,4 @@
+import '../entities/clarification_slot.dart';
 import '../entities/doubt.dart';
 import '../entities/product_snapshot.dart';
 import '../entities/voice_lexicon.dart';
@@ -35,12 +36,16 @@ final class AnswerReading {
   ///
   /// The value keeps the shape the completion expects: a [ProductSnapshot] for a
   /// product, a number for a quantity, a bool for a yes or a no.
-  Object? read(String utterance, {required DoubtKind asked}) {
+  Object? read(
+    String utterance, {
+    required DoubtKind asked,
+    ClarificationSlot? slot,
+  }) {
     final NormalizedText text = normalizer.normalize(utterance);
     if (text.isEmpty) {
       return null;
     }
-    if (asked.answersByYesOrNo) {
+    if (slot == ClarificationSlot.confirmed || asked.answersByYesOrNo) {
       return _readsAgreement(text);
     }
     if (asked.answersByQuantity) {
