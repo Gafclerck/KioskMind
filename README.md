@@ -24,6 +24,7 @@ Cloudinary) se trouvent dans `.env`, qui n'est pas versionne :
 
 ```bash
 cp .env.example .env   # une seule fois, puis renseigner les valeurs
+dart run tool/check_env.dart   # signale les placeholders et les cles manquantes
 ```
 
 Les valeurs sont injectees a la compilation. Sans elles, l'application
