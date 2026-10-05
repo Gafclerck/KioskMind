@@ -167,11 +167,14 @@ class _NavigationCard extends StatelessWidget {
       if (market != null && market.isNotEmpty) market,
     ].join(' · ');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceBright,
+    // Material plutôt qu'un Container coloré : les ListTile y peignent leurs
+    // effets d'encre, ils ont besoin d'un ancêtre Material au plus proche.
+    return Material(
+      color: scheme.surfaceBright,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outlineVariant),
+        side: BorderSide(color: scheme.outlineVariant),
       ),
       child: Column(
         children: [
