@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/generated/app_localizations.dart';
+import '../../domain/services/spoken_amount_formatter.dart';
 import '../state/voice_message.dart';
+import '../state/voice_recap.dart';
 import '../state/voice_session_controller.dart';
 import '../state/voice_session_state.dart';
 import 'voice_candidate_choices.dart';
@@ -88,7 +90,12 @@ class _VoiceMessage extends StatelessWidget {
               : voiceMessageText(l10n, message),
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        if (message case final QuestionMessage question)
+        if (message case final QuestionMessage question) ...<Widget>[
+          // The command is drawn above the buttons, never below them: the merchant
+          // reads what he is agreeing to before he decides whether to agree, and a
+          // recap placed under the answer reads as a consequence of it.
+          if (question.recap case final VoiceRecap recap)
+            _VoiceRecapView(l10n: l10n, recap: recap),
           if (question.candidates.isNotEmpty)
             VoiceCandidateChoices(
               candidates: question.candidates,
@@ -102,7 +109,44 @@ class _VoiceMessage extends StatelessWidget {
                 controller.confirm(question.doubt, accepted: accepted),
               ),
             ),
+        ],
       ],
+    );
+  }
+}
+
+/// The command a confirmation is about, drawn as the merchant will hear it.
+///
+/// The same facts and the same words as the spoken recap, so what he reads and
+/// what he hears cannot disagree: the screen asks for a name where the speaker
+/// asks for a name, and a figure is shown as the figure that is read aloud.
+class _VoiceRecapView extends StatelessWidget {
+  const _VoiceRecapView({required this.l10n, required this.recap});
+
+  final AppLocalizations l10n;
+  final VoiceRecap recap;
+
+  @override
+  Widget build(BuildContext context) {
+    final SpokenAmountFormatter amounts = const SpokenAmountFormatter();
+    final String summary = voiceRecapText(l10n, recap, amounts);
+    if (summary.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          summary,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
     );
   }
 }

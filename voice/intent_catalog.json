@@ -430,7 +430,7 @@
       "id": "create_product",
       "handler": "create_product",
       "onlineOnly": true,
-      "risk": "WRITE_REVERSIBLE",
+      "risk": "WRITE_SENSITIVE",
       "description": "Créer un nouvel article dans le catalogue de la boutique.",
       "triggers": [
         "creer produit",
@@ -495,7 +495,7 @@
       "id": "update_product_price",
       "handler": "update_product_price",
       "onlineOnly": true,
-      "risk": "WRITE_REVERSIBLE",
+      "risk": "WRITE_SENSITIVE",
       "referencePrice": "sale_price",
       "description": "Mettre à jour le prix de vente d'un produit existant.",
       "triggers": [

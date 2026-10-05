@@ -43,19 +43,51 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_out
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/intent_definition.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/voice_config.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/command_id_factory.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_handler.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_registry.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/ports/spoken_product_resolver.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/services/answer_application.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/command_validator.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/decision_policy.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/execute_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_message.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_outcome.dart';
+import 'package:kiosk_mind/features/voice_assistant/presentation/state/voice_recap.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/widgets/voice_message_text.dart';
 
 import 'fake_clock.dart';
+
+/// Resolves a spoken name against the same products the reader was given.
+///
+/// [AnswerApplication] needs one resolved name rather than the catalog itself, so
+/// the port is narrowed here. This double matches a name or an alias exactly, which
+/// is all the confirmations in this group need: a yes or a no settles a doubt
+/// without naming anything.
+final class _SpokenNameResolver implements SpokenProductResolver {
+  const _SpokenNameResolver(this._products);
+
+  final List<ProductSnapshot> _products;
+
+  @override
+  ProductSnapshot? resolve(String spokenName) {
+    final String spoken = spokenName.toLowerCase();
+    for (final ProductSnapshot product in _products) {
+      if (product.name.toLowerCase() == spoken) {
+        return product;
+      }
+      if (product.aliases.any(
+        (String alias) => alias.toLowerCase() == spoken,
+      )) {
+        return product;
+      }
+    }
+    return null;
+  }
+}
 
 final class _MemoryProductRepo implements ProductRepository {
   final Map<String, Product> products = <String, Product>{};
@@ -190,6 +222,7 @@ void main() {
   late DialogManager dialog;
   late DecisionPolicy policy;
   late CommandValidator validator;
+  late AnswerApplication answerApplication;
 
   setUp(() async {
     final String jsonContent = await File(
@@ -205,7 +238,7 @@ void main() {
     policy = DecisionPolicy(catalog: catalog);
     validator = CommandValidator(config: const VoiceConfig(), intents: catalog);
 
-    catalogReader = InMemoryProductCatalog(<ProductSnapshot>[
+    final List<ProductSnapshot> products = <ProductSnapshot>[
       const ProductSnapshot(
         id: 'prod-sucre',
         name: 'Sucre',
@@ -228,7 +261,13 @@ void main() {
         averageDailyQty: 1,
         aliases: <String>['lait'],
       ),
-    ]);
+    ];
+    catalogReader = InMemoryProductCatalog(products);
+
+    answerApplication = AnswerApplication(
+      intents: catalog,
+      resolver: _SpokenNameResolver(products),
+    );
   });
 
   VoiceHandlers createHandlers({
@@ -304,7 +343,7 @@ void main() {
 
   group('Bit-en-bit End-to-End Pipeline for 10 Online Tools', () {
     test(
-      'create_product: parses, decides executeWithUndo, creates product and speaks recap',
+      'create_product: parses, asks confirmation, creates product once confirmed and speaks recap',
       () async {
         final VoiceHandlers handlers = createHandlers();
         final ExecuteCommand executor = createExecutor(handlers);
@@ -336,27 +375,44 @@ void main() {
         final doubts = validator.validate(proposal);
         expect(doubts, isEmpty);
 
-        // 3. Policy: WRITE_REVERSIBLE -> executeWithUndo (NOT askConfirmation without reason!)
+        // 3. Policy: WRITE_SENSITIVE -> askConfirmation on the first turn
         final Decision decision = policy.decide(proposal);
-        expect(decision.outcome, equals(DecisionOutcome.executeWithUndo));
-        expect(decision.executes, isTrue);
+        expect(decision.outcome, equals(DecisionOutcome.askConfirmation));
+        expect(decision.executes, isFalse);
+        dialog.ask(decision, proposal: proposal);
+        expect(dialog.state, equals(VoiceDialogState.waitingForConfirmation));
+        expect(dialog.pending!.slot, equals(ClarificationSlot.confirmed));
 
-        // 4. Execution
+        // 4. The merchant says yes: the confirmation is recorded, not the command.
+        final CommandProposal confirmed = answerApplication.apply(
+          proposal,
+          asked: dialog.pending!.reason,
+          value: true,
+        );
+        expect(proposal.valueOf<bool>(kConfirmedSlot), isNull);
+        expect(confirmed.valueOf<bool>(kConfirmedSlot), isTrue);
+
+        // 5. Policy: still sensitive, but confirmed -> execute
+        final Decision confirmedDecision = policy.decide(confirmed);
+        expect(confirmedDecision.outcome, equals(DecisionOutcome.execute));
+        expect(confirmedDecision.executes, isTrue);
+
+        // 6. Execution
         final CommandExecution execution = await executor.run(
-          decision: decision,
-          proposal: proposal,
+          decision: confirmedDecision,
+          proposal: confirmed,
         );
         expect(execution.isExecuted, isTrue);
         expect(execution.failure, isNull);
 
-        // 5. Verify product was saved in repository with ID preserved
+        // 7. Verify product was saved in repository with ID preserved
         final Product? created = await productRepo.getProductById('prod-cmd-1');
         expect(created, isNotNull);
         expect(created!.name, equals('Savon Omo'));
         expect(created.salePrice, equals(500));
         expect(created.quantity, equals(10));
 
-        // 6. Outcome and Spoken Text
+        // 8. Outcome and Spoken Text
         final VoiceOutcome? outcome = outcomeOf(execution);
         expect(outcome, isA<ProductCreated>());
         final ProductCreated productCreated = outcome! as ProductCreated;
@@ -370,11 +426,23 @@ void main() {
             'Produit Savon Omo créé à cinq cents francs avec un stock initial de dix.',
           ),
         );
+
+        // 9. The recap the confirmation showed named the command to authorise.
+        final VoiceRecap? recap = await pendingRecapOf(
+          proposal,
+          (String productId) async => null,
+        );
+        expect(recap, isNotNull);
+        expect(recap!.intentId, equals('create_product'));
+        expect(
+          recap.details.map((VoiceRecapDetail detail) => detail.key),
+          containsAll(<String>['name', 'price', 'purchasePrice', 'initialQty']),
+        );
       },
     );
 
     test(
-      'update_product_price: parses, decides executeWithUndo, updates price and speaks recap',
+      'update_product_price: parses, asks confirmation, updates price once confirmed and speaks recap',
       () async {
         // Pre-populate product in repo
         await productRepo.createProduct(
@@ -412,23 +480,39 @@ void main() {
         expect(proposal!.intentId, equals('update_product_price'));
         expect(proposal.doubts, isEmpty);
 
-        // 2. Policy: WRITE_REVERSIBLE -> executeWithUndo
+        // 2. Policy: WRITE_SENSITIVE -> askConfirmation, so nothing changes yet
         final Decision decision = policy.decide(proposal);
-        expect(decision.outcome, equals(DecisionOutcome.executeWithUndo));
-        expect(decision.executes, isTrue);
+        expect(decision.outcome, equals(DecisionOutcome.askConfirmation));
+        expect(decision.executes, isFalse);
+        dialog.ask(decision, proposal: proposal);
+        expect(dialog.state, equals(VoiceDialogState.waitingForConfirmation));
+        expect(
+          (await productRepo.getProductById('prod-sucre'))!.salePrice,
+          equals(600),
+        );
 
-        // 3. Execution
+        // 3. The merchant says yes, and only then does the policy run the write.
+        final CommandProposal confirmed = answerApplication.apply(
+          proposal,
+          asked: dialog.pending!.reason,
+          value: true,
+        );
+        final Decision confirmedDecision = policy.decide(confirmed);
+        expect(confirmedDecision.outcome, equals(DecisionOutcome.execute));
+        expect(confirmedDecision.executes, isTrue);
+
+        // 4. Execution
         final CommandExecution execution = await executor.run(
-          decision: decision,
-          proposal: proposal,
+          decision: confirmedDecision,
+          proposal: confirmed,
         );
         expect(execution.isExecuted, isTrue);
 
-        // 4. Verify product updated in repository
+        // 5. Verify product updated in repository
         final Product? updated = await productRepo.getProductById('prod-sucre');
         expect(updated!.salePrice, equals(700));
 
-        // 5. Outcome and Spoken Text
+        // 6. Outcome and Spoken Text
         final VoiceOutcome? outcome = outcomeOf(execution);
         expect(outcome, isA<ProductPriceUpdated>());
         final ProductPriceUpdated priceUpdated =
@@ -442,6 +526,24 @@ void main() {
           contains(
             'Le prix de Sucre a été mis à jour à sept cents francs (ancien prix : six cents francs).',
           ),
+        );
+
+        // 7. The recap named the product and the figure, read from the catalog
+        //    because the proposal only carries its identifier.
+        final VoiceRecap? recap = await pendingRecapOf(
+          proposal,
+          (String productId) async => productId == 'prod-sucre'
+              ? (await catalogReader.findById('prod-sucre'))
+              : null,
+        );
+        expect(recap!.lines.map((VoiceRecapLine line) => line.name), <String>[
+          'Sucre',
+        ]);
+        expect(
+          recap.details
+              .firstWhere((VoiceRecapDetail d) => d.key == 'newPrice')
+              .amount,
+          equals(700.0),
         );
       },
     );
