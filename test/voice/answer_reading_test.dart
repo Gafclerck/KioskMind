@@ -97,9 +97,18 @@ void main() {
     (said: 'ok', asked: DoubtKind.amountMismatch, gives: true),
     (said: 'exact', asked: DoubtKind.amountMismatch, gives: true),
     (said: 'euh oui', asked: DoubtKind.amountMismatch, gives: true),
+    (said: "d'accord", asked: DoubtKind.amountMismatch, gives: true),
+    (said: 'je confirme', asked: DoubtKind.implausibleQuantity, gives: true),
+    (said: 'confirme', asked: DoubtKind.amountMismatch, gives: true),
+    (said: 'valide', asked: DoubtKind.implausibleQuantity, gives: true),
+    (said: "c'est bon", asked: DoubtKind.amountMismatch, gives: true),
+    (said: 'vas-y', asked: DoubtKind.implausibleQuantity, gives: true),
+    (said: 'yes', asked: DoubtKind.amountMismatch, gives: true),
     // Anything that is not a yes leaves the doubt standing: a merchant who says
     // "non" has not agreed to the sale.
     (said: 'non', asked: DoubtKind.amountMismatch, gives: false),
+    (said: "non c'est pas bon", asked: DoubtKind.amountMismatch, gives: false),
+    (said: 'annule', asked: DoubtKind.implausibleQuantity, gives: false),
     (said: 'je ne sais pas', asked: DoubtKind.amountMismatch, gives: false),
     (said: 'sucre', asked: DoubtKind.implausibleQuantity, gives: false),
     (said: '', asked: DoubtKind.amountMismatch, gives: null),

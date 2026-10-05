@@ -147,6 +147,24 @@ void main() {
       expect(items?.first.spokenAmount, equals(4000.0));
     });
 
+    test('adds missingQuantity doubt when restock item has null qty', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'record_restock',
+          'items': <Map<String, dynamic>>[
+            <String, dynamic>{'productId': 'p_riz', 'qty': null},
+          ],
+        },
+      );
+
+      final proposal = await parser.parse('reçu du riz');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('record_restock'));
+      expect(proposal.hasDoubt(DoubtKind.missingQuantity), isTrue);
+    });
+
     test('parses cancel_last_sale intent with empty slots', () async {
       final parser = RemoteCloudIntentParser(
         catalogReader: catalog,
@@ -187,6 +205,179 @@ void main() {
       final proposal = await parser.parse('quel temps fait-il');
 
       expect(proposal, isNull);
+    });
+
+    test('parses query_daily_stats with optional date', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'query_daily_stats',
+          'date': '2026-03-01',
+        },
+      );
+
+      final proposal = await parser.parse('combien j\'ai vendu aujourd\'hui');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('query_daily_stats'));
+      expect(proposal.valueOf<String>('date'), equals('2026-03-01'));
+      expect(proposal.origin, equals(ProposalOrigin.languageModel));
+    });
+
+    test('parses query_low_stock with optional threshold', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'query_low_stock',
+          'level': 'rupture',
+        },
+      );
+
+      final proposal = await parser.parse('quels produits sont en rupture');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('query_low_stock'));
+      expect(proposal.valueOf<String>('level'), equals('rupture'));
+    });
+
+    test('parses query_product_price with valid product', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'query_product_price',
+          'productId': 'p_sucre',
+        },
+      );
+
+      final proposal = await parser.parse('quel est le prix du sucre');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('query_product_price'));
+      expect(proposal.valueOf<String>(kProductIdSlot), equals('p_sucre'));
+    });
+
+    test('parses record_stock_out with qty and reason', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'record_stock_out',
+          'productId': 'p_sucre',
+          'qty': 3.0,
+          'reason': 'perte',
+        },
+      );
+
+      final proposal = await parser.parse('retire 3 sucres avaries');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('record_stock_out'));
+      expect(proposal.valueOf<String>(kProductIdSlot), equals('p_sucre'));
+      expect(proposal.valueOf<double>('qty'), equals(3.0));
+      expect(proposal.valueOf<String>('reason'), equals('perte'));
+    });
+
+    test('parses navigate_to_page with destination', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'navigate_to_page',
+          'destination': 'sales',
+        },
+      );
+
+      final proposal = await parser.parse('va aux ventes');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('navigate_to_page'));
+      expect(proposal.valueOf<String>('destination'), equals('sales'));
+    });
+
+    test('parses export_sales_report with format', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'export_sales_report',
+          'format': 'pdf',
+        },
+      );
+
+      final proposal = await parser.parse('exporte le rapport en pdf');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('export_sales_report'));
+      expect(proposal.valueOf<String>('format'), equals('pdf'));
+    });
+
+    test('parses create_product with name, price and stock', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'create_product',
+          'name': 'Biscuit',
+          'price': 250.0,
+          'purchasePrice': 200.0,
+          'initialQuantity': 20.0,
+          'unit': 'PIECE',
+        },
+      );
+
+      final proposal = await parser.parse('cree le produit biscuit a 250');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('create_product'));
+      expect(proposal.valueOf<String>('name'), equals('Biscuit'));
+      expect(proposal.valueOf<double>('price'), equals(250.0));
+      expect(proposal.valueOf<double>('purchasePrice'), equals(200.0));
+      expect(proposal.valueOf<double>('initialQty'), equals(20.0));
+      expect(proposal.valueOf<String>('unit'), equals('PIECE'));
+    });
+
+    test('parses update_product_price with new price', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'update_product_price',
+          'productId': 'p_sucre',
+          'newPrice': 800.0,
+        },
+      );
+
+      final proposal = await parser.parse('change le prix du sucre a 800');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('update_product_price'));
+      expect(proposal.valueOf<String>(kProductIdSlot), equals('p_sucre'));
+      expect(proposal.valueOf<double>('newPrice'), equals(800.0));
+    });
+
+    test('parses query_sales_history with limit', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'query_sales_history',
+          'limit': 5,
+        },
+      );
+
+      final proposal = await parser.parse('montre les dernieres ventes');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('query_sales_history'));
+      expect(proposal.valueOf<int>('limit'), equals(5));
+    });
+
+    test('parses query_business_info with empty slots', () async {
+      final parser = RemoteCloudIntentParser(
+        catalogReader: catalog,
+        cloudCaller: (functionName, parameters) async => <String, dynamic>{
+          'intentId': 'query_business_info',
+        },
+      );
+
+      final proposal = await parser.parse('info boutique');
+
+      expect(proposal, isNotNull);
+      expect(proposal!.intentId, equals('query_business_info'));
     });
   });
 }

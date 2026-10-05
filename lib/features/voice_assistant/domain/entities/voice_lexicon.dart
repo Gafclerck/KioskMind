@@ -76,10 +76,42 @@ const Set<String> kCorrectionWords = <String>{'non', 'pas'};
 
 /// Words that accept what the module just read back.
 ///
-/// A confirmation is answered by a yes or a no, so this is the whole vocabulary
-/// of agreement. "Non" is absent on purpose: refusing is not an answer that
-/// settles anything, it leaves the doubt standing so the merchant is asked again.
-const Set<String> kAffirmativeWords = <String>{'oui', 'ouais', 'ok', 'exact'};
+/// A confirmation is answered by a yes or a no. Expanded with natural spoken French
+/// affirmative expressions used in kiosk commerce.
+const Set<String> kAffirmativeWords = <String>{
+  'oui',
+  'ouais',
+  'ok',
+  'exact',
+  'accord',
+  'daccord',
+  'confirme',
+  'confirmer',
+  'valide',
+  'valider',
+  'vasy',
+  'yes',
+  'absolument',
+  'parfait',
+};
+
+/// Words that reject or cancel what was asked.
+///
+/// Explicit negation words immediately prevent interpreting an answer as consent,
+/// ensuring safety-critical transactions are never recorded against merchant intent.
+const Set<String> kNegativeWords = <String>{
+  'non',
+  'nan',
+  'pas',
+  'annule',
+  'annuler',
+  'stop',
+  'quitter',
+  'refuse',
+  'refuser',
+  'laisse',
+  'jamais',
+};
 
 /// Articles opening a product name, dropped before resolving an answer.
 ///

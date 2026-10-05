@@ -1,6 +1,7 @@
 import 'package:kiosk_mind/features/profile/domain/entities/user_profile.dart';
 import 'package:kiosk_mind/features/profile/domain/repositories/user_profile_repository.dart';
 import 'package:kiosk_mind/features/profile/domain/services/avatar_upload_service.dart';
+import 'package:kiosk_mind/features/profile/presentation/providers/logout_provider.dart';
 
 class FakeUserProfileRepository implements UserProfileRepository {
   FakeUserProfileRepository({UserProfile? initialProfile})
@@ -51,5 +52,15 @@ class FakeAvatarUploadService implements AvatarUploadService {
       throw Exception('upload failed');
     }
     return urlToReturn;
+  }
+}
+
+class FakeLogoutNotifier extends LogoutNotifier {
+  int signOutCalls = 0;
+
+  @override
+  Future<bool> signOut() async {
+    signOutCalls++;
+    return true;
   }
 }

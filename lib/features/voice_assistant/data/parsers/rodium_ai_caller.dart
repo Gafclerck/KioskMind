@@ -20,6 +20,7 @@ import 'direct_gemini_caller.dart';
 final class RodiumAiCaller {
   RodiumAiCaller({
     required this.apiKey,
+    required this.systemPrompt,
     this.baseUrl = 'https://api.rodiumai.io/v1',
     this.model = 'google/gemini-1.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
@@ -30,27 +31,14 @@ final class RodiumAiCaller {
   final String baseUrl;
   final String model;
   final Duration timeout;
-  final HttpJsonPoster _httpPoster;
 
-  static const String _systemPrompt =
-      "Tu es l'assistant de caisse de KioskMind pour les commerçants d'Afrique de l'Ouest.\n"
-      "Analyse la phrase prononcée par le commerçant et identifie son intention parmi :\n"
-      "- 'record_sale' : vente d'un ou plusieurs produits.\n"
-      "- 'record_restock' : approvisionnement ou entrée en stock.\n"
-      "- 'query_stock' : demande d'information sur le stock restant.\n"
-      "- 'cancel_last_sale' : annulation de la dernière vente.\n\n"
-      "RÈGLE D'ANCRAGE STRICTE (D5) :\n"
-      "Tu dois OBLIGATOIREMENT et UNIQUEMENT utiliser les 'id' des produits qui figurent explicitement dans le catalogue fourni.\n"
-      "N'invente JAMAIS d'identifiant de produit qui n'est pas dans le catalogue.\n\n"
-      "FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR :\n"
-      "- Pour une vente :\n"
-      "  {\"intentId\": \"record_sale\", \"items\": [{\"productId\": \"<id_catalogue>\", \"qty\": 2.0, \"spokenUnitPrice\": 500}]}\n"
-      "- Pour un réapprovisionnement :\n"
-      "  {\"intentId\": \"record_restock\", \"items\": [{\"productId\": \"<id_catalogue>\", \"qty\": 5.0, \"spokenUnitCost\": 400}]}\n"
-      "- Pour une question de stock :\n"
-      "  {\"intentId\": \"query_stock\", \"productId\": \"<id_catalogue>\"}\n"
-      "- Pour une annulation :\n"
-      "  {\"intentId\": \"cancel_last_sale\"}";
+  /// What the model is told the shop can do, built from the catalog by
+  /// [KioskRegistry.buildSystemPrompt]. Required rather than defaulted: a caller
+  /// that forgot it would otherwise reach the network with a prompt describing a
+  /// different list of commands than the app has, and nothing would say so.
+  final String systemPrompt;
+
+  final HttpJsonPoster _httpPoster;
 
   Future<Map<String, dynamic>> call(
     String functionName,
@@ -69,7 +57,7 @@ final class RodiumAiCaller {
     final Map<String, dynamic> requestBody = <String, dynamic>{
       'model': model,
       'messages': <Map<String, String>>[
-        <String, String>{'role': 'system', 'content': _systemPrompt},
+        <String, String>{'role': 'system', 'content': systemPrompt},
         <String, String>{
           'role': 'user',
           'content':

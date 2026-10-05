@@ -2,79 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/formatting/french_date.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../routing/app_routes.dart';
 import '../../../navigation/navigation_index_provider.dart';
 import '../../domain/entities/user_profile.dart';
 import '../providers/logout_provider.dart';
-import '../providers/profile_stats_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../widgets/profile_avatar.dart';
 
-class ProfilePage extends ConsumerStatefulWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  ConsumerState<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends ConsumerState<ProfilePage> {
-  Future<void> _confirmSignOut() async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Se déconnecter ?'),
-          content: const Text(
-            'Votre appareil sera déconnecté. Vous pourrez vous reconnecter à tout moment.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-              child: const Text('Se déconnecter'),
-            ),
-          ],
-        );
-      },
-    );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-    final bool succeeded = await ref.read(logoutProvider.notifier).signOut();
-    if (!mounted) {
-      return;
-    }
-    if (succeeded) {
-      AppToast.show(
-        ref,
-        message: 'Déconnexion réussie',
-        type: AppToastType.info,
-      );
-    } else {
-      AppToast.show(
-        ref,
-        message:
-            ref.read(logoutProvider).errorMessage ??
-            "Une erreur est survenue, réessayez",
-        type: AppToastType.error,
-      );
-    }
-  }
-
-  void _goToSalesHistory() {
-    ref.read(navigationIndexProvider.notifier).goTo(2);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final UserProfile? profile = ref.watch(userProfileProvider).valueOrNull;
-    final ProfileStats stats = ref.watch(profileStatsProvider);
     final bool isSigningOut = ref.watch(logoutProvider).isSigningOut;
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
@@ -84,31 +27,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          _Header(
-            profile: profile,
-            onSettings: () => context.push(AppRoutes.settings),
-          ),
+          _Header(profile: profile),
           const SizedBox(height: 20),
-          _StatsGrid(
-            stats: stats,
-            profile: profile,
+          _MemberSinceCard(
+            createdAt: profile?.createdAt,
             scheme: scheme,
             textTheme: textTheme,
           ),
           const SizedBox(height: 24),
-          _SectionTitle('Navigation', textTheme),
-          const SizedBox(height: 12),
           _NavigationCard(
             scheme: scheme,
             textTheme: textTheme,
             profile: profile,
             onEditProfile: () => context.push(AppRoutes.editProfile),
-            onSalesHistory: _goToSalesHistory,
+            onSalesHistory: () =>
+                ref.read(navigationIndexProvider.notifier).goTo(2),
+            onSettings: () => context.push(AppRoutes.settings),
           ),
           const SizedBox(height: 24),
           _SignOutButton(
             isLoading: isSigningOut,
-            onPressed: _confirmSignOut,
+            onPressed: () => _confirmSignOut(context, ref),
             scheme: scheme,
             textTheme: textTheme,
           ),
@@ -118,164 +57,82 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
 
+/// En-tête sur une seule ligne : le nom de l'application à gauche, l'avatar
+/// de l'utilisateur à droite. Les informations personnelles restent dans
+/// « Mon kiosque et moi ».
 class _Header extends StatelessWidget {
-  const _Header({required this.profile, required this.onSettings});
+  const _Header({required this.profile});
 
   final UserProfile? profile;
-  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme textTheme = Theme.of(context).textTheme;
-
     return Row(
       children: [
+        Expanded(
+          child: Text(
+            'KioskMind',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+        ),
+        const SizedBox(width: 12),
         ProfileAvatar(
           photoUrl: profile?.photoUrl,
           initials: profile?.initials ?? '?',
-          radius: 30,
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                profile?.fullName.isNotEmpty == true
-                    ? profile!.fullName
-                    : 'Utilisateur',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                profile?.phone.isNotEmpty == true
-                    ? '${profile!.countryCode} ${profile!.phone}'
-                    : profile?.email ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: onSettings,
-          icon: const Icon(Icons.settings_outlined),
-          tooltip: 'Paramètres',
+          radius: 22,
         ),
       ],
     );
   }
 }
 
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({
-    required this.stats,
-    required this.profile,
+class _MemberSinceCard extends StatelessWidget {
+  const _MemberSinceCard({
+    required this.createdAt,
     required this.scheme,
     required this.textTheme,
   });
 
-  final ProfileStats stats;
-  final UserProfile? profile;
-  final ColorScheme scheme;
-  final TextTheme textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            label: 'Membre depuis',
-            value: _formatMemberSince(profile?.createdAt),
-            scheme: scheme,
-            textTheme: textTheme,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            label: 'Ventes',
-            value: '${stats.salesCount}',
-            scheme: scheme,
-            textTheme: textTheme,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            label: 'Produits actifs',
-            value: '${stats.activeProducts}',
-            scheme: scheme,
-            textTheme: textTheme,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatMemberSince(DateTime? date) {
-    if (date == null) {
-      return '—';
-    }
-    final String day = date.day.toString().padLeft(2, '0');
-    final String month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.scheme,
-    required this.textTheme,
-  });
-
-  final String label;
-  final String value;
+  final DateTime? createdAt;
   final ColorScheme scheme;
   final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: scheme.surfaceBright,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: scheme.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: scheme.primary,
-              ),
+          Icon(Icons.calendar_today_outlined, color: scheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Membre depuis',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  formatFrenchDate(createdAt),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -291,6 +148,7 @@ class _NavigationCard extends StatelessWidget {
     required this.profile,
     required this.onEditProfile,
     required this.onSalesHistory,
+    required this.onSettings,
   });
 
   final ColorScheme scheme;
@@ -298,6 +156,7 @@ class _NavigationCard extends StatelessWidget {
   final UserProfile? profile;
   final VoidCallback onEditProfile;
   final VoidCallback onSalesHistory;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -308,20 +167,23 @@ class _NavigationCard extends StatelessWidget {
       if (market != null && market.isNotEmpty) market,
     ].join(' · ');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surfaceBright,
+    // Material plutôt qu'un Container coloré : les ListTile y peignent leurs
+    // effets d'encre, ils ont besoin d'un ancêtre Material au plus proche.
+    return Material(
+      color: scheme.surfaceBright,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: scheme.outlineVariant),
+        side: BorderSide(color: scheme.outlineVariant),
       ),
       child: Column(
         children: [
           _NavTile(
             icon: Icons.storefront_outlined,
-            title: 'Mon kiosque',
+            title: 'Mon kiosque et moi',
             subtitle: kioskSummary.isNotEmpty
                 ? kioskSummary
-                : 'À compléter dans « Modifier le profil »',
+                : 'Complétez vos informations',
             onTap: onEditProfile,
             scheme: scheme,
             textTheme: textTheme,
@@ -346,9 +208,9 @@ class _NavigationCard extends StatelessWidget {
             color: scheme.outlineVariant,
           ),
           _NavTile(
-            icon: Icons.edit_outlined,
-            title: 'Modifier le profil',
-            onTap: onEditProfile,
+            icon: Icons.settings_outlined,
+            title: 'Paramètres',
+            onTap: onSettings,
             scheme: scheme,
             textTheme: textTheme,
           ),
@@ -458,14 +320,42 @@ class _SignOutButton extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text, this.textTheme);
-
-  final String text;
-  final TextTheme textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(text, style: textTheme.titleLarge);
+Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+  final bool? confirmed = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        title: const Text('Se déconnecter ?'),
+        content: const Text(
+          'Votre appareil sera déconnecté. Vous pourrez vous reconnecter à tout moment.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Se déconnecter'),
+          ),
+        ],
+      );
+    },
+  );
+  if (confirmed != true || !context.mounted) {
+    return;
   }
+  final bool succeeded = await ref.read(logoutProvider.notifier).signOut();
+  if (!context.mounted) {
+    return;
+  }
+  AppToast.show(
+    ref,
+    message: succeeded
+        ? 'Déconnexion réussie'
+        : ref.read(logoutProvider).errorMessage ??
+              "Une erreur est survenue, réessayez",
+    type: succeeded ? AppToastType.info : AppToastType.error,
+  );
 }

@@ -6,6 +6,7 @@ import '../../domain/entities/stock_movement.dart';
 import '../providers/product_providers.dart';
 import '../widgets/formatters.dart';
 import '../widgets/product_card.dart';
+import '../widgets/product_image.dart';
 import 'record_stock_movement_page.dart';
 
 /// Fiche produit détaillée : marge, niveau de stock, historique et actions.
@@ -40,17 +41,10 @@ class ProductDetailPage extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
+              ProductImage(
+                name: product.name,
+                imageUrl: product.imageUrl,
                 radius: 28,
-                backgroundColor: scheme.primaryContainer,
-                child: Text(
-                  product.name.characters.first.toUpperCase(),
-                  style: TextStyle(
-                    color: scheme.onPrimaryContainer,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
               ),
               const SizedBox(width: 16),
               Expanded(

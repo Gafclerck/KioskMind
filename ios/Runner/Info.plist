@@ -33,6 +33,10 @@
 	<string>Le micro enregistre votre voix pour transformer vos commandes en ventes. L'enregistrement ne part pas de cet appareil.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>La reconnaissance vocale transforme vos mots en commandes. Elle fonctionne sans connexion.</string>
+	<!-- Photos produits et photo de profil : iOS refuse d'ouvrir la galerie sans
+	     une phrase qui explique la destination de la photo. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>La galerie sert a choisir la photo d'un produit ou votre photo de profil. L'image est envoyee a votre espace de stockage d'images.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

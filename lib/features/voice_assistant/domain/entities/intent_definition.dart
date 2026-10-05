@@ -18,16 +18,26 @@ enum IntentRisk {
 
 /// What a slot holds. The set is closed: an unknown type is a catalog error, not
 /// something to pass through to the LLM.
+///
+/// [productReference] is named after what it points at rather than after the field
+/// that carries it, because the field is `productId` for every intent that takes
+/// one and the type says nothing about a name.
 enum SlotType {
-  productName('product_name'),
+  productReference('product_reference'),
   quantity('quantity'),
   unit('unit'),
   money('money'),
-  itemList('item_list');
+  itemList('item_list'),
+  string('string'),
+  number('number');
 
   const SlotType(this.code);
 
   final String code;
+
+  /// Whether the slot refers to a product the shop already sells, which is what
+  /// the grounding rule (D5) is about.
+  bool get referencesProduct => this == SlotType.productReference;
 }
 
 /// Which price of the product a spoken amount is compared against.
@@ -85,6 +95,7 @@ final class IntentDefinition {
     required this.examples,
     required this.slots,
     this.referencePrice = ReferencePrice.none,
+    this.onlineOnly = false,
   });
 
   final String id;
@@ -106,8 +117,23 @@ final class IntentDefinition {
   /// Which product price an announced amount is compared against.
   final ReferencePrice referencePrice;
 
+  /// Whether this intent is strictly reserved for the online LLM mode.
+  final bool onlineOnly;
+
   /// Whether running this command takes a list of lines, from the declared shape.
   bool get takesItems => slots.any((SlotDefinition slot) => slot.isItemList);
+
+  /// Whether this command works on a product the shop already sells.
+  ///
+  /// Read off the declared slots rather than off the identifier: a slot of type
+  /// [SlotType.productReference] is a reference into the catalog, and its presence
+  /// is exactly what the grounding rule has to mention. Deriving it keeps the rule
+  /// true when a command is added instead of quietly leaving it out of the prompt.
+  bool get referencesExistingProducts => slots.any(
+    (SlotDefinition slot) =>
+        slot.type.referencesProduct ||
+        slot.lineSlots.any((SlotDefinition line) => line.type.referencesProduct),
+  );
 }
 
 /// The validated contents of `voice/intent_catalog.json`.
@@ -133,4 +159,15 @@ final class IntentCatalog {
   List<String> get ids => <String>[
     for (final IntentDefinition intent in intents) intent.id,
   ];
+
+  /// Intents available offline.
+  List<IntentDefinition> get offlineIntents =>
+      intents.where((IntentDefinition intent) => !intent.onlineOnly).toList();
+
+  /// Intents available online (all 14 intents).
+  List<IntentDefinition> get onlineIntents => intents;
+
+  /// Intents restricted to online-only execution (10 tools).
+  List<IntentDefinition> get onlineOnlyIntents =>
+      intents.where((IntentDefinition intent) => intent.onlineOnly).toList();
 }

@@ -161,24 +161,30 @@ final class DialogManager {
     if (!decision.isQuestion) {
       return;
     }
-    final DoubtKind? reason = decision.reason;
-    if (reason == null) {
-      return;
-    }
     _touch();
     _closeUndoWindow();
+    _awaiting = proposal;
+    if (decision.outcome == DecisionOutcome.askConfirmation) {
+      _ask(
+        ClarificationSlot.confirmed,
+        decision.reason ?? DoubtKind.amountMismatch,
+      );
+      return;
+    }
     if (_turns >= config.maxClarificationTurns) {
       _offerManualEntry();
       return;
     }
-    _awaiting = proposal;
-    if (decision.outcome == DecisionOutcome.askConfirmation) {
-      _ask(ClarificationSlot.confirmed, reason);
+    final DoubtKind? reason = decision.reason;
+    if (reason == null) {
       return;
     }
     _turns += 1;
     _ask(
-      ClarificationSlot.forDoubt(reason, hasItems: _hasItems(proposal)),
+      ClarificationSlot.forDoubt(
+        reason,
+        hasItems: _hasItems(proposal),
+      ),
       reason,
     );
   }
@@ -242,7 +248,15 @@ final class DialogManager {
     _manualEntry = true;
   }
 
-  void _touch() => _lastActivity = clock.now();
+  /// Records activity against the clock, resetting session and question deadlines.
+  void touch() {
+    _lastActivity = clock.now();
+    if (_askedAt != null) {
+      _askedAt = clock.now();
+    }
+  }
+
+  void _touch() => touch();
 
   /// A session nobody has spoken into has not expired: it has not started.
   bool get _sessionExpired {
@@ -254,8 +268,16 @@ final class DialogManager {
   /// Whether the pending question went past its deadline.
   bool get _questionExpired {
     final DateTime? asked = _askedAt;
-    return asked != null &&
-        clock.now().difference(asked) >= config.questionTimeout;
+    if (asked == null) {
+      return false;
+    }
+    final bool isConfirmation =
+        _pending?.slot == ClarificationSlot.confirmed ||
+        _state == VoiceDialogState.waitingForConfirmation;
+    final Duration timeout = isConfirmation
+        ? config.confirmationTimeout
+        : config.questionTimeout;
+    return clock.now().difference(asked) >= timeout;
   }
 
   /// A question in progress takes precedence over the undo banner, so a merchant

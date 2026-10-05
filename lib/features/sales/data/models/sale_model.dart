@@ -14,29 +14,47 @@ class SaleModel extends Sale {
     super.cancelledAt,
   });
 
+  static DateTime _parseDateTime(dynamic value, [DateTime? fallback]) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    return fallback ?? DateTime.now();
+  }
+
   factory SaleModel.fromMap(Map<String, dynamic> map, {String? id}) {
+    final parsedDateTime = _parseDateTime(map['dateTime']);
     return SaleModel(
       id: id ?? map['id'] as String?,
-      dateTime: (map['dateTime'] as Timestamp).toDate(),
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      total: (map['total'] as num).toDouble(),
-      items: (map['items'] as List<dynamic>)
+      dateTime: parsedDateTime,
+      createdAt: _parseDateTime(map['createdAt'], parsedDateTime),
+      total: (map['total'] as num?)?.toDouble() ?? 0.0,
+      items: (map['items'] as List<dynamic>? ?? const [])
           .map(
             (item) => SaleItem(
-              productId: item['productId'] as String,
-              name: item['name'] as String,
-              qty: (item['qty'] as num).toDouble(),
-              unitPrice: (item['unitPrice'] as num).toDouble(),
+              productId: item['productId'] as String? ?? '',
+              name: item['name'] as String? ?? '',
+              qty: (item['qty'] as num?)?.toDouble() ?? 0.0,
+              unitPrice: (item['unitPrice'] as num?)?.toDouble() ?? 0.0,
               unitCost: item['unitCost'] != null
                   ? (item['unitCost'] as num).toDouble()
                   : null,
             ),
           )
           .toList(),
-      source: map['source'] as String,
-      status: map['status'] as String,
+      source: map['source'] as String? ?? 'MANUAL',
+      status: map['status'] as String? ?? 'COMPLETED',
       cancelledAt: map['cancelledAt'] != null
-          ? (map['cancelledAt'] as Timestamp).toDate()
+          ? _parseDateTime(map['cancelledAt'])
           : null,
     );
   }

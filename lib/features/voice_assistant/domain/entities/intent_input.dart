@@ -121,3 +121,159 @@ final class CancelLastSaleInput extends IntentInput {
     return <String, Object?>{'saleId': saleId};
   }
 }
+
+/// `query_daily_stats` input.
+final class QueryDailyStatsInput extends IntentInput {
+  const QueryDailyStatsInput({this.date});
+
+  final String? date;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{if (date != null) 'date': date};
+  }
+}
+
+/// `query_low_stock` input.
+final class QueryLowStockInput extends IntentInput {
+  const QueryLowStockInput({this.level});
+
+  final String? level;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{if (level != null) 'level': level};
+  }
+}
+
+/// `query_product_price` input.
+final class QueryProductPriceInput extends IntentInput {
+  const QueryProductPriceInput({required this.productId});
+
+  final String productId;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{kProductIdSlot: productId};
+  }
+}
+
+/// `record_stock_out` input.
+final class RecordStockOutInput extends IntentInput {
+  const RecordStockOutInput({
+    required this.productId,
+    required this.qty,
+    required this.reason,
+    this.note,
+  });
+
+  final String productId;
+  final double qty;
+  final String reason;
+  final String? note;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{
+      kProductIdSlot: productId,
+      'qty': qty,
+      'reason': reason,
+      if (note != null) 'note': note,
+    };
+  }
+}
+
+/// `navigate_to_page` input.
+final class NavigateToPageInput extends IntentInput {
+  const NavigateToPageInput({required this.destination});
+
+  final String destination;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{'destination': destination};
+  }
+}
+
+/// `export_sales_report` input.
+final class ExportSalesReportInput extends IntentInput {
+  const ExportSalesReportInput({required this.format, this.period});
+
+  final String format;
+  final String? period;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{
+      'format': format,
+      if (period != null) 'period': period,
+    };
+  }
+}
+
+/// `create_product` input.
+final class CreateProductInput extends IntentInput {
+  const CreateProductInput({
+    required this.name,
+    required this.price,
+    this.purchasePrice,
+    this.initialQty,
+    this.category,
+    this.unit,
+  });
+
+  final String name;
+  final double price;
+  final double? purchasePrice;
+  final double? initialQty;
+  final String? category;
+  final String? unit;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{
+      'name': name,
+      'price': price,
+      if (purchasePrice != null) 'purchasePrice': purchasePrice,
+      if (initialQty != null) 'initialQty': initialQty,
+      if (category != null) 'category': category,
+      if (unit != null) 'unit': unit,
+    };
+  }
+}
+
+/// `update_product_price` input.
+final class UpdateProductPriceInput extends IntentInput {
+  const UpdateProductPriceInput({
+    required this.productId,
+    required this.newPrice,
+  });
+
+  final String productId;
+  final double newPrice;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{kProductIdSlot: productId, 'newPrice': newPrice};
+  }
+}
+
+/// `query_sales_history` input.
+final class QuerySalesHistoryInput extends IntentInput {
+  const QuerySalesHistoryInput({this.limit});
+
+  final int? limit;
+
+  @override
+  Map<String, Object?> toArguments() {
+    return <String, Object?>{if (limit != null) 'limit': limit};
+  }
+}
+
+/// `query_business_info` input.
+final class QueryBusinessInfoInput extends IntentInput {
+  const QueryBusinessInfoInput();
+
+  @override
+  Map<String, Object?> toArguments() => const <String, Object?>{};
+}

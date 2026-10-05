@@ -3,6 +3,8 @@ import '../../../../features/products_stock/domain/repositories/product_reposito
 import '../../domain/entities/product_snapshot.dart';
 import '../../domain/ports/product_catalog_reader.dart';
 
+import 'product_alias_generator.dart';
+
 /// Real adapter implementing [ProductCatalogReader] backed by [ProductRepository].
 ///
 /// Converts domain [Product] entities to [ProductSnapshot] value objects so the
@@ -36,7 +38,7 @@ final class RealProductCatalogReader implements ProductCatalogReader {
     return ProductSnapshot(
       id: product.id,
       name: product.name,
-      aliases: const <String>[],
+      aliases: ProductAliasGenerator.generate(product.name),
       unit: product.unit,
       price: product.salePrice.toDouble(),
       purchasePrice: product.purchasePrice.toDouble(),
