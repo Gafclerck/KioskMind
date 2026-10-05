@@ -4,6 +4,7 @@ import '../../../auth/domain/auth_gateway.dart';
 import '../../../auth/presentation/providers/auth_gateway_provider.dart';
 import '../../../auth/presentation/providers/auth_state_provider.dart';
 import '../../domain/entities/user_profile.dart';
+import '../../domain/services/avatar_upload_service.dart';
 import 'avatar_upload_service_provider.dart';
 import 'user_profile_provider.dart';
 
@@ -145,6 +146,12 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
         photoUrl: url ?? state.photoUrl,
       );
       return url != null;
+    } on AvatarUploadException catch (error) {
+      state = state.copyWith(
+        isUploadingAvatar: false,
+        errorMessage: error.message,
+      );
+      return false;
     } catch (_) {
       state = state.copyWith(
         isUploadingAvatar: false,
