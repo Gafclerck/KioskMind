@@ -1,5 +1,5 @@
-/// Configuration de l'API Unsigned Cloudinary utilisée pour téléverser les
-/// photos de profil.
+/// Configuration de l'API Unsigned Cloudinary, partagée par les features qui
+/// téléversent une image.
 ///
 /// Les valeurs arrivent à la compilation et ne sont donc jamais écrites dans le
 /// dépôt. On part du template du dépôt :
@@ -22,7 +22,7 @@
 abstract final class CloudinaryConfig {
   const CloudinaryConfig._();
 
-  /// Nom du cloud Cloudinary qui héberge les avatars.
+  /// Nom du cloud Cloudinary qui héberge les images.
   static const String cloudName = String.fromEnvironment(
     'CLOUDINARY_CLOUD_NAME',
   );
