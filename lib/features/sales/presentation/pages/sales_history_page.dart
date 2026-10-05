@@ -18,10 +18,26 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   DateTime? _customStart;
   DateTime? _customEnd;
 
+  late Future<List<Sale>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _future = ref.read(getSalesHistoryProvider).call();
+  }
+
+  Future<void> _refresh() async {
+    ref.invalidate(getSalesHistoryProvider);
+    setState(_load);
+    await _future;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final getSalesHistory = ref.watch(getSalesHistoryProvider);
-
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9F5),
       appBar: AppBar(
@@ -36,15 +52,13 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              ref.invalidate(getSalesHistoryProvider);
-            },
+            onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF156C61)),
           ),
         ],
       ),
       body: FutureBuilder<List<Sale>>(
-        future: getSalesHistory(),
+        future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -60,9 +74,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   const Text('Impossible de charger les ventes.'),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () {
-                      ref.invalidate(getSalesHistoryProvider);
-                    },
+                    onPressed: _refresh,
                     child: const Text('Réessayer'),
                   ),
                 ],
@@ -70,11 +82,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             );
           }
 
-          final sales = _filterSales(snapshot.data ?? []);
-
-          if (sales.isEmpty) {
-            return _emptyState();
-          }
+          final allSales = snapshot.data ?? [];
+          final sales = _filterSales(allSales);
 
           final completedSales = sales.where(
             (sale) => sale.status != 'CANCELLED',
@@ -87,26 +96,28 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
           return RefreshIndicator(
             color: const Color(0xFF156C61),
-            onRefresh: () async {
-              ref.invalidate(getSalesHistoryProvider);
-              await Future<void>.delayed(const Duration(milliseconds: 300));
-            },
+            onRefresh: _refresh,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 _periodSelector(),
                 const SizedBox(height: 16),
                 _summaryCard(total, completedSales.length),
                 const SizedBox(height: 20),
-                Text(
-                  '${sales.length} vente${sales.length > 1 ? 's' : ''}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                if (sales.isEmpty)
+                  _emptyState(hasAnySales: allSales.isNotEmpty)
+                else ...[
+                  Text(
+                    '${sales.length} vente${sales.length > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ...sales.map((sale) => _saleCard(sale)),
+                  const SizedBox(height: 12),
+                  ...sales.map((sale) => _saleCard(sale)),
+                ],
               ],
             ),
           );
@@ -387,7 +398,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       );
 
       if (updated == true && mounted) {
-        ref.invalidate(getSalesHistoryProvider);
+        _refresh();
       }
 
       return;
@@ -432,7 +443,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
       if (!mounted) return;
 
-      ref.invalidate(getSalesHistoryProvider);
+      _refresh();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vente annulée avec succès')),
@@ -522,11 +533,39 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     });
   }
 
-  Widget _emptyState() {
-    return const Center(
-      child: Text(
-        'Aucune vente',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+  Widget _emptyState({required bool hasAnySales}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 52,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasAnySales
+                ? 'Aucune vente pour cette période'
+                : 'Aucune vente enregistrée',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF2D3748),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasAnySales
+                ? 'Sélectionnez une autre période (Cette semaine, Ce mois...) pour voir vos autres ventes.'
+                : 'Vos ventes enregistrées apparaîtront ici.',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
