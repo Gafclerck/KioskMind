@@ -52,10 +52,20 @@ final class KioskRegistry {
       .toList(growable: false);
 
   /// One line per command: what it is called and what it does.
+  ///
+  /// The descriptions come from the catalog and already end in a full stop, so the
+  /// separator is added only when one is missing: a doubled stop in a prompt is
+  /// noise the model reads as a typo, and a prompt full of typos is a prompt read
+  /// less carefully.
   String toPromptDescription() {
     return _tools
-        .map((KioskToolSpec tool) => "- '${tool.name}' : ${tool.label}.")
+        .map((KioskToolSpec tool) => "- '${tool.name}' : ${_sentenceOf(tool)}")
         .join('\n');
+  }
+
+  String _sentenceOf(KioskToolSpec tool) {
+    final String label = tool.label.trim();
+    return label.endsWith('.') ? label : '$label.';
   }
 
   /// One worked answer per command, shaped by the slots the catalog declares.
