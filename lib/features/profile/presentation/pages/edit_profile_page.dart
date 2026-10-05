@@ -16,6 +16,20 @@ class EditProfilePage extends ConsumerStatefulWidget {
   ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
+/// Types d'activité proposés dans le menu déroulant.
+const List<String> _presetBusinessTypes = <String>[
+  'Épicerie / Alimentation',
+  'Habillement / Textile',
+  'Électronique / Téléphonie',
+  'Restauration / Snack',
+  'Cosmétique / Beauté',
+  'Service',
+  'Autre',
+];
+
+/// Valeur du menu qui libère une saisie libre à côté.
+const String _customBusinessTypeOption = 'Autre';
+
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _fullNameController = TextEditingController();
@@ -23,8 +37,54 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final TextEditingController _kioskNameController = TextEditingController();
   final TextEditingController _marketLocationController =
       TextEditingController();
-  final TextEditingController _businessTypeController = TextEditingController();
+  final TextEditingController _customBusinessTypeController =
+      TextEditingController();
   bool _hydrated = false;
+
+  /// Sélection courante du menu d'activité ; `null` tant que le commerçant n'a
+  /// pas choisi. Vaut « Autre » quand la saisie libre est affichée.
+  String? _businessTypeSelection;
+
+  /// Vrai quand le champ de saisie libre d'activité est visible.
+  bool get _showsCustomBusinessType =>
+      _businessTypeSelection == _customBusinessTypeOption;
+
+  /// Traduit une valeur stockée en sélection de menu : une valeur absante ne
+  /// présélectionne rien, une valeur qui n'est plus proposée retombe sur
+  /// « Autre » pour que la saisie reste visible et modifiable.
+  String? _selectionFor(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    if (value == _customBusinessTypeOption) {
+      return _customBusinessTypeOption;
+    }
+    return _presetBusinessTypes.contains(value)
+        ? value
+        : _customBusinessTypeOption;
+  }
+
+  void _onBusinessTypeSelected(String? selection) {
+    if (selection == null) {
+      return;
+    }
+    setState(() {
+      _businessTypeSelection = selection;
+    });
+    if (selection != _customBusinessTypeOption) {
+      _customBusinessTypeController.clear();
+      ref.read(editProfileProvider.notifier).setBusinessType(selection);
+      return;
+    }
+    // « Autre » : le champ libre devient la source de vérité. S'il porte déjà
+    // du texte, on l'adopte tel quel pour ne pas perdre la saisie.
+    _onCustomBusinessTypeChanged(_customBusinessTypeController.text);
+  }
+
+  void _onCustomBusinessTypeChanged(String value) {
+    final String trimmed = value.trim();
+    ref.read(editProfileProvider.notifier).setBusinessType(trimmed);
+  }
 
   @override
   void initState() {
@@ -42,7 +102,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _phoneController.dispose();
     _kioskNameController.dispose();
     _marketLocationController.dispose();
-    _businessTypeController.dispose();
+    _customBusinessTypeController.dispose();
     super.dispose();
   }
 
@@ -55,7 +115,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _phoneController.text = profile.phone;
     _kioskNameController.text = profile.kioskName ?? '';
     _marketLocationController.text = profile.marketLocation ?? '';
-    _businessTypeController.text = profile.businessType ?? '';
+    final String? businessType = profile.businessType;
+    _businessTypeSelection = _selectionFor(businessType);
+    if (_businessTypeSelection == _customBusinessTypeOption) {
+      _customBusinessTypeController.text = businessType ?? '';
+    }
     ref.read(editProfileProvider.notifier).load(profile);
   }
 
@@ -200,17 +264,36 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       .setMarketLocation(value),
                 ),
                 const SizedBox(height: 14),
-                TextFormField(
-                  controller: _businessTypeController,
-                  textInputAction: TextInputAction.done,
+                DropdownButtonFormField<String>(
+                  initialValue: _businessTypeSelection,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: "Type d'activité",
                     prefixIcon: Icon(Icons.category_outlined),
                   ),
-                  onChanged: (String value) => ref
-                      .read(editProfileProvider.notifier)
-                      .setBusinessType(value),
+                  items: _presetBusinessTypes
+                      .map(
+                        (String type) => DropdownMenuItem<String>(
+                          value: type,
+                          child: Text(type, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _onBusinessTypeSelected,
                 ),
+                if (_showsCustomBusinessType) ...[
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _customBusinessTypeController,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'Précisez votre activité',
+                      hintText: 'Ex: vente de Hayden',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                    ),
+                    onChanged: _onCustomBusinessTypeChanged,
+                  ),
+                ],
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: state.isSubmitting || state.isUploadingAvatar
