@@ -1,9 +1,9 @@
 """
 Script de test manuel contre l'émulateur Firestore local.
-Adapté au schéma officiel (users, products, alerts, dailyStats).
+Adapté au schéma officiel (users/{uid}/products, alerts, users/{uid}/dailyStats).
 
 Lance d'abord `firebase emulators:start` dans un autre terminal,
-puis exécute ce script avec `python test_manual_v2.py`.
+puis exécute ce script avec `python test_manual.py`.
 
 Pour UC14, le déclenchement n'est PAS automatique dans l'émulateur :
 après avoir lancé ce script, ouvre un 3e terminal et tape :
@@ -19,9 +19,19 @@ os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 
 db = firestore.Client(project="kiosk-mind")
 
-USER_ID = "user_test"
+# USER_ID doit correspondre à l'UID Firebase Auth utilisé dans l'app.
+# Avec l'émulateur Auth actif, crée un compte dans l'app puis copie l'UID ici,
+# ou utilise "user_test" si tu crées manuellement le user dans l'émulateur Auth.
+USER_ID = "test_alerts_uid" # pour le test metter le même id ici que celui dans alerts_providers.dart
+
+
 PRODUIT_RIZ = "riz"
 PRODUIT_HUILE = "huile"
+
+
+def _ref_produit(produit_id):
+    """Chemin officiel : users/{uid}/products/{id}"""
+    return db.collection("users").document(USER_ID).collection("products").document(produit_id)
 
 
 def preparer_user_de_test():
@@ -32,19 +42,19 @@ def preparer_user_de_test():
         "phone": "+261000000000",
         "language": "fr",
         "currency": "XOF",
-       "fcmTokens": ["d2H7Yb-2QNyUAhCj7z3gOV:APA91bHkoZIjjh9TcC9_T7Ywly6G0pwW39IF4ZgsFGnpg04SYBp-BaYsnLIUpO0kJgQpbPr8ONWS0FT6-Dz0xPEBjZZHO-12JZaw3V_hk3AjphEyrEn-diU","fF6Und1OTXOlLFGYCdqA50:APA91bEqsKYA4_Yc2mRY907SxP-8UZi6hBfckt3IWjpvNqSfFo4HQGbl3RvWBjAf8TAFuY-fbeQpnb9XuF_sFzftPzRpSlcBSfpb4lFgBVr0eltVqw6sfgU"],
+        "fcmTokens": ["COLLER_ICI_VOTRE_TOKEN_FCM"], # "IMPORTANT N'oubliez pas ceci pour le test 
         "createdAt": datetime.now(timezone.utc),
     })
 
 
 def _ajouter_vente_journaliere(produit_id, quantite_par_jour):
-    """Ajoute/complète 7 jours de dailyStats pour un produit donné,
-    sans écraser ce qui existe déjà pour d'autres produits ce jour-là."""
+    """Ajoute 7 jours de dailyStats dans users/{uid}/dailyStats/ (schéma officiel)."""
     aujourdhui = datetime.now(timezone.utc)
     for i in range(7):
         jour = aujourdhui - timedelta(days=i)
         doc_id = jour.strftime("%Y%m%d")
-        ref = db.collection("dailyStats").document(doc_id)
+        # Chemin officiel : users/{uid}/dailyStats/{date}
+        ref = db.collection("users").document(USER_ID).collection("dailyStats").document(doc_id)
         existant = ref.get()
         donnees = existant.to_dict() if existant.exists else {
             "revenue": 0, "cost": 0, "salesCount": 0, "qtyByProduct": {}
@@ -56,16 +66,17 @@ def _ajouter_vente_journaliere(produit_id, quantite_par_jour):
 def preparer_produit_riz_pour_uc13():
     """Seuil proche du stock : destiné à tester verifier_stock (UC13)."""
     print("Création du produit 'Riz' (test UC13)...")
-    db.collection("products").document(PRODUIT_RIZ).set({
+    # Chemin officiel : users/{uid}/products/{id}
+    # Champ "quantity" (et non "stock") — aligné avec main.py
+    _ref_produit(PRODUIT_RIZ).set({
         "name": "Riz",
         "nameNormalized": "riz",
         "unit": "KG",
         "price": 2500,
         "purchasePrice": 2000,
-        "stock": 12,
+        "quantity": 12,         
         "alertThreshold": 10,
         "isArchived": False,
-        "userId": USER_ID,
         "createdAt": datetime.now(timezone.utc),
         "updatedAt": datetime.now(timezone.utc),
     })
@@ -73,20 +84,17 @@ def preparer_produit_riz_pour_uc13():
 
 
 def preparer_produit_huile_pour_uc14():
-    """Seuil bas (5) mais vente rapide (3/jour) : le stock peut être
-    AU-DESSUS du seuil tout en étant proche de la rupture — c'est le
-    cas que UC14 doit détecter, contrairement à UC13."""
+    """Seuil bas (5) mais vente rapide (3/jour) : UC14 doit détecter la rupture prévue."""
     print("Création du produit 'Huile' (test UC14)...")
-    db.collection("products").document(PRODUIT_HUILE).set({
+    _ref_produit(PRODUIT_HUILE).set({
         "name": "Huile",
         "nameNormalized": "huile",
         "unit": "LITRE",
         "price": 3000,
         "purchasePrice": 2200,
-        "stock": 8,  # au-dessus du seuil (5) -> pas ignoré par UC13
+        "quantity": 8,          
         "alertThreshold": 5,
         "isArchived": False,
-        "userId": USER_ID,
         "createdAt": datetime.now(timezone.utc),
         "updatedAt": datetime.now(timezone.utc),
     })
@@ -94,20 +102,20 @@ def preparer_produit_huile_pour_uc14():
 
 
 def simuler_une_vente_qui_declenche_l_alerte():
-    print("Simulation : le stock de riz passe de 12 à 8 (sous le seuil de 10)...")
-    db.collection("products").document(PRODUIT_RIZ).update({"stock": 8})
+    print("Simulation : la quantity de riz passe de 12 à 8 (sous le seuil de 10)...")
+    _ref_produit(PRODUIT_RIZ).update({"quantity": 8})
     print("Écriture faite. Vérifie les logs de l'émulateur Functions.\n")
 
 
 def simuler_un_stock_negatif():
-    print("Simulation : le stock de riz passe à -2 (vente malgré rupture)...")
-    db.collection("products").document(PRODUIT_RIZ).update({"stock": -2})
+    print("Simulation : la quantity de riz passe à -2 (vente malgré rupture)...")
+    _ref_produit(PRODUIT_RIZ).update({"quantity": -2})
     print("Écriture faite. Alerte NEGATIVE_STOCK attendue.\n")
 
 
 def simuler_un_reapprovisionnement():
-    print("Simulation : réapprovisionnement du riz, le stock passe à 25...")
-    db.collection("products").document(PRODUIT_RIZ).update({"stock": 25})
+    print("Simulation : réapprovisionnement du riz, la quantity passe à 25...")
+    _ref_produit(PRODUIT_RIZ).update({"quantity": 25})
     print("Écriture faite. Les alertes actives devraient se résoudre.\n")
 
 
@@ -137,7 +145,7 @@ if __name__ == "__main__":
     time.sleep(2)
     print("--- Riz après vente en négatif (NEGATIVE_STOCK attendu : ACTIVE) ---")
     afficher_les_alertes(PRODUIT_RIZ)
-
+# vous pouvez décommenter pour test
     print()
     simuler_un_reapprovisionnement()
     time.sleep(2)
@@ -151,5 +159,5 @@ if __name__ == "__main__":
     print("Dans un AUTRE terminal, lance :")
     print("  firebase functions:shell")
     print("  predictions_quotidiennes()")
-    print("\nPuis relance ce script avec seulement la vérification :")
-    print("  python -c \"from test_manual_v2 import afficher_les_alertes, PRODUIT_HUILE; afficher_les_alertes(PRODUIT_HUILE)\"")
+    print("\nPuis vérifie les alertes avec :")
+    print(f"  python -c \"from test_manual import afficher_les_alertes, PRODUIT_HUILE; afficher_les_alertes(PRODUIT_HUILE)\"")

@@ -46,7 +46,7 @@ MESSAGES = {
 
 
 # ---------------------------------------------------------------- UC13
-@firestore_fn.on_document_updated(document="products/{product_id}")
+@firestore_fn.on_document_updated(document="users/{uid}/products/{product_id}")
 def verifier_stock(event: firestore_fn.Event) -> None:
     """UC13 : notifie quand le stock franchit le seuil d'alerte,
     ou devient négatif."""
@@ -54,22 +54,26 @@ def verifier_stock(event: firestore_fn.Event) -> None:
     avant = event.data.before.to_dict() or {}
     apres = event.data.after.to_dict() or {}
     product_id = event.params["product_id"]
+    uid = event.params["uid"]
 
-    stock = apres.get("stock")
+    stock = apres.get("quantity")
     seuil = apres.get("alertThreshold")
-    if stock is None or seuil is None or stock == avant.get("stock"):
+    if stock is None or seuil is None or stock == avant.get("quantity"):
         return  # le stock n'a pas changé (ex. modification du prix)
 
     nom = apres.get("name", product_id)
-    print(f"[verifier_stock] {nom} : stock {avant.get('stock')} -> {stock}")
+    print(f"[verifier_stock] {nom} : quantity {avant.get('quantity')} -> {stock}")
+
+    # On enrichit le produit avec l'uid pour que _envoyer_notification puisse l'utiliser
+    apres_avec_uid = {**apres, "_uid": uid}
 
     if stock < 0:
         _resoudre_alerte(db, product_id, TYPE_LOW_STOCK)
         _resoudre_alerte(db, product_id, TYPE_PREDICTED)
-        _creer_alerte_et_notifier(db, product_id, nom, TYPE_NEGATIVE, stock, apres)
+        _creer_alerte_et_notifier(db, uid, product_id, nom, TYPE_NEGATIVE, stock, apres_avec_uid)
     elif stock <= seuil:
         _resoudre_alerte(db, product_id, TYPE_PREDICTED)
-        _creer_alerte_et_notifier(db, product_id, nom, TYPE_LOW_STOCK, stock, apres)
+        _creer_alerte_et_notifier(db, uid, product_id, nom, TYPE_LOW_STOCK, stock, apres_avec_uid)
     else:
         _resoudre_alerte(db, product_id, TYPE_LOW_STOCK)
         _resoudre_alerte(db, product_id, TYPE_NEGATIVE)
@@ -82,34 +86,40 @@ def predictions_quotidiennes(event: scheduler_fn.ScheduledEvent) -> None:
     documents dailyStats plutôt que sur les ventes individuelles."""
     db = firestore.client()
 
-    for doc in db.collection("products").stream():
-        produit = doc.to_dict()
-        product_id = doc.id
-        nom = produit["name"]
-        stock = produit["stock"]
-        seuil = produit["alertThreshold"]
+    for user_doc in db.collection("users").stream():
+        uid = user_doc.id
+        for doc in db.collection("users").document(uid).collection("products").stream():
+            produit = doc.to_dict()
+            product_id = doc.id
+            nom = produit.get("name", product_id)
+            stock = produit.get("quantity")
+            seuil = produit.get("alertThreshold")
 
-        if stock <= seuil:
-            continue  # déjà pris en charge par UC13 (LOW_STOCK ou NEGATIVE_STOCK)
+            if stock is None or seuil is None:
+                continue
 
-        total_vendu = _total_vendu_depuis_dailystats(db, product_id)
-        if total_vendu == 0:
-            _resoudre_alerte(db, product_id, TYPE_PREDICTED)
-            continue
+            if stock <= seuil:
+                continue  # déjà pris en charge par UC13 (LOW_STOCK ou NEGATIVE_STOCK)
 
-        jours = stock / (total_vendu / FENETRE_JOURS)
-        print(f"[predictions_quotidiennes] {nom} : {jours:.1f} jour(s) estimés")
+            total_vendu = _total_vendu_depuis_dailystats(db, uid, product_id)
+            if total_vendu == 0:
+                _resoudre_alerte(db, product_id, TYPE_PREDICTED)
+                continue
 
-        if jours <= LIMITE_JOURS:
-            _creer_alerte_et_notifier(
-                db, product_id, nom, TYPE_PREDICTED, round(jours), produit
-            )
-        else:
-            _resoudre_alerte(db, product_id, TYPE_PREDICTED)
+            jours = stock / (total_vendu / FENETRE_JOURS)
+            print(f"[predictions_quotidiennes] {nom} : {jours:.1f} jour(s) estimés")
+
+            produit_avec_uid = {**produit, "_uid": uid}
+            if jours <= LIMITE_JOURS:
+                _creer_alerte_et_notifier(
+                    db, uid, product_id, nom, TYPE_PREDICTED, round(jours), produit_avec_uid
+                )
+            else:
+                _resoudre_alerte(db, product_id, TYPE_PREDICTED)
 
 
 # --------------------------------------------------- fonctions partagées
-def _total_vendu_depuis_dailystats(db, product_id) -> float:
+def _total_vendu_depuis_dailystats(db, uid: str, product_id: str) -> float:
     """Lit les 7 derniers documents dailyStats plutôt que de parcourir
     les ventes une par une — beaucoup plus rapide."""
     aujourdhui = datetime.now(timezone.utc)
@@ -118,7 +128,13 @@ def _total_vendu_depuis_dailystats(db, product_id) -> float:
     for i in range(FENETRE_JOURS):
         jour = aujourdhui - timedelta(days=i)
         doc_id = jour.strftime("%Y%m%d")
-        doc = db.collection("dailyStats").document(doc_id).get()
+        doc = (
+            db.collection("users")
+            .document(uid)
+            .collection("dailyStats")
+            .document(doc_id)
+            .get()
+        )
         if doc.exists:
             qty_par_produit = doc.to_dict().get("qtyByProduct", {})
             total += qty_par_produit.get(product_id, 0)
@@ -132,18 +148,19 @@ def _ref_alerte(db, product_id, type_alerte):
     return db.collection("alerts").document(f"{product_id}_{type_alerte}")
 
 
-def _creer_alerte_et_notifier(db, product_id, nom, type_alerte, valeur, produit) -> None:
+def _creer_alerte_et_notifier(db, uid: str, product_id: str, nom, type_alerte, valeur, produit) -> None:
     """Crée (ou réactive) l'alerte, et notifie seulement si ce n'est
     pas déjà fait pour cette occurrence (via notifiedAt)."""
     ref = _ref_alerte(db, product_id, type_alerte)
     existante = ref.get()
-    deja_notifiee = existante.exists and existante.to_dict().get("statut") == "ACTIVE"
+    deja_notifiee = existante.exists and existante.to_dict().get("status") == "ACTIVE"
 
     donnees = {
         "type": type_alerte,
         "productId": product_id,
         "productName": nom,
-        "stockAtCreation": produit.get("stock"),
+        "userId": uid,              # indispensable pour filtrer côté Flutter
+        "stockAtCreation": produit.get("quantity"),
         "status": "ACTIVE",
     }
     if type_alerte == TYPE_PREDICTED:
@@ -155,7 +172,7 @@ def _creer_alerte_et_notifier(db, product_id, nom, type_alerte, valeur, produit)
     ref.set(donnees, merge=True)
 
     if not deja_notifiee:
-        _envoyer_notification(db, produit, type_alerte, nom, valeur)
+        _envoyer_notification(db, uid, produit, type_alerte, nom, valeur)
         ref.update({"notifiedAt": datetime.now(timezone.utc)})
 
 
@@ -169,10 +186,11 @@ def _resoudre_alerte(db, product_id, type_alerte) -> None:
         })
 
 
-def _envoyer_notification(db, produit, type_alerte, nom, valeur) -> None:
-    user_id = produit.get("userId") or produit.get("ownerId")
+def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> None:
+    # L'uid vient du chemin Firestore (users/{uid}/products/{id}), pas d'un champ du produit
+    user_id = uid or produit.get("_uid")
     if not user_id:
-        print(f"[notification] Aucun userId trouvé sur le produit {nom}")
+        print(f"[notification] Aucun uid disponible pour le produit {nom}")
         return
 
     user_doc = db.collection("users").document(user_id).get()

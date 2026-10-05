@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiosk_mind/core/theme/app_colors.dart';
+import 'package:kiosk_mind/features/alerts_predictions/domain/entities/alert.dart';
+import 'package:kiosk_mind/features/alerts_predictions/presentation/providers/alerts_providers.dart';
 import 'package:kiosk_mind/features/alerts_predictions/presentation/widgets/card_alert.dart';
 
-class AlertPredictionScreen extends StatelessWidget {
+class AlertPredictionScreen extends ConsumerWidget {
   const AlertPredictionScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const titleAppBar = "Prévisions & Alertes";
+    final alertsAsync = ref.watch(activeAlertsProvider);
+
     return Scaffold(
-      // appBar: AppBar(title: const Text(titleAppBar)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -47,21 +51,27 @@ class AlertPredictionScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                CardAlert(
-                  statutAlert: StatutAlert.urgent,
-                  productNameWithStock: "Sacs de Riz 5kg",
-                  alertMessage: "Rupture prévue demain. 2 sacs restants.",
-                ),
-                CardAlert(
-                  statutAlert: StatutAlert.prevision,
-                  productNameWithStock: "Sacs de Riz 5kg",
-                  alertMessage: "Rupture prévue demain. 2 sacs restants.",
-                ),
-                CardAlert(
-                  statutAlert: StatutAlert.conseil,
-                  productNameWithStock: "Sacs de Riz 5kg",
-                  alertMessage:
-                      "Livraison hebdomadaire recommandée d’ici Vendredi.",
+                alertsAsync.when(
+                  data: (alerts) {
+                    if (alerts.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text("Aucune alerte active pour le moment."),
+                      );
+                    }
+                    return Column(
+                      spacing: 10,
+                      children: alerts.map(_buildCard).toList(),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, stack) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text("Erreur de chargement : $error"),
+                  ),
                 ),
               ],
             ),
@@ -69,5 +79,32 @@ class AlertPredictionScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCard(Alert alert) {
+    final statut = switch (alert.type) {
+      AlertType.lowStock || AlertType.negativeStock => StatutAlert.urgent,
+      AlertType.predictedStockout => StatutAlert.prevision,
+    };
+
+    return CardAlert(
+      statutAlert: statut,
+      productNameWithStock: alert.productName,
+      alertMessage: _messagePour(alert),
+    );
+  }
+
+  String _messagePour(Alert alert) {
+    switch (alert.type) {
+      case AlertType.lowStock:
+        return "Stock bas : il ne reste que ${alert.stockAtCreation} unité(s).";
+      case AlertType.negativeStock:
+        return "Stock négatif (${alert.stockAtCreation}) : vérifiez vos ventes récentes.";
+      case AlertType.predictedStockout:
+        final jours = alert.estimatedDaysLeft;
+        return jours != null
+            ? "Rupture prévue dans environ $jours jour(s)."
+            : "Rupture de stock prévue prochainement.";
+    }
   }
 }

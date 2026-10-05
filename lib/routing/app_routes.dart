@@ -12,4 +12,5 @@ abstract final class AppRoutes {
   static const String settingsTerms = '/profile/settings/terms';
   static const String settingsPrivacy = '/profile/settings/privacy';
   static const String export = '/export';
+  static const String notificationsAlert = '/notificationsAlert';
 }
