@@ -165,6 +165,9 @@ List<VoiceRecapLine> _lineRecap(CommandProposal proposal) {
         name: mention.product.name,
         qty: mention.qty,
         unit: mention.product.unit,
+        // The catalog's price, not a price yet applied: nothing has run, so this is
+        // what the line would be worth unless the merchant named another amount.
+        unitPrice: mention.product.price,
       ),
   ];
 }
@@ -185,14 +188,25 @@ Future<List<VoiceRecapLine>> _productRecap(
   }
   for (final ItemMention mention in _mentions(proposal)) {
     if (mention.product.id == productId) {
-      return <VoiceRecapLine>[(name: mention.product.name, qty: 0, unit: null)];
+      // A named product with no quantity: a read or a price change moves nothing, so
+      // it has no line total to show and no price to apply.
+      return <VoiceRecapLine>[
+        (
+          name: mention.product.name,
+          qty: 0,
+          unit: null,
+          unitPrice: null,
+        ),
+      ];
     }
   }
   final ProductSnapshot? named = await byId(productId);
   if (named == null) {
     return const <VoiceRecapLine>[];
   }
-  return <VoiceRecapLine>[(name: named.name, qty: 0, unit: null)];
+  return <VoiceRecapLine>[
+    (name: named.name, qty: 0, unit: null, unitPrice: null),
+  ];
 }
 
 /// The amounts the merchant announced on the lines, which the recap repeats.

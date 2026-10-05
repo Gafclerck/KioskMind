@@ -352,7 +352,12 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         UndoneMessage(
           SaleCancelled(<VoiceRecapLine>[
             for (final SaleLineResult line in value.restored)
-              (name: line.name, qty: line.qty, unit: line.unit),
+              (
+                name: line.name,
+                qty: line.qty,
+                unit: line.unit,
+                unitPrice: line.appliedUnitPrice,
+              ),
           ]),
         ),
       Failed<CancelLastSaleResult>(failure: const NothingToUndo()) =>

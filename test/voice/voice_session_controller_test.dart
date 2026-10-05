@@ -250,7 +250,14 @@ void main() {
         isA<SaleRecorded>().having(
           (SaleRecorded sale) => sale.lines,
           'lines',
-          <VoiceRecapLine>[(name: 'Savon de ménage', qty: 2.0, unit: 'PIECE')],
+          <VoiceRecapLine>[
+            (
+              name: 'Savon de ménage',
+              qty: 2.0,
+              unit: 'PIECE',
+              unitPrice: 250,
+            ),
+          ],
         ),
       );
       expect(harness.state.canUndo, isTrue);

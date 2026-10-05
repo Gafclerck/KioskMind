@@ -8,7 +8,13 @@ import '../../domain/usecases/execute_command.dart';
 /// [unit] is the code the catalog uses, and null when the use case that wrote the
 /// line did not report one: the contract of a restock carries no unit, and a recap
 /// invents nothing.
-typedef VoiceRecapLine = ({String name, double qty, String? unit});
+///
+/// [unitPrice] is the price the line was actually valued at, and null when the use
+/// case that wrote the line reported none: a restock carries a cost the merchant
+/// never sees, and a price invented here would be a figure on a receipt that no
+/// sale produced. It is the price the handler applied and not the catalog's, so a
+/// line priced by an amount the merchant announced reads back as that amount.
+typedef VoiceRecapLine = ({String name, double qty, String? unit, double? unitPrice});
 
 /// What a command actually did, in the shape a recap needs.
 ///
@@ -202,7 +208,9 @@ VoiceOutcome? outcomeOfValue(Object value) {
     ),
     final RecordRestockResult result => RestockRecorded(<VoiceRecapLine>[
       for (final RestockLineResult line in result.lines)
-        (name: line.name, qty: line.qty, unit: null),
+        // A restock carries a purchase cost, not a selling price: there is no
+        // receipt here for a price to have been applied to.
+        (name: line.name, qty: line.qty, unit: null, unitPrice: null),
     ]),
     final QueryStockResult result => StockRead(
       product: result.productName,
@@ -260,7 +268,12 @@ VoiceOutcome? outcomeOfValue(Object value) {
 List<VoiceRecapLine> _saleLines(List<SaleLineResult> lines) {
   return <VoiceRecapLine>[
     for (final SaleLineResult line in lines)
-      (name: line.name, qty: line.qty, unit: line.unit),
+      (
+        name: line.name,
+        qty: line.qty,
+        unit: line.unit,
+        unitPrice: line.appliedUnitPrice,
+      ),
   ];
 }
 
