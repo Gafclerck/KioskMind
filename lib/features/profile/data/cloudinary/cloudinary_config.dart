@@ -1,8 +1,15 @@
 /// Configuration de l'API Unsigned Cloudinary utilisée pour téléverser les
 /// photos de profil.
 ///
-/// Les valeurs arrivent à la compilation via `--dart-define` et ne sont donc
-/// jamais écrites dans le dépôt :
+/// Les valeurs arrivent à la compilation et ne sont donc jamais écrites dans le
+/// dépôt. On part du template du dépôt :
+///
+/// ```bash
+/// cp .env.example .env   # puis renseigner les deux variables Cloudinary
+/// flutter run --dart-define-from-file=.env
+/// ```
+///
+/// En ligne de commande, pour une compilation ponctuelle :
 ///
 /// ```
 /// flutter run \
