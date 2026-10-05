@@ -13,7 +13,30 @@ Application Flutter de gestion de caisse, stock et alertes pour borne.
 git clone https://github.com/Gafclerck/KioskMind.git
 cd KioskMind
 flutter pub get
+cp .env.example .env
 ```
+
+## Variables d'environnement
+
+Les reglages propres a ta machine (cles rodium, gemini, upload d'avatar
+Cloudinary) se trouvent dans `.env`, qui n'est pas versionne :
+`.env.example` fait foi pour la liste et le format.
+
+```bash
+cp .env.example .env   # une seule fois, puis renseigner les valeurs
+```
+
+Les valeurs sont injectees a la compilation. Sans elles, l'application
+demarre quand meme et signale les fonctions concernees comme non configurees.
+
+| Variable | Role |
+|---|---|
+| `VOICE_USE_MOCKS` | `true` pour faire tourner l'assistant vocal sans micro |
+| `VOICE_ENABLE_CLOUD` | `false` pour garder l'interpretation vocale hors ligne |
+| `RODIUM_API_KEY`, `RODIUM_MODEL`, `RODIUM_BASE_URL` | Passerelle vocale cloud |
+| `GEMINI_API_KEY` | Interpretation d'intents Google |
+| `CLOUDINARY_CLOUD_NAME` | Cloud qui heberge les photos de profil |
+| `CLOUDINARY_UPLOAD_PRESET` | Preset d'upload **unsigned** Cloudinary |
 
 ## Commandes
 
@@ -22,13 +45,19 @@ flutter pub get      # dependances
 flutter analyze      # lint et analyse statique
 flutter test         # tests
 dart format lib test # formatage
-flutter run          # lancer l'application
+flutter run --dart-define-from-file=.env   # lancer l'application
 ```
 
-Pour un test unitaire :
+Unittest :
 
 ```bash
 flutter test test/widget_test.dart
+```
+
+Release :
+
+```bash
+flutter build apk --dart-define-from-file=.env --release
 ```
 
 ## Architecture
