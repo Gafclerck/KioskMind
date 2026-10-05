@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/product.dart';
 import '../../domain/entities/stock_movement.dart';
+import 'product_image.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -37,18 +38,13 @@ class ProductCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
+                  ProductImage(
+                    name: product.name,
+                    imageUrl: product.imageUrl,
                     radius: 20,
-                    backgroundColor: scheme.primaryContainer,
-                    child: Text(
-                      product.name.characters.first.toUpperCase(),
-                      style: TextStyle(
-                        color: scheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
