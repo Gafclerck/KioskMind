@@ -20,17 +20,18 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final getSalesHistory = ref.watch(getSalesHistoryProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F5),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF9F5),
+        backgroundColor: colorScheme.surface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Historique des ventes',
           style: TextStyle(
-            color: Color(0xFF156C61),
+            color: colorScheme.primary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -39,7 +40,10 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             onPressed: () {
               ref.invalidate(getSalesHistoryProvider);
             },
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF156C61)),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: colorScheme.primary,
+            ),
           ),
         ],
       ),
@@ -47,8 +51,10 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         future: getSalesHistory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF156C61)),
+            return Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
+              ),
             );
           }
 
@@ -57,7 +63,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Impossible de charger les ventes.'),
+                  Text(
+                    'Impossible de charger les ventes.',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () {
@@ -86,10 +97,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           );
 
           return RefreshIndicator(
-            color: const Color(0xFF156C61),
+            color: colorScheme.primary,
             onRefresh: () async {
               ref.invalidate(getSalesHistoryProvider);
-              await Future<void>.delayed(const Duration(milliseconds: 300));
+              await Future<void>.delayed(
+                const Duration(milliseconds: 300),
+              );
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -100,7 +113,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                 const SizedBox(height: 20),
                 Text(
                   '${sales.length} vente${sales.length > 1 ? 's' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -116,7 +130,14 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Widget _periodSelector() {
-    const periods = ['Aujourd’hui', 'Cette semaine', 'Ce mois', 'Personnalisé'];
+    final colorScheme = Theme.of(context).colorScheme;
+
+    const periods = [
+      'Aujourd’hui',
+      'Cette semaine',
+      'Ce mois',
+      'Personnalisé',
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -138,10 +159,15 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   });
                 }
               },
-              selectedColor: const Color(0xFF156C61),
-              backgroundColor: Colors.white,
+              selectedColor: colorScheme.primary,
+              backgroundColor: colorScheme.surfaceContainer,
+              side: BorderSide(
+                color: colorScheme.outlineVariant,
+              ),
               labelStyle: TextStyle(
-                color: selected ? Colors.white : const Color(0xFF156C61),
+                color: selected
+                    ? colorScheme.onPrimary
+                    : colorScheme.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -152,10 +178,12 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Widget _summaryCard(double total, int count) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF156C61),
+        color: colorScheme.primary,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
@@ -164,15 +192,18 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Chiffre d’affaires',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${_formatAmount(total)} FCFA',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onPrimary,
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
                   ),
@@ -180,20 +211,27 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
               ],
             ),
           ),
-          Container(width: 1, height: 48, color: Colors.white24),
+          Container(
+            width: 1,
+            height: 48,
+            color: colorScheme.onPrimary.withValues(alpha: 0.2),
+          ),
           const SizedBox(width: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 'Ventes',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(
+                  color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 '$count',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -206,13 +244,17 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Widget _saleCard(Sale sale) {
+    final colorScheme = Theme.of(context).colorScheme;
     final cancelled = sale.status == 'CANCELLED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -228,15 +270,17 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: cancelled
-                          ? Colors.red.withValues(alpha: 0.08)
-                          : const Color(0xFF156C61).withValues(alpha: 0.1),
+                          ? colorScheme.error.withValues(alpha: 0.08)
+                          : colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Icon(
                       cancelled
                           ? Icons.cancel_outlined
                           : Icons.receipt_long_rounded,
-                      color: cancelled ? Colors.red : const Color(0xFF156C61),
+                      color: cancelled
+                          ? colorScheme.error
+                          : colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -246,13 +290,16 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                       children: [
                         Text(
                           _formatTime(sale.dateTime),
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           '${sale.items.length} produit${sale.items.length > 1 ? 's' : ''}',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -260,18 +307,18 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                     ),
                   ),
                   if (cancelled)
-                    const Text(
+                    Text(
                       'Annulée',
                       style: TextStyle(
-                        color: Colors.red,
+                        color: colorScheme.error,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     )
                   else
-                    const Icon(
+                    Icon(
                       Icons.more_vert_rounded,
-                      color: Color(0xFF156C61),
+                      color: colorScheme.primary,
                     ),
                 ],
               ),
@@ -285,7 +332,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                         child: Text(
                           item.name,
                           style: TextStyle(
-                            color: Colors.grey.shade800,
+                            color: colorScheme.onSurface,
                             fontSize: 13,
                           ),
                         ),
@@ -293,7 +340,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                       Text(
                         '${_formatNumber(item.qty)} × ${_formatAmount(item.unitPrice)}',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
@@ -301,19 +348,27 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   ),
                 ),
               ),
-              const Divider(height: 20),
+              Divider(
+                height: 20,
+                color: colorScheme.outlineVariant,
+              ),
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Total',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Text(
                     '${_formatAmount(sale.total)} FCFA',
                     style: TextStyle(
-                      color: cancelled ? Colors.red : const Color(0xFF156C61),
+                      color: cancelled
+                          ? colorScheme.error
+                          : colorScheme.primary,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -328,13 +383,19 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Future<void> _showSaleActions(Sale sale) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surfaceContainer,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
       ),
       builder: (context) {
+        final sheetColorScheme = Theme.of(context).colorScheme;
+
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -345,29 +406,46 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: sheetColorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Action sur la vente',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: sheetColorScheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.edit_outlined,
-                    color: Color(0xFF156C61),
+                    color: sheetColorScheme.primary,
                   ),
-                  title: const Text('Modifier la vente'),
+                  title: Text(
+                    'Modifier la vente',
+                    style: TextStyle(
+                      color: sheetColorScheme.onSurface,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context, 'edit');
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.cancel_outlined, color: Colors.red),
-                  title: const Text('Annuler la vente'),
+                  leading: Icon(
+                    Icons.cancel_outlined,
+                    color: sheetColorScheme.error,
+                  ),
+                  title: Text(
+                    'Annuler la vente',
+                    style: TextStyle(
+                      color: sheetColorScheme.onSurface,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context, 'cancel');
                   },
@@ -383,7 +461,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
 
     if (action == 'edit') {
       final updated = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => UpdateSalePage(sale: sale)),
+        MaterialPageRoute(
+          builder: (_) => UpdateSalePage(sale: sale),
+        ),
       );
 
       if (updated == true && mounted) {
@@ -399,13 +479,25 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Future<void> _cancelSale(Sale sale) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
+        final dialogColorScheme = Theme.of(context).colorScheme;
+
         return AlertDialog(
-          title: const Text('Annuler la vente ?'),
-          content: const Text(
+          title: Text(
+            'Annuler la vente ?',
+            style: TextStyle(
+              color: dialogColorScheme.onSurface,
+            ),
+          ),
+          content: Text(
             'Cette action annulera la vente et restaurera automatiquement le stock.',
+            style: TextStyle(
+              color: dialogColorScheme.onSurfaceVariant,
+            ),
           ),
           actions: [
             TextButton(
@@ -415,8 +507,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: dialogColorScheme.error,
+                foregroundColor: dialogColorScheme.onError,
               ),
               child: const Text('Annuler la vente'),
             ),
@@ -435,13 +527,19 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       ref.invalidate(getSalesHistoryProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vente annulée avec succès')),
+        SnackBar(
+          content: const Text('Vente annulée avec succès'),
+          backgroundColor: colorScheme.primary,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible d’annuler la vente')),
+        SnackBar(
+          content: const Text('Impossible d’annuler la vente'),
+          backgroundColor: colorScheme.error,
+        ),
       );
     }
   }
@@ -458,7 +556,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         }).toList();
 
       case 'Cette semaine':
-        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        final startOfWeek = now.subtract(
+          Duration(days: now.weekday - 1),
+        );
 
         final start = DateTime(
           startOfWeek.year,
@@ -469,7 +569,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         final end = start.add(const Duration(days: 7));
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) &&
+              sale.dateTime.isBefore(end);
         }).toList();
 
       case 'Ce mois':
@@ -477,7 +578,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         final end = DateTime(now.year, now.month + 1);
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) &&
+              sale.dateTime.isBefore(end);
         }).toList();
 
       case 'Personnalisé':
@@ -498,7 +600,8 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         );
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) &&
+              sale.dateTime.isBefore(end);
         }).toList();
 
       default:
@@ -523,10 +626,16 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   Widget _emptyState() {
-    return const Center(
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Center(
       child: Text(
         'Aucune vente',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: colorScheme.onSurface,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -547,8 +656,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   }
 
   String _formatAmount(double value) {
-    return value
-        .toStringAsFixed(0)
-        .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (match) => ' ');
+    return value.toStringAsFixed(0).replaceAllMapped(
+          RegExp(r'\B(?=(\d{3})+(?!\d))'),
+          (match) => ' ',
+        );
   }
 }
