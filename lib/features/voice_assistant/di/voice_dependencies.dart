@@ -696,14 +696,18 @@ final FutureProvider<IntentParser> voiceParserProvider =
           journal: journal,
         );
       }
-      return CascadingParser(
+      final parser = CascadingParser(
         local: local,
         cloud: await ref.watch(voiceCloudIntentParserProvider.future),
         connectivity: ref.watch(voiceConnectivityProbeProvider),
         circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
         journal: journal,
-        timeBudget: const Duration(milliseconds: 2000),
       );
+      parser.setTimeBudget(
+        isRemoteCloud: true,
+        isLocalCriticalPath: false,
+      );
+      return parser;
     });
 
 /// One utterance in, what happens out.

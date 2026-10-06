@@ -108,7 +108,7 @@ void main() {
     );
     expect(container.read(stockAlertsProvider), isFalse);
     expect(prefs.stockAlertsEnabled, isFalse);
-    expect(find.textContaining('Préférence enregistrée'), findsOneWidget);
+    expect(find.textContaining('Alertes de stock désactivées'), findsOneWidget);
   });
 
   testWidgets('tapping to change the password opens the dialog', (
