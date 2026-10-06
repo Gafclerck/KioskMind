@@ -83,6 +83,9 @@ class StubFlutterTts extends FlutterTts {
     stopCalls++;
     return onStop?.call() ?? 1;
   }
+
+  /// Raises an engine error as the plugin does through its callback.
+  void raiseError(dynamic message) => errorHandler?.call(message);
 }
 
 void main() {
@@ -90,7 +93,7 @@ void main() {
 
   group('PluginDeviceSpeechSpeaker', () {
     test(
-      'supports returns true when direct locale is available as boolean',
+      'probe says available when the exact locale is available as boolean',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR';
@@ -98,13 +101,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports returns true when direct locale is available as int 1',
+      'probe says available when the exact locale is available as int 1',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => lang == 'fr-FR' ? 1 : 0;
@@ -112,13 +115,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports falls back to base language fr when fr-FR is missing',
+      'probe falls back to base language fr when fr-FR is missing',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => lang == 'fr';
@@ -126,13 +129,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports queries getLanguages when isLanguageAvailable throws PlatformException',
+      'probe queries getLanguages when isLanguageAvailable throws PlatformException',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) =>
@@ -142,13 +145,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports matches underscored language codes like fr_FR from getLanguages',
+      'probe matches underscored language codes like fr_FR from getLanguages',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => false;
@@ -157,13 +160,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports matches prefix language codes like fr-CA from getLanguages',
+      'probe matches prefix language codes like fr-CA from getLanguages',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => false;
@@ -172,13 +175,13 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isTrue);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.available);
       },
     );
 
     test(
-      'supports returns false when no French variant is available in language list',
+      'probe says localeUnavailable when no French variant is in the list',
       () async {
         final StubFlutterTts engine = StubFlutterTts();
         engine.onIsLanguageAvailable = (String lang) => false;
@@ -187,10 +190,64 @@ void main() {
           engine: engine,
         );
 
-        final bool result = await speaker.supports('fr-FR');
-        expect(result, isFalse);
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.localeUnavailable);
       },
     );
+
+    test(
+      'probe says engineUnreachable when the engine has nothing to say',
+      () async {
+        final StubFlutterTts engine = StubFlutterTts();
+        engine.onIsLanguageAvailable = (String lang) => false;
+        engine.onGetLanguages = () => <String>[];
+        final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+          engine: engine,
+        );
+
+        final TtsProbe result = await speaker.probe('fr-FR');
+        expect(result, TtsProbe.engineUnreachable);
+      },
+    );
+
+    test('say reports a sentence the engine dropped', () async {
+      final StubFlutterTts engine = StubFlutterTts();
+      engine.onSpeak = (String text) => 0;
+      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+        engine: engine,
+      );
+
+      final bool spoken = await speaker.say('Bonjour le marchand');
+
+      expect(spoken, isFalse);
+      expect(engine.spokenTexts, <String>['Bonjour le marchand']);
+    });
+
+    test('say reports an engine error instead of waiting forever', () async {
+      final StubFlutterTts engine = StubFlutterTts();
+      engine.onSpeak = (String text) =>
+          Future<dynamic>.delayed(const Duration(hours: 1), () => 1);
+      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+        engine: engine,
+      );
+
+      final Future<bool> spoken = speaker.say('Bonjour le marchand');
+      engine.raiseError('error from TextToSpeech');
+
+      expect(await spoken, isFalse);
+    });
+
+    test('say reports a sentence that was spoken', () async {
+      final StubFlutterTts engine = StubFlutterTts();
+      final PluginDeviceSpeechSpeaker speaker = PluginDeviceSpeechSpeaker(
+        engine: engine,
+      );
+
+      final bool spoken = await speaker.say('Bonjour le marchand');
+
+      expect(spoken, isTrue);
+      expect(engine.spokenTexts, <String>['Bonjour le marchand']);
+    });
 
     test(
       'matchesLanguageList handles normalized tags and prefixes correctly',

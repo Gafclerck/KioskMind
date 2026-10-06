@@ -1,4 +1,5 @@
 import '../../../../core/voice_services/speech_service_error.dart';
+import '../../../../core/voice_services/tts_port.dart';
 import 'voice_message.dart';
 
 /// What the microphone is doing right now.
@@ -40,6 +41,7 @@ final class VoiceSessionState {
     this.remainingUndo = Duration.zero,
     this.awaitingManualEntry = false,
     this.fault,
+    this.ttsAvailability = TtsAvailability.unknown,
   });
 
   final VoiceSessionStatus status;
@@ -70,6 +72,21 @@ final class VoiceSessionState {
   /// The device failure that ended the voice attempt, kept so the panel can say
   /// why it ended.
   final SpeechServiceError? fault;
+
+  /// What the synthesiser is currently able to do with the shop's language.
+  ///
+  /// The panel uses it to explain a silence, which is the only thing a merchant
+  /// who hears nothing can be told. Not a decision: the verdict is the engine's
+  /// business, and this field only carries it.
+  final TtsAvailability ttsAvailability;
+
+  /// The recap cannot be read aloud, and that is why.
+  ///
+  /// The panel shows something different for a phone without the voice than for
+  /// an engine that has not answered yet, because one of them may fix itself.
+  bool get speaksUnavailable =>
+      ttsAvailability == TtsAvailability.localeUnavailable ||
+      ttsAvailability == TtsAvailability.engineUnreachable;
 
   /// The banner has something to undo.
   bool get canUndo =>
@@ -104,6 +121,7 @@ final class VoiceSessionState {
     Object? remainingUndo = _kept,
     bool? awaitingManualEntry,
     Object? fault = _kept,
+    TtsAvailability? ttsAvailability,
   }) {
     return VoiceSessionState(
       status: status ?? this.status,
@@ -116,6 +134,7 @@ final class VoiceSessionState {
           : remainingUndo as Duration,
       awaitingManualEntry: awaitingManualEntry ?? this.awaitingManualEntry,
       fault: _kept == fault ? this.fault : fault as SpeechServiceError?,
+      ttsAvailability: ttsAvailability ?? this.ttsAvailability,
     );
   }
 }

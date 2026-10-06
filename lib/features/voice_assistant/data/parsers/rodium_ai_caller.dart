@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'cloud_call_failure.dart';
 import 'direct_gemini_caller.dart';
 
 /// Direct caller to Rodium AI OpenAI-compatible API gateway for Cloud NLU interpretation.
@@ -114,6 +115,11 @@ final class RodiumAiCaller {
         return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
+    } on CloudCallFailure {
+      // A refused key, an exhausted quota and a server error are reported as
+      // themselves. Returning an empty answer here is what made all three look like
+      // a model that had nothing to say.
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[RodiumAiCaller] Error: $e');
@@ -153,11 +159,11 @@ final class RodiumAiCaller {
           return Map<String, dynamic>.from(decoded);
         }
       } else {
-        if (kDebugMode) {
-          debugPrint(
-            '[RodiumAiCaller] HTTP ${response.statusCode}: $responseBody',
-          );
-        }
+        throw CloudCallFailure.fromResponse(
+          'Rodium AI',
+          response.statusCode,
+          responseBody,
+        );
       }
       return const <String, dynamic>{};
     } finally {

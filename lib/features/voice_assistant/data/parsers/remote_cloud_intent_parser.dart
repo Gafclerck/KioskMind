@@ -4,11 +4,14 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../domain/entities/command_proposal.dart';
 import '../../domain/entities/doubt.dart';
+import '../../domain/entities/parse_route.dart';
 import '../../domain/entities/product_snapshot.dart';
 import '../../domain/entities/slot.dart';
 import '../../domain/ports/cloud_intent_parser.dart';
 import '../../domain/ports/intent_handler.dart';
+import '../../domain/ports/parse_outcome_journal.dart';
 import '../../domain/ports/product_catalog_reader.dart';
+import 'cloud_call_failure.dart';
 
 typedef CloudFunctionCaller =
     Future<Map<String, dynamic>> Function(
@@ -22,14 +25,25 @@ typedef CloudFunctionCaller =
 /// Grounding guarantee (D5): all products returned by the remote language model
 /// are strictly cross-referenced against [catalogReader]. If the remote model names
 /// an unknown product id, it is treated as a doubt rather than executed.
+///
+/// Every way this parser can fail to produce a proposal is written to [journal]
+/// before the null that stands for it is returned. Returning null is what tells the
+/// cascade to fall back to the rules parser, and it used to be the only thing that
+/// happened, which made an absent credential, a refused key and a model that answered
+/// with nothing at all look identical from outside.
 final class RemoteCloudIntentParser implements CloudIntentParser {
   RemoteCloudIntentParser({
     required this.catalogReader,
     CloudFunctionCaller? cloudCaller,
+    this.journal,
   }) : _cloudCaller = cloudCaller ?? _defaultFirebaseCaller;
 
   final ProductCatalogReader catalogReader;
   final CloudFunctionCaller _cloudCaller;
+
+  /// Optional, for the same reason the cascade's is: a test drives this parser
+  /// without caring what the route was.
+  final ParseOutcomeJournal? journal;
 
   static Future<Map<String, dynamic>> _defaultFirebaseCaller(
     String functionName,
@@ -50,6 +64,10 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
 
   @override
   Future<CommandProposal?> parse(String raw) async {
+    // Set once the gateway has actually answered, so the catch below can tell a call
+    // that failed from an answer that could not be read. They are different defects
+    // and the merchant cannot tell them apart either way.
+    bool answered = false;
     try {
       final List<ProductSnapshot> activeProducts = await catalogReader
           .readActiveProducts();
@@ -73,9 +91,26 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
         'interpretUtterance',
         payload,
       );
+      answered = true;
 
       final String? intentId = response['intentId'] as String?;
-      if (intentId == null || !kSupportedIntentIds.contains(intentId)) {
+      if (intentId == null || intentId.isEmpty) {
+        journal?.record(
+          ParseRouteEvent(
+            utterance: raw,
+            reason: ParseRouteReason.noIntentReturned,
+          ),
+        );
+        return null;
+      }
+      if (!kSupportedIntentIds.contains(intentId)) {
+        journal?.record(
+          ParseRouteEvent(
+            utterance: raw,
+            reason: ParseRouteReason.unsupportedIntent,
+            detail: intentId,
+          ),
+        );
         return null;
       }
 
@@ -121,9 +156,29 @@ final class RemoteCloudIntentParser implements CloudIntentParser {
         doubts: doubts,
         origin: ProposalOrigin.languageModel,
       );
-    } catch (_) {
-      // Remote call or parsing failure: returning null causes CascadingParser
-      // to record the failure in CircuitBreaker and fall back to local parser.
+    } on CloudCallFailure catch (failure) {
+      // The call itself failed. Returning null causes CascadingParser to record the
+      // failure in CircuitBreaker and fall back to the local parser; what is new is
+      // that the status code survives, because a refused credential and a dropped
+      // connection are not the same bug.
+      journal?.record(
+        ParseRouteEvent(
+          utterance: raw,
+          reason: ParseRouteReason.unreachable,
+          detail: failure.detail,
+        ),
+      );
+      return null;
+    } catch (error) {
+      journal?.record(
+        ParseRouteEvent(
+          utterance: raw,
+          reason: answered
+              ? ParseRouteReason.malformedAnswer
+              : ParseRouteReason.unreachable,
+          detail: '$error',
+        ),
+      );
       return null;
     }
   }

@@ -47,6 +47,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   VoiceSessionState build() {
     _startTicking();
     ref.onDispose(_dispose);
+    unawaited(_refreshTtsAvailability());
     return const VoiceSessionState();
   }
 
@@ -352,7 +353,12 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         UndoneMessage(
           SaleCancelled(<VoiceRecapLine>[
             for (final SaleLineResult line in value.restored)
-              (name: line.name, qty: line.qty, unit: line.unit),
+              (
+                name: line.name,
+                qty: line.qty,
+                unit: line.unit,
+                unitPrice: line.appliedUnitPrice,
+              ),
           ]),
         ),
       Failed<CancelLastSaleResult>(failure: const NothingToUndo()) =>
@@ -375,12 +381,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   void _microphoneLost(SpeechServiceError fault) {
     final DialogManager dialog = ref.read(voiceDialogProvider);
     if (!fault.isTerminal && dialog.pending != null) {
-      _set(
-        state.copyWith(
-          status: VoiceSessionStatus.idle,
-          lastHeard: '',
-        ),
-      );
+      _set(state.copyWith(status: VoiceSessionStatus.idle, lastHeard: ''));
       return;
     }
     dialog.reset();
@@ -406,6 +407,24 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       SpeechReadiness.unsupported => SpeechFault.unsupported,
       SpeechReadiness.unavailable => SpeechFault.unavailable,
     };
+  }
+
+  /// Asks the synthesiser what it can do, so the panel can explain a silence.
+  ///
+  /// Nothing blocks on it: the sheet must appear at once, and the verdict arrives
+  /// a moment later. A synthesiser that cannot be reached leaves the field alone,
+  /// because `unknown` shows nothing and the next probe may do better.
+  Future<void> _refreshTtsAvailability() async {
+    try {
+      final TtsPort tts = ref.read(voiceTtsProvider);
+      final TtsAvailability availability = await tts.availability();
+      if (_disposed || state.ttsAvailability == availability) {
+        return;
+      }
+      _set(state.copyWith(ttsAvailability: availability));
+    } catch (_) {
+      // The engine did not answer. The ticker keeps asking until it does.
+    }
   }
 
   /// Silences the module before the microphone opens.
@@ -460,6 +479,14 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   void _refresh() {
     if (_disposed) {
       return;
+    }
+    // An engine that had not answered may have become reachable since (Chrome
+    // publishes its voices after load, Android finishes a download in the
+    // background), so the panel keeps re-asking while the verdict is that one.
+    // The port answers from its cache until the verdict has aged, so this is a
+    // read, not a conversation with the engine.
+    if (state.ttsAvailability == TtsAvailability.engineUnreachable) {
+      unawaited(_refreshTtsAvailability());
     }
     final DialogManager dialog = ref.read(voiceDialogProvider);
     if (dialog.awaitsManualEntry != state.awaitingManualEntry) {

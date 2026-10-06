@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/core/voice_services/device_speech_recognizer.dart';
@@ -96,12 +99,30 @@ class FakeDeviceRecognizer implements DeviceSpeechRecognizer {
 class FakeDeviceSpeaker implements DeviceSpeechSpeaker {
   FakeDeviceSpeaker({this.canSpeak = true});
 
+  /// Whether the shop's language is available to the engine.
   bool canSpeak;
-  Object? supportsFailure;
+
+  /// When set, [probe] answers this instead of [canSpeak].
+  TtsProbe? probeOverride;
+
+  Object? probeFailure;
   Object? sayFailure;
   Object? stopFailure;
 
+  /// When set, [say] reports the sentence dropped rather than spoken.
+  bool dropped = false;
+
+  /// While true, every [say] waits for a [stop] before answering, like a real
+  /// engine that swallows its own completion promise. The platform's own `stop`
+  /// before a sentence releases the previous one the same way it releases this
+  /// one.
+  bool hangSays = false;
+
+  /// The sentences [hangSays] is holding: each is released by the next [stop].
+  final List<Completer<void>> _pending = <Completer<void>>[];
+
   int configureCount = 0;
+  int probeCount = 0;
   int sayCount = 0;
   int stopCount = 0;
 
@@ -113,12 +134,14 @@ class FakeDeviceSpeaker implements DeviceSpeechSpeaker {
   String? said;
 
   @override
-  Future<bool> supports(String locale) async {
-    final Object? failure = supportsFailure;
+  Future<TtsProbe> probe(String locale) async {
+    probeCount++;
+    final Object? failure = probeFailure;
     if (failure != null) {
       throw failure;
     }
-    return canSpeak;
+    return probeOverride ??
+        (canSpeak ? TtsProbe.available : TtsProbe.localeUnavailable);
   }
 
   @override
@@ -136,13 +159,22 @@ class FakeDeviceSpeaker implements DeviceSpeechSpeaker {
   }
 
   @override
-  Future<void> say(String text) async {
+  Future<bool> say(String text) async {
     sayCount++;
     said = text;
+    if (dropped) {
+      return false;
+    }
     final Object? failure = sayFailure;
     if (failure != null) {
       throw failure;
     }
+    if (hangSays) {
+      final Completer<void> gate = Completer<void>();
+      _pending.add(gate);
+      await gate.future;
+    }
+    return true;
   }
 
   @override
@@ -151,6 +183,13 @@ class FakeDeviceSpeaker implements DeviceSpeechSpeaker {
     final Object? failure = stopFailure;
     if (failure != null) {
       throw failure;
+    }
+    final List<Completer<void>> pending = List<Completer<void>>.of(_pending);
+    _pending.clear();
+    for (final Completer<void> gate in pending) {
+      if (!gate.isCompleted) {
+        gate.complete();
+      }
     }
   }
 }
@@ -392,7 +431,7 @@ void main() {
 
     test('never lets a device failure reach the session', () async {
       final FakeDeviceSpeaker device = FakeDeviceSpeaker()
-        ..supportsFailure = PlatformException(code: 'no_tts');
+        ..probeFailure = PlatformException(code: 'no_tts');
       final PlatformTts tts = PlatformTts(
         device: device,
         settings: const VoiceServiceSettings(),
@@ -441,6 +480,224 @@ void main() {
       await tts.stop();
 
       expect(device.stopCount, 1);
+    });
+
+    test('stops the previous sentence before saying the next one', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker();
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+      );
+
+      await tts.speak('premiere');
+      await tts.speak('deuxieme');
+
+      expect(device.sayCount, 2);
+      expect(device.stopCount, 2);
+    });
+
+    test('gives up on an engine that never answers', () {
+      fakeAsync((FakeAsync async) {
+        final FakeDeviceSpeaker device = FakeDeviceSpeaker()..hangSays = true;
+        final PlatformTts tts = PlatformTts(
+          device: device,
+          settings: const VoiceServiceSettings(),
+        );
+
+        bool done = false;
+        tts.speak('deux savons').then((_) {
+          done = true;
+        });
+
+        async.elapse(const Duration(minutes: 2));
+
+        expect(done, isTrue);
+        // Once for the stop before the sentence, once to silence the engine that
+        // went quiet for too long.
+        expect(device.stopCount, 2);
+      });
+    });
+
+    test('a longer sentence gets a longer deadline', () {
+      fakeAsync((FakeAsync async) {
+        final FakeDeviceSpeaker device = FakeDeviceSpeaker()..hangSays = true;
+        final PlatformTts tts = PlatformTts(
+          device: device,
+          settings: const VoiceServiceSettings(),
+        );
+
+        bool done = false;
+        // 'deux' is 4 characters: 10 s of grace plus 4 * 80 ms / 0.5 = 10.64 s.
+        tts.speak('deux').then((_) {
+          done = true;
+        });
+
+        async.elapse(const Duration(milliseconds: 10600));
+        expect(done, isFalse, reason: 'still inside the deadline');
+
+        async.elapse(const Duration(milliseconds: 100));
+        expect(done, isTrue, reason: 'past the deadline, the session is freed');
+      });
+    });
+
+    test('a sentence the engine dropped is not reported as spoken', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker()..dropped = true;
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+      );
+
+      await tts.speak('deux savons');
+
+      expect(device.sayCount, 1);
+    });
+
+    test('a missing plugin never reaches the session', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker()
+        ..sayFailure = MissingPluginException('flutter_tts');
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+      );
+
+      await tts.speak('deux savons');
+      await tts.stop();
+
+      expect(device.sayCount, 1);
+      // Once for the stop before the sentence, once for the stop the test asks for.
+      expect(device.stopCount, 2);
+    });
+  });
+
+  group('the verdict', () {
+    test('a device without French speaks nothing and is not retried', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker(canSpeak: false);
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+        now: () => DateTime(2026),
+      );
+
+      expect(await tts.availability(), TtsAvailability.localeUnavailable);
+      await tts.speak('deux savons');
+      expect(device.sayCount, 0);
+
+      // The sans-pari is a fact about the device, not a moment: it is not asked
+      // again, and no fallback language is tried.
+      expect(await tts.availability(), TtsAvailability.localeUnavailable);
+      expect(device.probeCount, 1);
+    });
+
+    test(
+      'an engine that had not answered is asked again once it has aged',
+      () async {
+        DateTime now = DateTime(2026);
+        final FakeDeviceSpeaker device = FakeDeviceSpeaker()
+          ..probeOverride = TtsProbe.engineUnreachable;
+        final PlatformTts tts = PlatformTts(
+          device: device,
+          settings: const VoiceServiceSettings(),
+          now: () => now,
+        );
+
+        expect(await tts.availability(), TtsAvailability.engineUnreachable);
+        expect(device.probeCount, 1);
+
+        // The moment has not aged yet: the verdict stands.
+        now = now.add(const Duration(seconds: 10));
+        expect(await tts.availability(), TtsAvailability.engineUnreachable);
+        expect(device.probeCount, 1);
+
+        // Once it has aged, the engine - which answers now - is heard.
+        device.probeOverride = TtsProbe.available;
+        now = now.add(kTtsReprobeAfter);
+        expect(await tts.availability(), TtsAvailability.ready);
+        expect(device.probeCount, 2);
+      },
+    );
+
+    test('a working device is reconfigured only once', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker();
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+      );
+
+      await tts.speak('deux savons');
+      await tts.speak('et un savon');
+
+      expect(device.configureCount, 1);
+      expect(device.probeCount, 1);
+    });
+
+    test(
+      'parallel sentences are spoken one after the other, not over each other',
+      () async {
+        final FakeDeviceSpeaker device = FakeDeviceSpeaker();
+        final PlatformTts tts = PlatformTts(
+          device: device,
+          settings: const VoiceServiceSettings(),
+        );
+
+        await Future.wait(<Future<void>>[
+          tts.speak('premiere'),
+          tts.speak('deuxieme'),
+        ]);
+
+        expect(device.sayCount, 2);
+        expect(device.stopCount, 2);
+      },
+    );
+
+    test('stop settles a stuck sentence and the one queued behind it', () async {
+      final FakeDeviceSpeaker device = FakeDeviceSpeaker()..hangSays = true;
+      final PlatformTts tts = PlatformTts(
+        device: device,
+        settings: const VoiceServiceSettings(),
+      );
+
+      bool firstDone = false;
+      bool secondDone = false;
+      tts.speak('premiere').then((_) {
+        firstDone = true;
+      });
+      // Wait until the first sentence is actually being said, so its queue is a
+      // real one and not an artifact of a preparation still running.
+      while (device.sayCount < 1) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      tts.speak('deuxieme').then((_) {
+        secondDone = true;
+      });
+      expect(firstDone, isFalse);
+      expect(secondDone, isFalse);
+
+      await tts.stop();
+      // The stop frees the chain; the sentences settle a microtask later.
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        firstDone,
+        isTrue,
+        reason: 'the sentence being said was interrupted',
+      );
+      expect(
+        secondDone,
+        isTrue,
+        reason: 'the queued sentence was settled too, not left hanging',
+      );
+      expect(
+        device.sayCount,
+        1,
+        reason: 'only the first sentence reached the engine before the stop',
+      );
+      expect(device.stopCount, greaterThanOrEqualTo(2));
+
+      // The microphone opened and closed again: the next sentence is said like
+      // the first one would have been, and the chain is usable again.
+      device.hangSays = false;
+      await tts.speak('troisieme');
+      expect(device.sayCount, 2);
     });
   });
 

@@ -11,6 +11,14 @@
   "voiceMicSpeaking": "Je vous réponds",
   "voiceMicUnavailable": "Micro indisponible",
   "voiceMicRefused": "Micro autorisé ? Sinon, utilisez la saisie manuelle",
+  "voiceTtsUnavailable": "Synthèse vocale indisponible sur cet appareil",
+  "@voiceTtsUnavailable": {
+    "description": "Montré quand l'appareil n'a pas de voix pour la langue de la boutique. L'écrit reste disponible, la lecture audio ne l'est pas."
+  },
+  "voiceTtsEngineUnreachable": "La voix ne répond pas pour l'instant. Réessayez dans un instant",
+  "@voiceTtsEngineUnreachable": {
+    "description": "Montré quand le moteur de synthèse n'a pas répondu (il peut devenir prêt plus tard) : la lecture reviendra toute seule."
+  },
   "voiceHeardLabel": "Entendu",
   "voiceQuestionProduct": "Quel produit ?",
   "voiceQuestionProductInLine": "Quel produit pour la première ligne ?",
@@ -59,6 +67,42 @@
     }
   },
   "voiceCurrency": "francs",
+  "voiceSheetTitle": "Copilote vocal",
+  "@voiceSheetTitle": {
+    "description": "Titre de la feuille de session vocale."
+  },
+  "voiceClose": "Fermer l'assistant vocal",
+  "@voiceClose": {
+    "description": "Libellé du bouton qui ferme la session vocale."
+  },
+  "voiceWaveformLabel": "Niveau du micro",
+  "@voiceWaveformLabel": {
+    "description": "Libellé de l'onde audio, lu par les lecteurs d'écran."
+  },
+  "voiceDetectedProducts": "Produits détectés",
+  "@voiceDetectedProducts": {
+    "description": "Titre de la liste, quand une confirmation est en attente."
+  },
+  "voiceRecordedProducts": "Ce qui a été enregistré",
+  "@voiceRecordedProducts": {
+    "description": "Titre de la liste, quand la commande a déjà été exécutée."
+  },
+  "voiceTotalLabel": "Montant total",
+  "@voiceTotalLabel": {
+    "description": "Libellé du montant total d'une vente."
+  },
+  "voiceRetry": "Réessayer",
+  "@voiceRetry": {
+    "description": "Bouton qui rouvre le microphone pour redire la commande."
+  },
+  "voiceConfirm": "Confirmer",
+  "@voiceConfirm": {
+    "description": "Bouton qui accepte une confirmation en attente."
+  },
+  "voiceNewCommand": "Nouvelle commande",
+  "@voiceNewCommand": {
+    "description": "Bouton qui enchaîne sur une nouvelle commande."
+  },
   "voiceSaleCancelled": "Vente annulée",
   "voiceNothingToUndo": "Rien à annuler",
   "voiceUndoFailed": "Annulation impossible",

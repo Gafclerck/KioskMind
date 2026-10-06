@@ -37,6 +37,28 @@ final class TtsVoice {
   String toString() => 'TtsVoice($locale, rate: $rate)';
 }
 
+/// What the device can do with the shop's language.
+///
+/// Three questions, not one, because they lead to three different behaviours.
+/// "No voice for French" is a fact about the phone that no retry will change,
+/// while "the engine has not answered" is a moment that has probably already
+/// passed by the time the merchant asks again. Collapsing both into a boolean is
+/// what makes a synthesiser that was merely not ready look permanently broken.
+enum TtsAvailability {
+  /// Nobody has asked yet.
+  unknown,
+
+  /// The shop's language can be read aloud.
+  ready,
+
+  /// The engine works and has no voice for the shop's language. Nothing will
+  /// change without installing one.
+  localeUnavailable,
+
+  /// The engine did not answer. Worth asking again.
+  engineUnreachable,
+}
+
 /// Speaks.
 ///
 /// Two calls and no settings: the voice is configured once by the adapter, so the
@@ -46,6 +68,11 @@ final class TtsVoice {
 /// costs the merchant nothing.
 abstract interface class TtsPort {
   /// Reads [text] aloud, the future completing when the sentence is finished.
+  ///
+  /// Completes when the engine says it is done, or when the wait is judged
+  /// exhausted. It never throws and never hangs: a synthesiser that swallows its
+  /// own promise would otherwise leave the microphone closed for the rest of the
+  /// session, which costs the merchant the voice rather than only the recap.
   Future<void> speak(String text);
 
   /// Stops whatever is being said, now.
@@ -53,4 +80,10 @@ abstract interface class TtsPort {
   /// Called before the microphone opens every single time: a phone that talks over
   /// its own microphone hears the synthesis as an order.
   Future<void> stop();
+
+  /// What the engine can currently do, for a merchant who hears nothing.
+  ///
+  /// Re-readable and idempotent. Exposed because silence with no explanation is
+  /// indistinguishable from a bug from where the merchant sits.
+  Future<TtsAvailability> availability();
 }

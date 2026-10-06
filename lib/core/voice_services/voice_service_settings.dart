@@ -46,6 +46,10 @@ final class VoiceServiceSettings {
 }
 
 /// French is the language the module speaks, on both sides.
+///
+/// The synthesiser gets no fallback: a recap read in a language the merchant did not
+/// choose is worse than a recap he reads on screen. A device that has no voice for
+/// this locale therefore stays silent, and says so rather than quietly doing nothing.
 const String kDefaultSpeechLocale = 'fr-FR';
 
 /// A merchant reading an order aloud pauses between products.
@@ -54,7 +58,13 @@ const Duration kDefaultSpeechPauseFor = Duration(seconds: 3);
 /// Past this, the session is closed whatever was heard.
 const Duration kDefaultSpeechListenFor = Duration(seconds: 12);
 
-/// Half speed, the pace a recap is understood at in a noisy shop.
+/// The normal pace of `flutter_tts`.
+///
+/// Not half speed: the plugin doubles the rate on Android so the two platforms
+/// agree, and both end up at their engine's normal pace with this value. Android
+/// receives 1.0 (TextToSpeech's normal), iOS receives
+/// `AVSpeechUtteranceDefaultSpeechRate`, and the recap reads at the speed the
+/// phone's own voice was built for rather than at an arbitrary fraction of it.
 const double kDefaultTtsRate = 0.5;
 
 const double kDefaultTtsPitch = 1;
@@ -69,3 +79,31 @@ const TtsVoice kDefaultTtsVoice = TtsVoice(
 );
 
 const int kDefaultVocabularyLimit = 40;
+
+/// Engine start-up and audio route latency, paid before the first syllable.
+///
+/// Not the same as speaking: a synthesiser that has never been asked to speak
+/// still has to bind its service and open an audio route, and on Android that
+/// binding is the slowest part of the whole exchange.
+const Duration kTtsEngineGrace = Duration(seconds: 10);
+
+/// Milliseconds per character at a rate of 1.0, so about 12.5 characters a second.
+///
+/// Deliberately under the real figure - French synthesis runs nearer 15 to 19
+/// characters a second - because the two ways of being wrong are not equal. A
+/// deadline that fires early cuts a recap off mid-sentence, in front of a
+/// merchant who is waiting for it; a deadline that fires late only delays a case
+/// that is already broken.
+const int kTtsMsPerCharAtUnitRate = 80;
+
+/// Ceiling on the deadline, so an absurd sentence cannot park the session for
+/// minutes on a kiosk nobody is watching any more.
+const Duration kTtsMaxSpeakDeadline = Duration(seconds: 60);
+
+/// How long an engine that did not answer is left alone before being asked again.
+///
+/// Chrome publishes its voice list after page load, and Android finishes
+/// downloading a voice pack in the background. An engine that has merely not
+/// answered yet must not be treated as an engine that cannot speak, or the first
+/// question of the session silences it for good.
+const Duration kTtsReprobeAfter = Duration(seconds: 30);

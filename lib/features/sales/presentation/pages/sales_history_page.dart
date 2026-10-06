@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatting/money.dart';
 import '../../domain/entities/sale.dart';
 import '../providers/sales_provider.dart';
 import 'update_sale_page.dart';
@@ -692,10 +693,5 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     return value.toStringAsFixed(2);
   }
 
-  String _formatAmount(double value) {
-    return value.toStringAsFixed(0).replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (match) => ' ',
-        );
-  }
+  String _formatAmount(double value) => formatThousands(value);
 }

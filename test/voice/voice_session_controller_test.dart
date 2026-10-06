@@ -30,6 +30,7 @@ class SessionHarness {
     clock = FakeClock(DateTime(2026, 3, 14, 9, 30));
     container = ProviderContainer(
       overrides: <Override>[
+        voiceUseMocksProvider.overrideWithValue(true),
         voiceRecognizerProvider.overrideWith((Ref ref) async => recognizer),
         voiceTtsProvider.overrideWithValue(tts),
         voiceClockProvider.overrideWithValue(clock),
@@ -250,7 +251,9 @@ void main() {
         isA<SaleRecorded>().having(
           (SaleRecorded sale) => sale.lines,
           'lines',
-          <VoiceRecapLine>[(name: 'Savon de ménage', qty: 2.0, unit: 'PIECE')],
+          <VoiceRecapLine>[
+            (name: 'Savon de ménage', qty: 2.0, unit: 'PIECE', unitPrice: 250),
+          ],
         ),
       );
       expect(harness.state.canUndo, isTrue);
@@ -370,25 +373,39 @@ void main() {
       expect(harness.journal.calls, isEmpty);
     });
 
+    test('a confirmation does not expire after 15 seconds and completes', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.submit('vendu trente sucre');
+      expect(harness.state.message, isA<QuestionMessage>());
+      expect(harness.state.awaitingManualEntry, isFalse);
+
+      // Simulate TTS recap playback + merchant pause (15 seconds, exceeding 10s clarification timeout)
+      await harness.elapse(const Duration(seconds: 15));
+
+      // After 15s, confirmation remains active and does not drop to manual entry
+      expect(harness.state.message, isA<QuestionMessage>());
+      expect(harness.state.awaitingManualEntry, isFalse);
+
+      final QuestionMessage question =
+          harness.state.message! as QuestionMessage;
+      await harness.controller.confirm(question.doubt, accepted: true);
+
+      expect(harness.state.awaitingManualEntry, isFalse);
+      expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
+        <String, Object?>{'productId': 'p_sucre', 'qty': 30},
+      ]);
+    });
+
     test(
-      'a confirmation does not expire after 15 seconds and completes',
+      'a spoken "d\'accord" settles the confirmation and executes',
       () async {
         final SessionHarness harness = SessionHarness();
         addTearDown(harness.dispose);
         await harness.controller.submit('vendu trente sucre');
         expect(harness.state.message, isA<QuestionMessage>());
-        expect(harness.state.awaitingManualEntry, isFalse);
 
-        // Simulate TTS recap playback + merchant pause (15 seconds, exceeding 10s clarification timeout)
-        await harness.elapse(const Duration(seconds: 15));
-
-        // After 15s, confirmation remains active and does not drop to manual entry
-        expect(harness.state.message, isA<QuestionMessage>());
-        expect(harness.state.awaitingManualEntry, isFalse);
-
-        final QuestionMessage question =
-            harness.state.message! as QuestionMessage;
-        await harness.controller.confirm(question.doubt, accepted: true);
+        await harness.controller.submit("d'accord");
 
         expect(harness.state.awaitingManualEntry, isFalse);
         expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
@@ -397,33 +414,22 @@ void main() {
       },
     );
 
-    test('a spoken "d\'accord" settles the confirmation and executes', () async {
-      final SessionHarness harness = SessionHarness();
-      addTearDown(harness.dispose);
-      await harness.controller.submit('vendu trente sucre');
-      expect(harness.state.message, isA<QuestionMessage>());
+    test(
+      'a spoken "c\'est bon" settles the confirmation and executes',
+      () async {
+        final SessionHarness harness = SessionHarness();
+        addTearDown(harness.dispose);
+        await harness.controller.submit('vendu trente sucre');
+        expect(harness.state.message, isA<QuestionMessage>());
 
-      await harness.controller.submit("d'accord");
+        await harness.controller.submit("c'est bon");
 
-      expect(harness.state.awaitingManualEntry, isFalse);
-      expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
-        <String, Object?>{'productId': 'p_sucre', 'qty': 30},
-      ]);
-    });
-
-    test('a spoken "c\'est bon" settles the confirmation and executes', () async {
-      final SessionHarness harness = SessionHarness();
-      addTearDown(harness.dispose);
-      await harness.controller.submit('vendu trente sucre');
-      expect(harness.state.message, isA<QuestionMessage>());
-
-      await harness.controller.submit("c'est bon");
-
-      expect(harness.state.awaitingManualEntry, isFalse);
-      expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
-        <String, Object?>{'productId': 'p_sucre', 'qty': 30},
-      ]);
-    });
+        expect(harness.state.awaitingManualEntry, isFalse);
+        expect(harness.journal.calls.single.handlerArgs['items'], <Object?>[
+          <String, Object?>{'productId': 'p_sucre', 'qty': 30},
+        ]);
+      },
+    );
   });
 
   group('a refusal', () {
