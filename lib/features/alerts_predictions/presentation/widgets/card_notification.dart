@@ -5,11 +5,17 @@ class CardNotification extends StatelessWidget {
   final String message;
   final String notificationTitle;
   final String time;
+
+  /// Indicateur « non lu » (point rouge). true par défaut pour
+  /// préserver le rendu existant.
+  final bool isUnread;
+
   const CardNotification({
     super.key,
     required this.message,
     required this.time,
     required this.notificationTitle,
+    this.isUnread = true,
   });
 
   @override
