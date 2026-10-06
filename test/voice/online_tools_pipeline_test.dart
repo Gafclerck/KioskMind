@@ -154,6 +154,9 @@ final class _MemorySalesRepo implements SalesRepository {
   Future<List<Sale>> getSalesHistory() async => sales;
 
   @override
+  Stream<List<Sale>> watchSalesHistory() => Stream.value(sales);
+
+  @override
   Future<List<Sale>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,
@@ -781,7 +784,9 @@ void main() {
       final String text = voiceMessageText(l10n, DoneMessage(lowStock));
       expect(
         text,
-        contains('1 produit en alerte de stock : Lait Bonnet Rouge (reste deux)'),
+        contains(
+          '1 produit en alerte de stock : Lait Bonnet Rouge (reste deux)',
+        ),
       );
     });
 

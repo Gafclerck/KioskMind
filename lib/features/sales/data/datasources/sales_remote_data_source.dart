@@ -14,6 +14,8 @@ abstract class SalesRemoteDataSource {
 
   Future<List<SaleModel>> getSalesHistory();
 
+  Stream<List<SaleModel>> watchSalesHistory();
+
   Future<List<SaleModel>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,
@@ -24,7 +26,10 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
   final FirebaseFirestore firestore;
   final FirebaseAuth auth;
 
-  SalesRemoteDataSourceImpl({required this.firestore, required this.auth});
+  SalesRemoteDataSourceImpl({
+    required this.firestore,
+    required this.auth,
+  });
 
   String get uid {
     final user = auth.currentUser;
@@ -103,7 +108,11 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       );
     }
 
-    batch.set(dailyStatsRef, statsUpdates, SetOptions(merge: true));
+    batch.set(
+      dailyStatsRef,
+      statsUpdates,
+      SetOptions(merge: true),
+    );
 
     await batch.commit();
 
@@ -124,10 +133,55 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       throw SaleNotFoundException(sale.id!);
     }
 
-    final oldSale = SaleModel.fromMap(saleDoc.data()!, id: saleDoc.id);
+    final oldSale = SaleModel.fromMap(
+      saleDoc.data()!,
+      id: saleDoc.id,
+    );
 
     if (oldSale.status == 'CANCELLED' || oldSale.cancelledAt != null) {
       throw AlreadyCancelledException(sale.id!);
+    }
+
+    final oldQuantities = _groupQuantitiesByProduct(oldSale.items);
+    final newQuantities = _groupQuantitiesByProduct(sale.items);
+
+    final productIds = <String>{
+      ...oldQuantities.keys,
+      ...newQuantities.keys,
+    };
+
+    for (final productId in productIds) {
+      final oldQty = oldQuantities[productId] ?? 0;
+      final newQty = newQuantities[productId] ?? 0;
+
+      final additionalQty = newQty - oldQty;
+
+      if (additionalQty <= 0) {
+        continue;
+      }
+
+      final productRef = productsCollection.doc(productId);
+      final productDoc = await productRef.get();
+
+      if (!productDoc.exists || productDoc.data() == null) {
+        throw Exception('Produit introuvable : $productId');
+      }
+
+      final data = productDoc.data()!;
+
+      final currentStock =
+          (data['quantity'] as num?)?.toDouble() ?? 0;
+
+      final productName =
+          data['name']?.toString() ?? productId;
+
+      if (currentStock < additionalQty) {
+        throw Exception(
+          'Stock insuffisant pour "$productName". '
+          'Disponible : ${currentStock.toInt()}, '
+          'nécessaire : ${additionalQty.toInt()}.',
+        );
+      }
     }
 
     final batch = firestore.batch();
@@ -162,19 +216,17 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
     final oldCost = _calculateCost(oldSale.items);
     final newCost = _calculateCost(sale.items);
 
-    final oldQuantities = _groupQuantitiesByProduct(oldSale.items);
-
-    final newQuantities = _groupQuantitiesByProduct(sale.items);
-
     if (oldDateId == newDateId) {
       final dailyStatsRef = dailyStatsCollection.doc(oldDateId);
 
       final statsUpdates = <String, dynamic>{
-        'revenue': FieldValue.increment(sale.total - oldSale.total),
-        'cost': FieldValue.increment(newCost - oldCost),
+        'revenue': FieldValue.increment(
+          sale.total - oldSale.total,
+        ),
+        'cost': FieldValue.increment(
+          newCost - oldCost,
+        ),
       };
-
-      final productIds = <String>{...oldQuantities.keys, ...newQuantities.keys};
 
       for (final productId in productIds) {
         final oldQty = oldQuantities[productId] ?? 0;
@@ -183,13 +235,19 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
         final delta = newQty - oldQty;
 
         if (delta != 0) {
-          statsUpdates['qtyByProduct.$productId'] = FieldValue.increment(delta);
+          statsUpdates['qtyByProduct.$productId'] =
+              FieldValue.increment(delta);
         }
       }
 
-      batch.set(dailyStatsRef, statsUpdates, SetOptions(merge: true));
+      batch.set(
+        dailyStatsRef,
+        statsUpdates,
+        SetOptions(merge: true),
+      );
     } else {
-      final oldDailyStatsRef = dailyStatsCollection.doc(oldDateId);
+      final oldDailyStatsRef =
+          dailyStatsCollection.doc(oldDateId);
 
       final oldStatsUpdates = <String, dynamic>{
         'revenue': FieldValue.increment(-oldSale.total),
@@ -198,14 +256,18 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       };
 
       for (final entry in oldQuantities.entries) {
-        oldStatsUpdates['qtyByProduct.${entry.key}'] = FieldValue.increment(
-          -entry.value,
-        );
+        oldStatsUpdates['qtyByProduct.${entry.key}'] =
+            FieldValue.increment(-entry.value);
       }
 
-      batch.set(oldDailyStatsRef, oldStatsUpdates, SetOptions(merge: true));
+      batch.set(
+        oldDailyStatsRef,
+        oldStatsUpdates,
+        SetOptions(merge: true),
+      );
 
-      final newDailyStatsRef = dailyStatsCollection.doc(newDateId);
+      final newDailyStatsRef =
+          dailyStatsCollection.doc(newDateId);
 
       final newStatsUpdates = <String, dynamic>{
         'revenue': FieldValue.increment(sale.total),
@@ -214,31 +276,32 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       };
 
       for (final entry in newQuantities.entries) {
-        newStatsUpdates['qtyByProduct.${entry.key}'] = FieldValue.increment(
-          entry.value,
-        );
+        newStatsUpdates['qtyByProduct.${entry.key}'] =
+            FieldValue.increment(entry.value);
       }
 
-      batch.set(newDailyStatsRef, newStatsUpdates, SetOptions(merge: true));
+      batch.set(
+        newDailyStatsRef,
+        newStatsUpdates,
+        SetOptions(merge: true),
+      );
     }
 
     final updatedSale = SaleModel(
       id: sale.id,
       dateTime: sale.dateTime,
-
       createdAt: oldSale.createdAt,
-
       total: sale.total,
       items: sale.items,
-
       source: oldSale.source,
-
       status: sale.status,
-
       cancelledAt: null,
     );
 
-    batch.update(saleRef, updatedSale.toMap());
+    batch.update(
+      saleRef,
+      updatedSale.toMap(),
+    );
 
     await batch.commit();
 
@@ -253,7 +316,10 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       throw SaleNotFoundException(saleId);
     }
 
-    final sale = SaleModel.fromMap(saleDoc.data()!, id: saleDoc.id);
+    final sale = SaleModel.fromMap(
+      saleDoc.data()!,
+      id: saleDoc.id,
+    );
 
     if (sale.status == 'CANCELLED' || sale.cancelledAt != null) {
       throw AlreadyCancelledException(saleId);
@@ -293,15 +359,19 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       'salesCount': FieldValue.increment(-1),
     };
 
-    final quantitiesByProduct = _groupQuantitiesByProduct(sale.items);
+    final quantitiesByProduct =
+        _groupQuantitiesByProduct(sale.items);
 
     for (final entry in quantitiesByProduct.entries) {
-      statsUpdates['qtyByProduct.${entry.key}'] = FieldValue.increment(
-        -entry.value,
-      );
+      statsUpdates['qtyByProduct.${entry.key}'] =
+          FieldValue.increment(-entry.value);
     }
 
-    batch.set(dailyStatsRef, statsUpdates, SetOptions(merge: true));
+    batch.set(
+      dailyStatsRef,
+      statsUpdates,
+      SetOptions(merge: true),
+    );
 
     await batch.commit();
 
@@ -324,9 +394,31 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
         .get();
 
     return snapshot.docs
-        .map((doc) => SaleModel.fromMap(doc.data(), id: doc.id))
+        .map(
+          (doc) => SaleModel.fromMap(
+            doc.data(),
+            id: doc.id,
+          ),
+        )
         .toList();
   }
+
+  @override
+Stream<List<SaleModel>> watchSalesHistory() {
+  return salesCollection
+      .orderBy('dateTime', descending: true)
+      .snapshots()
+      .map(
+        (snapshot) => snapshot.docs
+            .map(
+              (doc) => SaleModel.fromMap(
+                doc.data(),
+                id: doc.id,
+              ),
+            )
+            .toList(),
+      );
+}
 
   @override
   Future<List<SaleModel>> getSalesByDateRange({
@@ -338,12 +430,20 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
           'dateTime',
           isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
         )
-        .where('dateTime', isLessThan: Timestamp.fromDate(endDate))
+        .where(
+          'dateTime',
+          isLessThan: Timestamp.fromDate(endDate),
+        )
         .orderBy('dateTime', descending: true)
         .get();
 
     return snapshot.docs
-        .map((doc) => SaleModel.fromMap(doc.data(), id: doc.id))
+        .map(
+          (doc) => SaleModel.fromMap(
+            doc.data(),
+            id: doc.id,
+          ),
+        )
         .toList();
   }
 
@@ -359,11 +459,14 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
     });
   }
 
-  Map<String, double> _groupQuantitiesByProduct(List<SaleItem> items) {
+  Map<String, double> _groupQuantitiesByProduct(
+    List<SaleItem> items,
+  ) {
     final quantities = <String, double>{};
 
     for (final item in items) {
-      quantities[item.productId] = (quantities[item.productId] ?? 0) + item.qty;
+      quantities[item.productId] =
+          (quantities[item.productId] ?? 0) + item.qty;
     }
 
     return quantities;

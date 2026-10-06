@@ -53,10 +53,6 @@ class _P {
   );
 }
 
-// -----------------------------------------------------------------------------
-// DASHBOARD
-// -----------------------------------------------------------------------------
-
 class SalesDashboardPage extends ConsumerStatefulWidget {
   const SalesDashboardPage({super.key});
 
@@ -65,24 +61,7 @@ class SalesDashboardPage extends ConsumerStatefulWidget {
 }
 
 class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
-  late Future<List<Sale>> _future;
-
   _Period _period = _Period.semaine;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    _future = ref.read(getSalesHistoryProvider).call();
-  }
-
-  Future<void> _refresh() async {
-    setState(_load);
-    await _future;
-  }
 
   String _getUserFirstName(String? fullName) {
     final name = fullName?.trim() ?? '';
@@ -108,7 +87,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
       case _Period.semaine:
         final today = DateTime(now.year, now.month, now.day);
+
         final daysFromMonday = today.weekday - 1;
+
         final start = today.subtract(Duration(days: daysFromMonday));
 
         return DateTimeRange(
@@ -117,11 +98,13 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         );
 
       case _Period.mois:
-        final start = DateTime(now.year, now.month, 1);
+        final quarterStartMonth = ((now.month - 1) ~/ 3) * 3 + 1;
+
+        final start = DateTime(now.year, quarterStartMonth, 1);
 
         return DateTimeRange(
           start: start,
-          end: DateTime(now.year, now.month + 1, 1),
+          end: DateTime(now.year, quarterStartMonth + 3, 1),
         );
     }
   }
@@ -212,20 +195,39 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         return (labels, values);
 
       case _Period.mois:
-        final labels = ['S1', 'S2', 'S3', 'S4'];
+        final now = DateTime.now();
 
-        final values = List<double>.filled(4, 0);
+        final quarterStartMonth = ((now.month - 1) ~/ 3) * 3 + 1;
+
+        const monthLabels = [
+          'Jan',
+          'Fév',
+          'Mar',
+          'Avr',
+          'Mai',
+          'Juin',
+          'Juil',
+          'Août',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Déc',
+        ];
+
+        final labels = [
+          monthLabels[quarterStartMonth - 1],
+          monthLabels[quarterStartMonth],
+          monthLabels[quarterStartMonth + 1],
+        ];
+
+        final values = List<double>.filled(3, 0);
 
         for (final sale in validSales) {
-          final day = sale.dateTime.day;
+          final monthIndex = sale.dateTime.month - quarterStartMonth;
 
-          var index = (day - 1) ~/ 7;
-
-          if (index > 3) {
-            index = 3;
+          if (monthIndex >= 0 && monthIndex < 3) {
+            values[monthIndex] += sale.total;
           }
-
-          values[index] += sale.total;
         }
 
         return (labels, values);
@@ -298,6 +300,7 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
   double _growth(List<Sale> current, List<Sale> previous) {
     final currentRevenue = _totalRevenue(current);
+
     final previousRevenue = _totalRevenue(previous);
 
     if (previousRevenue == 0) {
@@ -311,46 +314,47 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     return ((currentRevenue - previousRevenue) / previousRevenue) * 100;
   }
 
-  // ---------------------------------------------------------------------------
-  // BUILD
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    final salesAsync = ref.watch(salesHistoryStreamProvider);
+
     final productsAsync = ref.watch(productsProvider);
+
     final profileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
       body: SafeArea(
-        child: FutureBuilder<List<Sale>>(
-          future: _future,
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator(color: p.primary));
-            }
-
-            if (snap.hasError || !snap.hasData) {
-              return _ErrorState(
-                message: 'Impossible de charger les statistiques.',
-                onRetry: _refresh,
-              );
-            }
-
-            final allSales = snap.data ?? [];
-
+        child: salesAsync.when(
+          loading: () {
+            return Center(child: CircularProgressIndicator(color: p.primary));
+          },
+          error: (error, stackTrace) {
+            return _ErrorState(
+              message: 'Impossible de charger les statistiques.',
+              onRetry: () {
+                ref.invalidate(salesHistoryStreamProvider);
+              },
+            );
+          },
+          data: (allSales) {
             final todayRange = _currentRange(_Period.jour);
+
             final todaySales = _filterSales(allSales, todayRange);
 
             final currentRange = _currentRange(_period);
+
             final currentSales = _filterSales(allSales, currentRange);
 
             final previousRange = _previousRange(_period);
+
             final previousSales = _filterSales(allSales, previousRange);
 
             final revenue = _totalRevenue(todaySales);
+
             final cost = _totalCost(todaySales);
+
             final margin = revenue - cost;
 
             final validTodaySales = _validSales(todaySales);
@@ -403,13 +407,14 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
             final peakHour = _peakHour(currentSales);
 
             return RefreshIndicator(
-              onRefresh: _refresh,
+              onRefresh: () async {
+                ref.invalidate(salesHistoryStreamProvider);
+              },
               color: p.primary,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
-                  // HEADER
                   _Header(
                     name: _getUserFirstName(profileAsync.valueOrNull?.fullName),
                     alertCount: alertCount,
@@ -417,7 +422,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 20),
 
-                  // KPI
                   _KpiGrid(
                     revenue: revenue,
                     margin: margin,
@@ -433,7 +437,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ACTIONS RAPIDES
                   _SectionTitle('Actions rapides', p),
 
                   const SizedBox(height: 12),
@@ -460,7 +463,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // STATISTIQUES
                   _SectionTitle('Statistiques', p),
 
                   const SizedBox(height: 12),
@@ -476,22 +478,18 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  // GRAPHIQUE
                   _SalesChartCard(labels: labels, values: values),
 
                   const SizedBox(height: 12),
 
-                  // CATEGORIES
                   _CategoriesCard(quantities: categoryQuantities),
 
                   const SizedBox(height: 12),
 
-                  // TOP PRODUITS
                   _TopProductsCard(qty: productQuantities),
 
                   const SizedBox(height: 12),
 
-                  // INSIGHTS
                   _InsightsRow(
                     bestProduct: bestProduct,
                     growth: growth,
@@ -500,7 +498,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ALERTES STOCK
                   _SectionTitle('Alertes stock', p),
 
                   const SizedBox(height: 12),
@@ -509,7 +506,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ACTIVITE RECENTE
                   _SectionTitle('Activité récente', p),
 
                   const SizedBox(height: 12),
@@ -533,10 +529,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
-
-// -----------------------------------------------------------------------------
-// HEADER
-// -----------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
   final String name;
@@ -591,16 +583,17 @@ class _Header extends StatelessWidget {
     final statusText = p.dark ? p.accent : const Color(0xFFD98228);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+      padding: const EdgeInsets.fromLTRB(15, 12, 11, 12),
       decoration: BoxDecoration(
         color: headerBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -610,6 +603,7 @@ class _Header extends StatelessWidget {
                     Text(
                       'Bonjour, ',
                       style: p.t.bodySmall?.copyWith(
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: p.primary,
                       ),
@@ -619,6 +613,7 @@ class _Header extends StatelessWidget {
                         name,
                         overflow: TextOverflow.ellipsis,
                         style: p.t.titleLarge?.copyWith(
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: p.dark ? p.text : const Color(0xFF164D46),
                         ),
@@ -626,30 +621,29 @@ class _Header extends StatelessWidget {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 8),
-
+                const SizedBox(height: 5),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 6,
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: statusBackground,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.check_circle_outline_rounded,
-                        size: 14,
+                        size: 13,
                         color: p.accent,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Text(
                         'Votre boutique est sous contrôle',
                         style: p.t.labelSmall?.copyWith(
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: statusText,
                         ),
@@ -657,28 +651,25 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 5),
-
+                const SizedBox(height: 3),
                 Text(
                   _formatDate(),
-                  style: p.t.labelSmall?.copyWith(color: p.muted),
+                  style: p.t.labelSmall?.copyWith(fontSize: 10, color: p.muted),
                 ),
               ],
             ),
           ),
-
           Row(
             children: [
               Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 43,
-                    height: 43,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: p.card,
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -691,17 +682,16 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   if (alertCount > 0)
                     Positioned(
                       right: -4,
                       top: -5,
                       child: Container(
                         constraints: const BoxConstraints(
-                          minWidth: 19,
-                          minHeight: 19,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
                         decoration: BoxDecoration(
                           color: p.accent,
                           shape: BoxShape.circle,
@@ -711,7 +701,7 @@ class _Header extends StatelessWidget {
                           child: Text(
                             alertCount > 9 ? '9+' : '$alertCount',
                             style: p.t.labelSmall?.copyWith(
-                              fontSize: 9,
+                              fontSize: 8,
                               fontWeight: FontWeight.w700,
                               color: p.onPrimary,
                             ),
@@ -721,20 +711,18 @@ class _Header extends StatelessWidget {
                     ),
                 ],
               ),
-
-              const SizedBox(width: 9),
-
+              const SizedBox(width: 7),
               Container(
-                width: 43,
-                height: 43,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: p.card,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.person_outline_rounded,
                   color: p.primary,
-                  size: 22,
+                  size: 20,
                 ),
               ),
             ],
@@ -744,10 +732,6 @@ class _Header extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// KPI
-// -----------------------------------------------------------------------------
 
 class _KpiGrid extends StatelessWidget {
   final double revenue;
@@ -772,24 +756,33 @@ class _KpiGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final growthText = growth >= 0
+    final safeMargin = margin < 0 ? 0.0 : margin;
+
+    final growthText = growth > 0
         ? '+${growth.toStringAsFixed(1)}% vs hier'
-        : '${growth.toStringAsFixed(1)}% vs hier';
+        : growth < 0
+        ? '${growth.toStringAsFixed(1)}% vs hier'
+        : '0% vs hier';
+
+    final marginPercent = revenue > 0
+        ? ((safeMargin / revenue) * 100).clamp(0, 100)
+        : 0.0;
 
     return GridView.count(
       crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
+      crossAxisSpacing: 6,
+      mainAxisSpacing: 6,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.4,
+      childAspectRatio: 2.1,
       children: [
         _KpiCard(
           title: 'Ventes du jour',
           value: _money(revenue),
           color: p.success,
           trend: growthText,
-          trendUp: growth >= 0,
+          trendUp: growth > 0,
+          trendDown: growth < 0,
         ),
         _KpiCard(
           title: 'Produits en stock',
@@ -798,16 +791,19 @@ class _KpiGrid extends StatelessWidget {
           trend: '$categoriesCount catégories',
         ),
         _KpiCard(
-          title: 'Bénéfice (est.)',
-          value: _money(margin),
+          title: 'Bénéfice',
+          value: _money(safeMargin),
           color: p.info,
-          trend: 'Marge réelle',
+          trend: 'Marge réelle ${marginPercent.toStringAsFixed(1)} %',
         ),
         _KpiCard(
           title: 'Alertes',
           value: '$alertCount',
-          color: p.error,
-          trend: alertCount > 0 ? 'Stock faible' : 'Stock sous contrôle',
+          color: alertCount > 0 ? p.accent : p.success,
+          trend: alertCount > 0
+              ? '$alertCount ${alertCount == 1 ? 'alerte' : 'alertes'}'
+              : 'Tout est sous contrôle',
+          alert: true,
         ),
       ],
     );
@@ -820,6 +816,8 @@ class _KpiCard extends StatelessWidget {
   final Color color;
   final String trend;
   final bool trendUp;
+  final bool trendDown;
+  final bool alert;
 
   const _KpiCard({
     required this.title,
@@ -827,49 +825,150 @@ class _KpiCard extends StatelessWidget {
     required this.color,
     required this.trend,
     this.trendUp = false,
+    this.trendDown = false,
+    this.alert = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    if (alert) {
+      final hasAlerts = value != '0';
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: p.cardDecoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Alertes',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: p.t.bodySmall?.copyWith(
+                color: p.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 1),
+            if (hasAlerts)
+              Expanded(
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: p.t.titleLarge?.copyWith(
+                          fontSize: 24,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                          color: p.accent,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Icon(
+                        Icons.warning_rounded,
+                        size: 42,
+                        color: p.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Expanded(
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 32,
+                      color: p.success,
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Tout est sous contrôle',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.success,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    Color trendColor = p.muted;
+    IconData? trendIcon;
+
+    if (trendUp) {
+      trendColor = p.success;
+      trendIcon = Icons.trending_up_rounded;
+    } else if (trendDown) {
+      trendColor = p.accent;
+      trendIcon = Icons.trending_down_rounded;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: p.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             title,
-            style: p.t.bodyMedium?.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: p.t.bodySmall?.copyWith(
               color: p.muted,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: p.t.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  value,
+                  style: p.t.titleLarge?.copyWith(
+                    fontSize: 22,
+                    height: 1.0,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
               ),
             ),
           ),
           Row(
             children: [
-              if (trendUp) ...[
-                Icon(Icons.trending_up, size: 14, color: p.success),
-                const SizedBox(width: 4),
+              if (trendIcon != null) ...[
+                Icon(trendIcon, size: 14, color: trendColor),
+                const SizedBox(width: 3),
               ],
               Flexible(
                 child: Text(
                   trend,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: p.t.bodySmall?.copyWith(
-                    color: trendUp ? p.success : p.muted,
+                    color: trendColor,
+                    fontSize: 11,
+                    height: 1.0,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -881,10 +980,6 @@ class _KpiCard extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// ACTIONS RAPIDES
-// -----------------------------------------------------------------------------
 
 class _QuickActions extends StatelessWidget {
   final VoidCallback onAddProduct;
@@ -976,10 +1071,6 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// SELECTEUR DE PERIODE
-// -----------------------------------------------------------------------------
-
 class _PeriodSelector extends StatelessWidget {
   final _Period value;
   final ValueChanged<_Period> onChanged;
@@ -989,7 +1080,7 @@ class _PeriodSelector extends StatelessWidget {
   static const Map<_Period, String> _labels = {
     _Period.jour: 'Jour',
     _Period.semaine: 'Semaine',
-    _Period.mois: 'Mois',
+    _Period.mois: 'Trimestre',
   };
 
   @override
@@ -997,11 +1088,11 @@ class _PeriodSelector extends StatelessWidget {
     final p = _P.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: p.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: p.border),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: p.border.withValues(alpha: 0.7)),
       ),
       child: Row(
         children: _Period.values.map((period) {
@@ -1011,18 +1102,19 @@ class _PeriodSelector extends StatelessWidget {
             child: GestureDetector(
               onTap: () => onChanged(period),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: selected ? p.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   _labels[period]!,
-                  style: p.t.labelLarge?.copyWith(
+                  textAlign: TextAlign.center,
+                  style: p.t.labelMedium?.copyWith(
                     color: selected ? p.onPrimary : p.muted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -1034,10 +1126,6 @@ class _PeriodSelector extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// GRAPHIQUE DES VENTES
-// -----------------------------------------------------------------------------
-
 class _SalesChartCard extends StatelessWidget {
   final List<String> labels;
   final List<double> values;
@@ -1048,68 +1136,134 @@ class _SalesChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final maxV = values.isEmpty ? 1.0 : values.reduce(math.max);
+    final hasSales = values.isNotEmpty && values.any((value) => value > 0);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 13),
       decoration: p.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Évolution des ventes', style: p.t.titleMedium),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 130,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(values.length, (i) {
-                final isMax = values[i] == maxV && maxV > 0;
+          Text(
+            'Évolution des ventes',
+            style: p.t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'Suivez l’évolution de votre activité',
+            style: p.t.bodySmall?.copyWith(color: p.muted, fontSize: 10),
+          ),
+          const SizedBox(height: 15),
+          if (!hasSales)
+            SizedBox(
+              height: 132,
+              child: Center(
+                child: Text(
+                  'Aucune vente pour cette période',
+                  style: p.t.bodySmall?.copyWith(color: p.muted),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 132,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(values.length, (i) {
+                  final value = values[i];
 
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: TweenAnimationBuilder<double>(
-                              key: ValueKey('${labels.length}-$i-${values[i]}'),
-                              tween: Tween(
-                                begin: 0,
-                                end: maxV == 0 ? 0 : values[i] / maxV,
-                              ),
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, factor, child) {
-                                final height = factor.clamp(0.02, 1.0);
+                  final maxV = values.reduce(math.max);
 
-                                return FractionallySizedBox(
-                                  heightFactor: height,
+                  final factor = maxV <= 0
+                      ? 0.0
+                      : (value / maxV).clamp(0.0, 1.0);
+
+                  final maxIndex = values.indexOf(maxV);
+
+                  final isMax = i == maxIndex && value > 0;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Stack(
+                              alignment: Alignment.bottomCenter,
+                              children: [
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
                                   child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isMax
-                                          ? p.primary
-                                          : p.primary.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
+                                    height: 1,
+                                    color: p.border.withValues(alpha: 0.45),
                                   ),
-                                );
-                              },
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey(
+                                      '${labels.length}'
+                                      '-$i-$value',
+                                    ),
+                                    tween: Tween(begin: 0.0, end: factor),
+                                    duration: const Duration(milliseconds: 150),
+                                    curve: Curves.easeOutCubic,
+                                    builder: (context, animationValue, child) {
+                                      final height = animationValue <= 0
+                                          ? 0.015
+                                          : animationValue;
+
+                                      return FractionallySizedBox(
+                                        heightFactor: height,
+                                        widthFactor: 0.46,
+                                        alignment: Alignment.bottomCenter,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isMax
+                                                ? p.primary
+                                                : p.primary.withValues(
+                                                    alpha: 0.16,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          labels[i],
-                          style: p.t.labelSmall?.copyWith(color: p.muted),
-                        ),
-                      ],
+                          const SizedBox(height: 7),
+                          Text(
+                            labels[i],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: p.t.labelSmall?.copyWith(
+                              fontSize: 9.5,
+                              color: isMax ? p.primary : p.muted,
+                              fontWeight: isMax
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
+          const SizedBox(height: 10),
+          _ChartInfo(
+            text:
+                'Plus la barre est haute, plus vos ventes sont importantes par rapport aux autres périodes.',
           ),
         ],
       ),
@@ -1117,9 +1271,41 @@ class _SalesChartCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// CATEGORIES
-// -----------------------------------------------------------------------------
+class _ChartInfo extends StatelessWidget {
+  final String text;
+
+  const _ChartInfo({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _P.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: p.card,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.insights_rounded, size: 15, color: p.muted),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              text,
+              style: p.t.bodySmall?.copyWith(
+                color: p.muted,
+                fontSize: 9.5,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _CategoriesCard extends StatelessWidget {
   final Map<String, double> quantities;
@@ -1142,8 +1328,16 @@ class _CategoriesCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Top catégories', style: p.t.titleMedium),
-            const SizedBox(height: 12),
+            Text(
+              'Top catégories',
+              style: p.t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Répartition de vos ventes',
+              style: p.t.bodySmall?.copyWith(color: p.muted, fontSize: 10),
+            ),
+            const SizedBox(height: 16),
             Text(
               'Aucune vente pour le moment.',
               style: p.t.bodyMedium?.copyWith(color: p.muted),
@@ -1155,63 +1349,144 @@ class _CategoriesCard extends StatelessWidget {
 
     final total = topEntries.fold<double>(0, (sum, item) => sum + item.value);
 
+    final colors = [p.primary, p.primary.withValues(alpha: 0.55), p.accent];
+
     final data = <(String, double, Color)>[];
 
-    final colors = [p.primary, p.primary.withValues(alpha: 0.5), p.accent];
-
     for (var i = 0; i < topEntries.length; i++) {
-      final percentage = total == 0 ? 0.0 : (topEntries[i].value / total) * 100;
+      final percentage = total <= 0 ? 0.0 : (topEntries[i].value / total) * 100;
 
       data.add((topEntries[i].key, percentage, colors[i]));
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
       decoration: p.cardDecoration,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 92,
-            height: 92,
-            child: CustomPaint(
-              painter: _DonutPainter(
-                data.map((item) => (item.$2, item.$3)).toList(),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Top catégories',
+                      style: p.t.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Répartition de vos ventes',
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              Icon(Icons.pie_chart_outline_rounded, size: 19, color: p.primary),
+            ],
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Top catégories', style: p.t.titleMedium),
-                const SizedBox(height: 10),
-                for (final item in data)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
+          const SizedBox(height: 15),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 112,
+                height: 112,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, animationValue, child) {
+                        return CustomPaint(
+                          size: const Size(112, 112),
+                          painter: _DonutPainter(
+                            data
+                                .map(
+                                  (item) => (item.$2 * animationValue, item.$3),
+                                )
+                                .toList(),
+                          ),
+                        );
+                      },
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: item.$3,
-                            shape: BoxShape.circle,
+                        Text(
+                          '${topEntries.length}',
+                          style: p.t.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: p.primary,
+                            height: 1,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${item.$1} (${item.$2.round()}%)',
-                            overflow: TextOverflow.ellipsis,
-                            style: p.t.bodySmall,
+                        const SizedBox(height: 3),
+                        Text(
+                          'Top',
+                          style: p.t.labelSmall?.copyWith(
+                            color: p.muted,
+                            fontSize: 9,
                           ),
                         ),
                       ],
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  children: [
+                    for (var i = 0; i < data.length; i++)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i == data.length - 1 ? 0 : 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: data[i].$3,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                data[i].$1,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: p.t.bodySmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${data[i].$2.round()}%',
+                              style: p.t.labelMedium?.copyWith(
+                                color: p.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1226,7 +1501,7 @@ class _DonutPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 16.0;
+    const stroke = 17.0;
 
     final rect = (Offset.zero & size).deflate(stroke / 2);
 
@@ -1248,9 +1523,9 @@ class _DonutPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.butt;
+        ..strokeCap = StrokeCap.round;
 
-      canvas.drawArc(rect, start, sweep - 0.04, false, paint);
+      canvas.drawArc(rect, start, math.max(0, sweep - 0.045), false, paint);
 
       start += sweep;
     }
@@ -1261,10 +1536,6 @@ class _DonutPainter extends CustomPainter {
     return oldDelegate.slices != slices;
   }
 }
-
-// -----------------------------------------------------------------------------
-// TOP PRODUITS
-// -----------------------------------------------------------------------------
 
 class _TopProductsCard extends StatelessWidget {
   final Map<String, double> qty;
@@ -1283,54 +1554,57 @@ class _TopProductsCard extends StatelessWidget {
     final maxQ = top.isEmpty ? 1.0 : top.first.value;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
       decoration: p.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Produits les plus vendus', style: p.t.titleMedium),
-          const SizedBox(height: 14),
-          if (top.isEmpty)
-            Text(
-              'Aucune vente pour le moment.',
-              style: p.t.bodyMedium?.copyWith(color: p.muted),
-            ),
-          for (final entry in top)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          entry.key,
-                          overflow: TextOverflow.ellipsis,
-                          style: p.t.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Produits les plus vendus',
+                      style: p.t.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${entry.value.round()} vendus',
-                        style: p.t.bodySmall?.copyWith(color: p.muted),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: maxQ == 0 ? 0 : entry.value / maxQ,
-                      minHeight: 8,
-                      backgroundColor: p.soft,
-                      color: p.primary,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      'Vos produits les plus populaires',
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.bar_chart_rounded, size: 20, color: p.primary),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (top.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Center(
+                child: Text(
+                  'Aucune vente pour le moment.',
+                  style: p.t.bodyMedium?.copyWith(color: p.muted),
+                ),
+              ),
+            ),
+          for (var i = 0; i < top.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == top.length - 1 ? 0 : 13),
+              child: _TopProductRow(
+                rank: i + 1,
+                name: top[i].key,
+                quantity: top[i].value,
+                maxQuantity: maxQ,
               ),
             ),
         ],
@@ -1339,9 +1613,92 @@ class _TopProductsCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// INSIGHTS
-// -----------------------------------------------------------------------------
+class _TopProductRow extends StatelessWidget {
+  final int rank;
+  final String name;
+  final double quantity;
+  final double maxQuantity;
+
+  const _TopProductRow({
+    required this.rank,
+    required this.name,
+    required this.quantity,
+    required this.maxQuantity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _P.of(context);
+
+    final progress = maxQuantity <= 0
+        ? 0.0
+        : (quantity / maxQuantity).clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 25,
+              height: 25,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: rank == 1
+                    ? p.primary
+                    : p.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$rank',
+                style: p.t.labelSmall?.copyWith(
+                  color: rank == 1 ? p.onPrimary : p.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: p.t.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${quantity.round()} vendus',
+              style: p.t.labelSmall?.copyWith(
+                color: p.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: progress),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) {
+              return LinearProgressIndicator(
+                value: value,
+                minHeight: 7,
+                backgroundColor: p.soft,
+                color: rank == 1
+                    ? p.primary
+                    : p.primary.withValues(alpha: 0.55),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _InsightsRow extends StatelessWidget {
   final String bestProduct;
@@ -1370,37 +1727,77 @@ class _InsightsRow extends StatelessWidget {
               child: _InsightCard(
                 label: 'Meilleur produit',
                 value: bestProduct,
+                icon: Icons.star_rounded,
+                iconColor: p.accent,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _InsightCard(
                 label: 'Croissance',
                 value: growthText,
-                valueColor: growth >= 0 ? p.success : p.error,
+                icon: growth >= 0
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                iconColor: growth >= 0 ? p.success : p.accent,
+                valueColor: growth >= 0 ? p.success : p.accent,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
           decoration: p.cardDecoration,
           child: Row(
             children: [
-              Icon(Icons.schedule_rounded, color: p.primary, size: 20),
-              const SizedBox(width: 10),
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: p.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.schedule_rounded, color: p.primary, size: 19),
+              ),
+              const SizedBox(width: 11),
               Expanded(
-                child: Text(
-                  'Heure de pointe des ventes',
-                  style: p.t.bodyMedium?.copyWith(color: p.muted),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Heure de pointe',
+                      style: p.t.bodySmall?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Moment où vous vendez le plus',
+                      style: p.t.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                peakHour,
-                style: p.t.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: p.primary,
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: p.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                  peakHour,
+                  style: p.t.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: p.primary,
+                  ),
                 ),
               ),
             ],
@@ -1415,32 +1812,77 @@ class _InsightCard extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final IconData icon;
+  final Color? iconColor;
 
   const _InsightCard({
     required this.label,
     required this.value,
+    required this.icon,
     this.valueColor,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    final color = iconColor ?? p.primary;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 14),
       decoration: p.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: p.t.bodySmall?.copyWith(color: p.muted)),
-          const SizedBox(height: 6),
+          Row(
+            children: [
+              Container(
+                width: 31,
+                height: 31,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(icon, size: 17, color: color),
+              ),
+              const Spacer(),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 11,
+                color: p.muted.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
           Text(
-            value,
-            maxLines: 2,
+            label,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: p.t.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? p.primary,
+            style: p.t.bodySmall?.copyWith(color: p.muted, fontSize: 10),
+          ),
+          const SizedBox(height: 4),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            builder: (context, animation, child) {
+              return Opacity(
+                opacity: animation,
+                child: Transform.translate(
+                  offset: Offset(0, 4 * (1 - animation)),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: p.t.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? p.primary,
+              ),
             ),
           ),
         ],
@@ -1448,10 +1890,6 @@ class _InsightCard extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// ALERTES STOCK
-// -----------------------------------------------------------------------------
 
 class _StockAlertsCard extends StatelessWidget {
   final List<dynamic> products;
@@ -1540,10 +1978,6 @@ class _StockAlertsCard extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// ACTIVITE RECENTE
-// -----------------------------------------------------------------------------
 
 class _RecentActivity extends StatelessWidget {
   final List<Sale> sales;
@@ -1727,10 +2161,6 @@ class _RecentActivity extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ETAT ERREUR
-// -----------------------------------------------------------------------------
-
 class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -1758,10 +2188,6 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// TITRES
-// -----------------------------------------------------------------------------
 
 class _SectionTitle extends StatelessWidget {
   final String text;

@@ -9,6 +9,8 @@ abstract class SalesRepository {
 
   Future<List<Sale>> getSalesHistory();
 
+  Stream<List<Sale>> watchSalesHistory();
+
   Future<List<Sale>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,

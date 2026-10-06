@@ -19,27 +19,14 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   DateTime? _customStart;
   DateTime? _customEnd;
 
-  late Future<List<Sale>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    _future = ref.read(getSalesHistoryProvider).call();
-  }
-
   Future<void> _refresh() async {
-    ref.invalidate(getSalesHistoryProvider);
-    setState(_load);
-    await _future;
+    ref.invalidate(salesHistoryStreamProvider);
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final salesAsync = ref.watch(salesHistoryStreamProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -56,46 +43,25 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         actions: [
           IconButton(
             onPressed: _refresh,
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: colorScheme.primary,
-            ),
+            icon: Icon(Icons.refresh_rounded, color: colorScheme.primary),
           ),
         ],
       ),
-      body: FutureBuilder<List<Sale>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: colorScheme.primary,
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Impossible de charger les ventes.',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text('Réessayer'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final allSales = snapshot.data ?? [];
+      body: salesAsync.when(
+        loading: () {
+          return Center(
+            child: CircularProgressIndicator(color: colorScheme.primary),
+          );
+        },
+        error: (error, stackTrace) {
+          return Center(
+            child: Text(
+              'Impossible de charger les ventes.',
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
+          );
+        },
+        data: (allSales) {
           final sales = _filterSales(allSales);
 
           final completedSales = sales.where(
@@ -143,12 +109,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   Widget _periodSelector() {
     final colorScheme = Theme.of(context).colorScheme;
 
-    const periods = [
-      'Aujourd’hui',
-      'Cette semaine',
-      'Ce mois',
-      'Personnalisé',
-    ];
+    const periods = ['Aujourd’hui', 'Cette semaine', 'Ce mois', 'Personnalisé'];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -172,13 +133,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
               },
               selectedColor: colorScheme.primary,
               backgroundColor: colorScheme.surfaceContainer,
-              side: BorderSide(
-                color: colorScheme.outlineVariant,
-              ),
+              side: BorderSide(color: colorScheme.outlineVariant),
               labelStyle: TextStyle(
-                color: selected
-                    ? colorScheme.onPrimary
-                    : colorScheme.primary,
+                color: selected ? colorScheme.onPrimary : colorScheme.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -263,9 +220,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -327,10 +282,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                       ),
                     )
                   else
-                    Icon(
-                      Icons.more_vert_rounded,
-                      color: colorScheme.primary,
-                    ),
+                    Icon(Icons.more_vert_rounded, color: colorScheme.primary),
                 ],
               ),
               const SizedBox(height: 14),
@@ -359,10 +311,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   ),
                 ),
               ),
-              Divider(
-                height: 20,
-                color: colorScheme.outlineVariant,
-              ),
+              Divider(height: 20, color: colorScheme.outlineVariant),
               Row(
                 children: [
                   Expanded(
@@ -400,9 +349,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       context: context,
       backgroundColor: colorScheme.surfaceContainer,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         final sheetColorScheme = Theme.of(context).colorScheme;
@@ -438,9 +385,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   ),
                   title: Text(
                     'Modifier la vente',
-                    style: TextStyle(
-                      color: sheetColorScheme.onSurface,
-                    ),
+                    style: TextStyle(color: sheetColorScheme.onSurface),
                   ),
                   onTap: () {
                     Navigator.pop(context, 'edit');
@@ -453,9 +398,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
                   ),
                   title: Text(
                     'Annuler la vente',
-                    style: TextStyle(
-                      color: sheetColorScheme.onSurface,
-                    ),
+                    style: TextStyle(color: sheetColorScheme.onSurface),
                   ),
                   onTap: () {
                     Navigator.pop(context, 'cancel');
@@ -471,15 +414,9 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     if (!mounted || action == null) return;
 
     if (action == 'edit') {
-      final updated = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => UpdateSalePage(sale: sale),
-        ),
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => UpdateSalePage(sale: sale)),
       );
-
-      if (updated == true && mounted) {
-        _refresh();
-      }
 
       return;
     }
@@ -500,15 +437,11 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         return AlertDialog(
           title: Text(
             'Annuler la vente ?',
-            style: TextStyle(
-              color: dialogColorScheme.onSurface,
-            ),
+            style: TextStyle(color: dialogColorScheme.onSurface),
           ),
           content: Text(
             'Cette action annulera la vente et restaurera automatiquement le stock.',
-            style: TextStyle(
-              color: dialogColorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(color: dialogColorScheme.onSurfaceVariant),
           ),
           actions: [
             TextButton(
@@ -534,8 +467,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       await ref.read(cancelSaleProvider)(sale.id!);
 
       if (!mounted) return;
-
-      _refresh();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -567,9 +498,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         }).toList();
 
       case 'Cette semaine':
-        final startOfWeek = now.subtract(
-          Duration(days: now.weekday - 1),
-        );
+        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
 
         final start = DateTime(
           startOfWeek.year,
@@ -580,8 +509,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         final end = start.add(const Duration(days: 7));
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) &&
-              sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
         }).toList();
 
       case 'Ce mois':
@@ -589,8 +517,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         final end = DateTime(now.year, now.month + 1);
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) &&
-              sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
         }).toList();
 
       case 'Personnalisé':
@@ -611,8 +538,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
         );
 
         return sales.where((sale) {
-          return !sale.dateTime.isBefore(start) &&
-              sale.dateTime.isBefore(end);
+          return !sale.dateTime.isBefore(start) && sale.dateTime.isBefore(end);
         }).toList();
 
       default:
@@ -639,6 +565,33 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   Widget _emptyState({required bool hasAnySales}) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final String message;
+
+    if (!hasAnySales) {
+      message = 'Aucune vente enregistrée';
+    } else {
+      switch (_selectedPeriod) {
+        case 'Aujourd’hui':
+          message = 'Il n’y a pas encore eu de vente aujourd’hui.';
+          break;
+
+        case 'Cette semaine':
+          message = 'Il n’y a pas encore eu de vente cette semaine.';
+          break;
+
+        case 'Ce mois':
+          message = 'Il n’y a pas encore eu de vente ce mois-ci.';
+          break;
+
+        case 'Personnalisé':
+          message = 'Il n’y a pas de vente pour cette période.';
+          break;
+
+        default:
+          message = 'Aucune vente pour cette période.';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
       alignment: Alignment.center,
@@ -652,9 +605,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            hasAnySales
-                ? 'Aucune vente pour cette période'
-                : 'Aucune vente enregistrée',
+            message,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -667,10 +618,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             hasAnySales
                 ? 'Sélectionnez une autre période (Cette semaine, Ce mois...) pour voir vos autres ventes.'
                 : 'Vos ventes enregistrées apparaîtront ici.',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: TextStyle(fontSize: 14, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
