@@ -60,8 +60,14 @@ class FakeSpeechRecognizer implements SpeechRecognizerPort {
 
 /// A voice that remembers every sentence instead of saying it.
 class FakeTts implements TtsPort {
+  FakeTts({this.availabilityValue = TtsAvailability.ready});
+
+  /// What [availability] answers; a test that wants a silent session drops it.
+  TtsAvailability availabilityValue;
+
   final List<String> spoken = <String>[];
   int stopCount = 0;
+  int availabilityCount = 0;
 
   /// When set, [speak] waits for it before saying anything.
   ///
@@ -79,6 +85,12 @@ class FakeTts implements TtsPort {
   @override
   Future<void> stop() async {
     stopCount++;
+  }
+
+  @override
+  Future<TtsAvailability> availability() async {
+    availabilityCount++;
+    return availabilityValue;
   }
 
   /// The last sentence, which is the one the panel reacts to.
