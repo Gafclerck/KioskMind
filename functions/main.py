@@ -8,6 +8,12 @@ initialize_app()
 FENETRE_JOURS = 7
 LIMITE_JOURS = 3
 
+# Doit correspondre à `_canalAndroid` dans
+# lib/features/alerts_predictions/data/data_sources/notification_remote_data_sources.dart.
+# Sans channel_id, Android classe la notification dans un canal par défaut
+# qui peut être silencieux ; le canal doit exister côté client (créé à l'init).
+CANAL_ALERTES = "kioskmind_alertes"
+
 TYPE_LOW_STOCK = "LOW_STOCK"
 TYPE_PREDICTED = "PREDICTED_STOCKOUT"
 TYPE_NEGATIVE = "NEGATIVE_STOCK"
@@ -190,7 +196,7 @@ def _creer_alerte_et_notifier(db, uid: str, product_id: str, nom, type_alerte, v
     ref.set(donnees, merge=True)
 
     if not deja_notifiee:
-        if _envoyer_notification(db, uid, produit, type_alerte, nom, valeur):
+        if _envoyer_notification(db, uid, product_id, produit, type_alerte, nom, valeur):
             ref.update({"notifiedAt": datetime.now(timezone.utc)})
 
 
@@ -204,7 +210,51 @@ def _resoudre_alerte(db, product_id, type_alerte) -> None:
         })
 
 
-def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> bool:
+def _token_definitivement_invalide(exception) -> bool:
+    """Vrai uniquement si FCM confirme que le token n'existe plus.
+
+    On ne purge sur AUCUNE autre erreur : une panne transitoire ou un
+    payload invalide supprimerait un token encore bon, et l'appareil
+    ne recevrait plus jamais rien sans qu'on s'en aperçoive.
+    """
+    if exception is None:
+        return False
+    if isinstance(exception, messaging.UnregisteredError):
+        return True
+    code = str(getattr(exception, "code", "")).lower()
+    return "registration-token-not-registered" in code or code == "404"
+
+
+def _purger_tokens_morts(db, user_id, tokens, reponse) -> None:
+    """Retire de users/{uid}.fcmTokens les tokens qu'un appareil désinstallé
+    a laissés derrière lui.
+
+    Sans ça, chaque appareil désinstallé garde son token : la liste gonfle,
+    les envois partent vers des destinataires morts, et le quota Firestore
+    (20 000 écritures/jour en Spark) est consommé pour rien.
+    """
+    reponses = getattr(reponse, "responses", None)
+    if not reponses:
+        return
+
+    morts = [
+        token
+        for token, retour in zip(tokens, reponses)
+        if not getattr(retour, "success", True)
+        and _token_definitivement_invalide(getattr(retour, "exception", None))
+    ]
+    if not morts:
+        return
+
+    db.collection("users").document(user_id).update(
+        {"fcmTokens": firestore.ArrayRemove(*morts)}
+    )
+    print(f"[notification] {len(morts)} token(s) périmé(s) purgé(s) pour {user_id}")
+
+
+def _envoyer_notification(
+    db, uid: str, product_id: str, produit, type_alerte, nom, valeur
+) -> bool:
     """Renvoie True si la notification a atteint au moins un appareil."""
     # L'uid vient du chemin Firestore (users/{uid}/products/{id}), pas d'un champ du produit
     user_id = uid or produit.get("_uid")
@@ -224,6 +274,15 @@ def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> bo
         return False
 
     langue = user.get("language", "fr")
+
+    # Préférence utilisateur (réglages de l'app). Une clé absente = activé :
+    # aucun existant n'est privé de ses alertes après cette mise à jour.
+    if user.get("stockAlertsEnabled", True) is False:
+        print(f"[notification] Alertes de stock désactivées par {user_id}")
+        # False => notifiedAt non écrit => on retentera si la préférence
+        # est réactivée avant l'occurrence suivante.
+        return False
+
     construire_message = MESSAGES.get(langue, MESSAGES["fr"])[type_alerte]
     titre, corps = construire_message(nom, valeur)
 
@@ -232,9 +291,20 @@ def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> bo
             messaging.MulticastMessage(
                 tokens=tokens,
                 notification=messaging.Notification(title=titre, body=corps),
+                # data = ce que l'app reçoit pour ouvrir la fiche du produit.
+                data={
+                    "type": type_alerte,
+                    "productId": product_id or "",
+                    "userId": user_id,
+                },
+                android=messaging.AndroidConfig(
+                    channel_id=CANAL_ALERTES,
+                    priority=messaging.AndroidPriority.HIGH,
+                ),
             )
         )
         print(f"[notification] Envoyée à {reponse.success_count}/{len(tokens)} appareil(s)")
+        _purger_tokens_morts(db, user_id, tokens, reponse)
         # Au moins un appareil a reçu la notification : l'occurrence
         # est considérée comme notifiée.
         return reponse.success_count > 0

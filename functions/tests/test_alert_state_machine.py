@@ -54,7 +54,14 @@ class _Doc:
     def update(self, data):
         if self.path not in self.store:
             raise KeyError(f"NOT_FOUND : {self.path}")
-        self.store[self.path].update(data)
+        for champ, valeur in data.items():
+            if isinstance(valeur, _ArrayRemove):
+                actuel = self.store[self.path].get(champ, [])
+                for mort in valeur.valeurs:
+                    if mort in actuel:
+                        actuel.remove(mort)
+            else:
+                self.store[self.path][champ] = valeur
 
 
 class _Coll:
@@ -79,22 +86,48 @@ class _FakeDB:
         return _Coll(self.store, "/".join(parts))
 
 
+class _ArrayRemove:
+    """Conteneur marquant une suppression de tableau (firestore.ArrayRemove)."""
+
+    def __init__(self, *valeurs):
+        self.valeurs = valeurs
+
+
 DB = _FakeDB()
 ENVOYES = []
+
+
+class _UnregisteredError(Exception):
+    """Équivalent du messaging.UnregisteredError (token mort)."""
+
+
+def _envoyer_stub(message):
+    """Réponse FCM simulée : tous les tokens sont valides par défaut."""
+    ENVOYES.append(message)
+    tokens = message.get("tokens", [])
+    return types.SimpleNamespace(
+        success_count=len(tokens),
+        failure_count=0,
+        responses=[
+            types.SimpleNamespace(success=True, exception=None) for _ in tokens
+        ],
+    )
 
 
 def _installer_stubs():
     """Place des modules firebase factices avant d'importer main.py."""
     firebase_admin = types.ModuleType("firebase_admin")
     firebase_admin.initialize_app = lambda *a, **k: None
-    firebase_admin.firestore = types.SimpleNamespace(client=lambda: DB)
+    firebase_admin.firestore = types.SimpleNamespace(
+        client=lambda: DB, ArrayRemove=_ArrayRemove
+    )
     firebase_admin.messaging = types.SimpleNamespace(
         MulticastMessage=lambda **k: k,
         Notification=lambda **k: k,
-        send_each_for_multicast=lambda message: (
-            ENVOYES.append(message)
-            or types.SimpleNamespace(success_count=len(message.get("tokens", [])))
-        ),
+        AndroidConfig=lambda **k: k,
+        AndroidPriority=types.SimpleNamespace(HIGH="HIGH", NORMAL="NORMAL"),
+        UnregisteredError=_UnregisteredError,
+        send_each_for_multicast=_envoyer_stub,
     )
     sys.modules["firebase_admin"] = firebase_admin
 
@@ -347,6 +380,75 @@ class MachineAEtatsAlertes(unittest.TestCase):
         self._remplir_daily_stats("bizarre", 2)
         main.predictions_quotidiennes(None)
         self.assertIsNone(_statut("bizarre", "PREDICTED_STOCKOUT"))
+
+
+class EnvoiNotification(unittest.TestCase):
+    """Préférence utilisateur et purge des tokens (FCM)."""
+
+    def setUp(self):
+        DB.store.clear()
+        ENVOYES.clear()
+        self._envoi_reussi = main.messaging.send_each_for_multicast
+        _user()
+
+    def tearDown(self):
+        main.messaging.send_each_for_multicast = self._envoi_reussi
+
+    def _vendre(self, pid="riz"):
+        """Passe le stock de 12 à 8 avec un seuil à 10 : déclenche UC13."""
+        avant = {"name": "Riz", "quantity": 12, "alertThreshold": 10}
+        apres = {"name": "Riz", "quantity": 8, "alertThreshold": 10}
+        _produit(pid, 8, 10)
+        _declencher(avant, apres, pid)
+
+    def _reponse(self, tokens, exceptions):
+        return types.SimpleNamespace(
+            success_count=sum(1 for e in exceptions if e is None),
+            failure_count=sum(1 for e in exceptions if e is not None),
+            responses=[
+                types.SimpleNamespace(success=e is None, exception=e)
+                for e in exceptions
+            ],
+        )
+
+    def test_payload_cible_le_canal_alertes(self):
+        """Sans channel_id, Android classe le push dans un canal par défaut
+        dont l'importance peut être silencieuse."""
+        self._vendre()
+        self.assertEqual(ENVOYES[-1]["android"]["channel_id"], main.CANAL_ALERTES)
+        self.assertEqual(ENVOYES[-1]["data"]["productId"], "riz")
+
+    def test_alertes_desactivees_ne_notifient_pas(self):
+        DB.store["users/u1"]["stockAlertsEnabled"] = False
+        self._vendre()
+        # L'alerte reste créée : elle doit rester visible dans l'app.
+        self.assertEqual(_statut("riz", "LOW_STOCK"), "ACTIVE")
+        self.assertEqual(len(ENVOYES), 0)
+        self.assertNotIn("notifiedAt", DB.store["alerts/riz_LOW_STOCK"])
+
+    def test_preference_absente_notifie_par_defaut(self):
+        """Clé absente = activé : aucun produit existant privé d'alertes."""
+        self._vendre()
+        self.assertEqual(len(ENVOYES), 1)
+
+    def test_token_non_enregistre_est_purge(self):
+        DB.store["users/u1"]["fcmTokens"] = ["vivant", "mort"]
+        main.messaging.send_each_for_multicast = lambda m: self._reponse(
+            m["tokens"], [None, _UnregisteredError("gone")]
+        )
+        self._vendre()
+        self.assertEqual(DB.store["users/u1"]["fcmTokens"], ["vivant"])
+        self.assertIn("notifiedAt", DB.store["alerts/riz_LOW_STOCK"])
+
+    def test_erreur_transitoire_ne_purge_rien(self):
+        """Supprimer sur une panne FCM priverait l'appareil de toute
+        notification future, sans erreur visible."""
+        DB.store["users/u1"]["fcmTokens"] = ["vivant"]
+        main.messaging.send_each_for_multicast = lambda m: self._reponse(
+            m["tokens"], [RuntimeError("FCM en panne")]
+        )
+        self._vendre()
+        self.assertEqual(DB.store["users/u1"]["fcmTokens"], ["vivant"])
 
 
 if __name__ == "__main__":
