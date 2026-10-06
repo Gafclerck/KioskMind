@@ -51,6 +51,11 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
+  Stream<List<Sale>> watchSalesHistory() {
+    return remoteDataSource.watchSalesHistory();
+  }
+
+  @override
   Future<List<Sale>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,

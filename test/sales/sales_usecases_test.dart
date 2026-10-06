@@ -107,6 +107,12 @@ final class _FakeSalesRepository implements SalesRepository {
         )
         .toList();
   }
+
+  @override
+Stream<List<Sale>> watchSalesHistory() {
+  return const Stream.empty();
+}
+
 }
 
 void main() {

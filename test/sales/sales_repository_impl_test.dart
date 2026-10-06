@@ -49,6 +49,12 @@ final class _MockRemoteDataSource implements SalesRemoteDataSource {
   }) async {
     return historyToReturn;
   }
+
+  @override
+Stream<List<SaleModel>> watchSalesHistory() {
+  return const Stream.empty();
+}
+
 }
 
 void main() {

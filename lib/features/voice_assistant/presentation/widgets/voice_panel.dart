@@ -19,6 +19,7 @@ import 'voice_manual_entry_notice.dart';
 import 'voice_message_text.dart';
 import 'voice_results_panel.dart';
 import 'voice_transcript.dart';
+import 'voice_tts_unavailable_banner.dart';
 import 'voice_undo_banner.dart';
 
 /// Everything the voice module shows, in the order it happens.
@@ -89,6 +90,7 @@ class VoicePanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          if (state.speaksUnavailable) VoiceTtsUnavailableBanner(state: state),
           if (state.canUndo)
             VoiceUndoBanner(
               state: state,

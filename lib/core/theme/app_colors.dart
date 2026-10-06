@@ -18,6 +18,7 @@ abstract final class AppColors {
   static const Color error = Color(0xFFE55B48);
   static const Color errorLight = Color(0xFFC0392B);
   static const Color errorDark = Color(0xFFF08A7A);
+  static const Color errorMid = Color(0xFFE6B032);
   static const Color success = Color(0xFF1A9E75);
   static const Color successLight = Color(0xFF0F7A5A);
   static const Color successDark = Color(0xFF2BC48F);

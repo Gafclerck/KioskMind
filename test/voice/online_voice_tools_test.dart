@@ -105,6 +105,9 @@ final class _MemorySalesRepo implements SalesRepository {
   Future<List<Sale>> getSalesHistory() async => sales;
 
   @override
+  Stream<List<Sale>> watchSalesHistory() => Stream.value(sales);
+
+  @override
   Future<List<Sale>> getSalesByDateRange({
     required DateTime startDate,
     required DateTime endDate,

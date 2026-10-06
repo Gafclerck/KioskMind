@@ -7,7 +7,10 @@ import '../providers/sales_provider.dart';
 class UpdateSalePage extends ConsumerStatefulWidget {
   final Sale sale;
 
-  const UpdateSalePage({super.key, required this.sale});
+  const UpdateSalePage({
+    super.key,
+    required this.sale,
+  });
 
   @override
   ConsumerState<UpdateSalePage> createState() => _UpdateSalePageState();
@@ -141,7 +144,7 @@ class _UpdateSalePageState extends ConsumerState<UpdateSalePage> {
     } catch (e) {
       if (!mounted) return;
 
-      _showError('Impossible de modifier la vente.');
+      _showError('Plus de stock pour cette quantité.');
     } finally {
       if (mounted) {
         setState(() {
@@ -421,6 +424,35 @@ class _SaleItemCard extends StatelessWidget {
     required this.onChanged,
   });
 
+  double _parseQuantity() {
+    return double.tryParse(
+          item.quantityController.text
+              .replaceAll(' ', '')
+              .replaceAll(',', '.'),
+        ) ??
+        1;
+  }
+
+  void _decrement() {
+    final quantity = _parseQuantity();
+
+    if (quantity <= 1) return;
+
+    item.quantityController.text =
+        (quantity - 1).toInt().toString();
+
+    onChanged();
+  }
+
+  void _increment() {
+    final quantity = _parseQuantity();
+
+    item.quantityController.text =
+        (quantity + 1).toInt().toString();
+
+    onChanged();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -471,10 +503,70 @@ class _SaleItemCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _NumberField(
-                  controller: item.quantityController,
-                  label: 'Quantité',
-                  onChanged: (_) => onChanged(),
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quantité',
+                      style: TextStyle(
+                        color:
+                            colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color:
+                            colorScheme.surfaceContainerLow,
+                        borderRadius:
+                            BorderRadius.circular(14),
+                        border: Border.all(
+                          color:
+                              colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: _decrement,
+                            icon: const Icon(
+                              Icons.remove_rounded,
+                            ),
+                            color: colorScheme.primary,
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller:
+                                  item.quantityController,
+                              textAlign: TextAlign.center,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              onChanged: (_) =>
+                                  onChanged(),
+                              decoration:
+                                  const InputDecoration(
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _increment,
+                            icon: const Icon(
+                              Icons.add_rounded,
+                            ),
+                            color: colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),

@@ -11,6 +11,14 @@
   "voiceMicSpeaking": "Je vous réponds",
   "voiceMicUnavailable": "Micro indisponible",
   "voiceMicRefused": "Micro autorisé ? Sinon, utilisez la saisie manuelle",
+  "voiceTtsUnavailable": "Synthèse vocale indisponible sur cet appareil",
+  "@voiceTtsUnavailable": {
+    "description": "Montré quand l'appareil n'a pas de voix pour la langue de la boutique. L'écrit reste disponible, la lecture audio ne l'est pas."
+  },
+  "voiceTtsEngineUnreachable": "La voix ne répond pas pour l'instant. Réessayez dans un instant",
+  "@voiceTtsEngineUnreachable": {
+    "description": "Montré quand le moteur de synthèse n'a pas répondu (il peut devenir prêt plus tard) : la lecture reviendra toute seule."
+  },
   "voiceHeardLabel": "Entendu",
   "voiceQuestionProduct": "Quel produit ?",
   "voiceQuestionProductInLine": "Quel produit pour la première ligne ?",

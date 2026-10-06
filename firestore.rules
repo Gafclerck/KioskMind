@@ -1,0 +1,73 @@
+// PROPOSITION - à valider avant déploiement.
+//
+// Rien n'est déployé : ce fichier n'est référencé par aucun `firebase.json`
+// (aucune clé `firestore`). Pour le valider :
+//   1. Vérifier :  firebase emulators:start --only firestore
+//      puis jouer l'application contre l'émulateur (cf. README alerts).
+//   2. Vérifier le déploiement sec :  firebase deploy --only firestore:rules --dry-run
+//   3. Une fois validé, ajouter dans firebase.json :
+//        "firestore": { "rules": "firestore.rules" }
+//
+// Schéma réellement utilisé par l'application (voir lib/ et functions/) :
+//   users/{uid}                     profil, fcmTokens, language
+//   users/{uid}/products/{id}       stock
+//   users/{uid}/sales/{id}          ventes
+//   users/{uid}/dailyStats/{id}     stats quotidiennes
+//   users/{uid}/stockMovements/{id} mouvements de stock
+//   alerts/{productId}_{type}       top-level, écrite par les Cloud Functions
+//                                   (Admin SDK : contourne les règles), lue
+//                                   côté client et mise à jour sur `readAt`.
+//
+// Requête client : alerts.where('userId', == uid).where('status', == 'ACTIVE')
+// -> deux filtres d'égalité sur des champs indexés séparément : aucun index
+//    composite n'est nécessaire, et le filtre `userId` rend la lecture
+//    « mon document » démontrable pour le moteur de règles.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function connecte() {
+      return request.auth != null;
+    }
+
+    function estProprio(uid) {
+      return connecte() && request.auth.uid == uid;
+    }
+
+    // Le profil : lecture/écriture strictement limitées au propriétaire.
+    // `fcmTokens` est mis à jour par le client (arrayUnion du token FCM),
+    // `language` et les champs de profil par l'application.
+    match /users/{uid} {
+      allow read, write: if estProprio(uid);
+
+      // Sous-collections du kiosque : même cloisonnement, aucun accès
+      // entre utilisateurs (le chemin contient déjà l'uid).
+      match /{sousCollection}/{docId} {
+        allow read, write: if estProprio(uid);
+      }
+    }
+
+    // Alertes : top-level car les Cloud Functions les créent avec l'Admin SDK.
+    //
+    // - Lecture  : propriétaire uniquement (le filtre `userId` de la requête
+    //              garantit que seule sa propre donnée est retournée).
+    // - Création / suppression : refusées au client. Seules les Cloud
+    //   Functions (Admin SDK) créent, réactivent et résolvent les alertes.
+    // - Mise à jour : au champ `readAt` uniquement (« Tout lire »).
+    //   `status`, `resolvedAt` et `notifiedAt` restent réservés aux Functions.
+    match /alerts/{alertId} {
+      allow get, list: if estProprio(resource.data.userId);
+
+      allow update: if estProprio(resource.data.userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['readAt']);
+
+      allow create, delete: if false;
+    }
+
+    // Toute autre collection : refus par défaut (le bloc match sans `allow`
+    // ci-dessus couvre les chemins non appariés).
+  }
+}
