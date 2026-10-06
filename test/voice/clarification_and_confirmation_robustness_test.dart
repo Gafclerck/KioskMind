@@ -23,6 +23,7 @@ class _RobustnessSessionHarness {
     clock = FakeClock(DateTime(2026, 3, 14, 9, 30));
     container = ProviderContainer(
       overrides: <Override>[
+        voiceUseMocksProvider.overrideWithValue(true),
         voiceRecognizerProvider.overrideWith((Ref ref) async => recognizer),
         voiceTtsProvider.overrideWithValue(tts),
         voiceClockProvider.overrideWithValue(clock),
@@ -189,7 +190,10 @@ void main() {
         await session.controller.submit('j ai vendu un riz a mille cinq cents');
         expect(session.state.message, isA<QuestionMessage>());
         expect(session.dialog.pending, isNotNull);
-        expect(session.dialog.pending!.slot, equals(ClarificationSlot.confirmed));
+        expect(
+          session.dialog.pending!.slot,
+          equals(ClarificationSlot.confirmed),
+        );
 
         await session.controller.submit('non');
         expect(session.dialog.pending, isNotNull);

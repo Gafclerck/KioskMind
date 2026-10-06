@@ -81,6 +81,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceUseMocksProvider.overrideWithValue(true),
             voiceEnableCloudProvider.overrideWithValue(false),
           ],
         );
@@ -106,6 +107,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceUseMocksProvider.overrideWithValue(true),
             voiceEnableCloudProvider.overrideWithValue(true),
             voiceRodiumApiKeyProvider.overrideWithValue(''),
             voiceGeminiApiKeyProvider.overrideWithValue(''),
@@ -137,6 +139,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceUseMocksProvider.overrideWithValue(true),
             voiceEnableCloudProvider.overrideWithValue(true),
             voiceRodiumApiKeyProvider.overrideWithValue(''),
             voiceGeminiApiKeyProvider.overrideWithValue(''),
@@ -163,6 +166,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceUseMocksProvider.overrideWithValue(true),
             voiceEnableCloudProvider.overrideWithValue(true),
             voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
             voiceCloudIntentParserProvider.overrideWith(
@@ -195,6 +199,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceUseMocksProvider.overrideWithValue(true),
             voiceEnableCloudProvider.overrideWithValue(true),
             voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
             voiceCloudIntentParserProvider.overrideWith(
@@ -220,6 +225,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+          voiceUseMocksProvider.overrideWithValue(true),
           voiceGeminiApiKeyProvider.overrideWithValue('dummy-api-key'),
         ],
       );
@@ -235,6 +241,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+          voiceUseMocksProvider.overrideWithValue(true),
           voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
         ],
       );
@@ -250,6 +257,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+          voiceUseMocksProvider.overrideWithValue(true),
           voiceGeminiApiKeyProvider.overrideWithValue('rd_sk_auto_detect_456'),
         ],
       );

@@ -168,9 +168,9 @@ void main() {
 
   group('the mock flag', () {
     test(
-      'defaults to true so the demo runs before the real use cases land',
+      'defaults to false so the assistant answers from the real catalogue',
       () {
-        expect(kVoiceUseMocks, isTrue);
+        expect(kVoiceUseMocks, isFalse);
       },
     );
 
@@ -179,6 +179,40 @@ void main() {
       addTearDown(container.dispose);
 
       expect(container.read(voiceUseMocksProvider), kVoiceUseMocks);
+    });
+
+    test('reaches the fixtures only when someone asks for them', () {
+      // Un build qui repond depuis la fixture est indiscernable d'un assistant qui
+      // marche: les commandes que les regles savent entendre reussissent contre des
+      // produits que le commerçant n'a jamais stockes. Le retour au mock doit donc
+      // etre un choix ecrit, pas un defaut.
+      final ProviderContainer container = ProviderContainer(
+        overrides: [voiceUseMocksProvider.overrideWithValue(true)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(voiceUseMocksProvider), isTrue);
+    });
+  });
+
+  group('the cloud flag', () {
+    test('is off by default, so a missing key is a recorded finding', () {
+      // Le cloud et le mock sont tous deux eteints par defaut, mais ils ne veut pas
+      // dire la meme chose: l'un enregistre `localOnly`, l'autre `noCredential`.
+      expect(kVoiceEnableCloud, isFalse);
+    });
+
+    test('needs a key to be worth turning on', () {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(voiceRodiumApiKeyProvider),
+        isEmpty,
+        reason: 'a build without RODIUM_API_KEY must record noCredential',
+      );
+      expect(container.read(voiceGeminiApiKeyProvider), isEmpty);
+      expect(container.read(voiceHasCloudCredentialProvider), isFalse);
     });
   });
 

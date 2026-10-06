@@ -49,6 +49,9 @@ class PanelHarness {
           voiceRecognizerProvider.overrideWith((Ref ref) async => recognizer),
           voiceTtsProvider.overrideWithValue(tts),
           voiceClockProvider.overrideWithValue(clock),
+          // Le panneau est monte sur la boutique de test: le defaut est desormais les
+          // vrais gestionnaires, quikovaulent un Firebase que ce test n'a pas.
+          voiceUseMocksProvider.overrideWithValue(true),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
