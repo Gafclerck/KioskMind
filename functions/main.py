@@ -72,11 +72,18 @@ def verifier_stock(event: firestore_fn.Event) -> None:
         _resoudre_alerte(db, product_id, TYPE_PREDICTED)
         _creer_alerte_et_notifier(db, uid, product_id, nom, TYPE_NEGATIVE, stock, apres_avec_uid)
     elif stock <= seuil:
+        # On repasse d'un stock négatif à un stock bas : l'alerte
+        # NEGATIVE_STOCK doit être résolue, sinon elle reste ACTIVE
+        # en parallèle de LOW_STOCK.
+        _resoudre_alerte(db, product_id, TYPE_NEGATIVE)
         _resoudre_alerte(db, product_id, TYPE_PREDICTED)
         _creer_alerte_et_notifier(db, uid, product_id, nom, TYPE_LOW_STOCK, stock, apres_avec_uid)
     else:
         _resoudre_alerte(db, product_id, TYPE_LOW_STOCK)
         _resoudre_alerte(db, product_id, TYPE_NEGATIVE)
+        # Un réapprovisionnement invalide aussi la prédiction de rupture :
+        # sans cela, elle reste affichée jusqu'à l'exécution du lendemain.
+        _resoudre_alerte(db, product_id, TYPE_PREDICTED)
 
 
 # ---------------------------------------------------------------- UC14
@@ -111,8 +118,11 @@ def predictions_quotidiennes(event: scheduler_fn.ScheduledEvent) -> None:
 
             produit_avec_uid = {**produit, "_uid": uid}
             if jours <= LIMITE_JOURS:
+                # max(1, ...) : sous une demi-journée, round() vaudrait 0 et
+                # la notification dirait "plus de stock dans 0 jour(s)".
+                jours_affiches = max(1, round(jours))
                 _creer_alerte_et_notifier(
-                    db, uid, product_id, nom, TYPE_PREDICTED, round(jours), produit_avec_uid
+                    db, uid, product_id, nom, TYPE_PREDICTED, jours_affiches, produit_avec_uid
                 )
             else:
                 _resoudre_alerte(db, product_id, TYPE_PREDICTED)
@@ -150,10 +160,18 @@ def _ref_alerte(db, product_id, type_alerte):
 
 def _creer_alerte_et_notifier(db, uid: str, product_id: str, nom, type_alerte, valeur, produit) -> None:
     """Crée (ou réactive) l'alerte, et notifie seulement si ce n'est
-    pas déjà fait pour cette occurrence (via notifiedAt)."""
+    pas déjà fait pour cette occurrence (via notifiedAt, écrit
+    uniquement quand l'envoi a réellement réussi)."""
     ref = _ref_alerte(db, product_id, type_alerte)
     existante = ref.get()
-    deja_notifiee = existante.exists and existante.to_dict().get("status") == "ACTIVE"
+    etat = existante.to_dict() if existante.exists else None
+    # notifiedAt ne marque qu'un ENVOI RÉUSSI : si l'envoi a échoué
+    # (FCM en panne, token absent), la prochaine occurrence retente.
+    deja_notifiee = (
+        etat is not None
+        and etat.get("status") == "ACTIVE"
+        and etat.get("notifiedAt") is not None
+    )
 
     donnees = {
         "type": type_alerte,
@@ -166,14 +184,14 @@ def _creer_alerte_et_notifier(db, uid: str, product_id: str, nom, type_alerte, v
     if type_alerte == TYPE_PREDICTED:
         donnees["estimatedDaysLeft"] = valeur
 
-    if not existante.exists or existante.to_dict().get("status") != "ACTIVE":
+    if etat is None or etat.get("status") != "ACTIVE":
         donnees["createdAt"] = datetime.now(timezone.utc)
 
     ref.set(donnees, merge=True)
 
     if not deja_notifiee:
-        _envoyer_notification(db, uid, produit, type_alerte, nom, valeur)
-        ref.update({"notifiedAt": datetime.now(timezone.utc)})
+        if _envoyer_notification(db, uid, produit, type_alerte, nom, valeur):
+            ref.update({"notifiedAt": datetime.now(timezone.utc)})
 
 
 def _resoudre_alerte(db, product_id, type_alerte) -> None:
@@ -186,23 +204,24 @@ def _resoudre_alerte(db, product_id, type_alerte) -> None:
         })
 
 
-def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> None:
+def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> bool:
+    """Renvoie True si la notification a atteint au moins un appareil."""
     # L'uid vient du chemin Firestore (users/{uid}/products/{id}), pas d'un champ du produit
     user_id = uid or produit.get("_uid")
     if not user_id:
         print(f"[notification] Aucun uid disponible pour le produit {nom}")
-        return
+        return False
 
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
         print(f"[notification] Aucun user trouvé pour l'id {user_id}")
-        return
+        return False
 
     user = user_doc.to_dict()
     tokens = user.get("fcmTokens", [])
     if not tokens:
         print(f"[notification] Pas de token FCM pour l'user {user_id}")
-        return
+        return False
 
     langue = user.get("language", "fr")
     construire_message = MESSAGES.get(langue, MESSAGES["fr"])[type_alerte]
@@ -216,5 +235,9 @@ def _envoyer_notification(db, uid: str, produit, type_alerte, nom, valeur) -> No
             )
         )
         print(f"[notification] Envoyée à {reponse.success_count}/{len(tokens)} appareil(s)")
+        # Au moins un appareil a reçu la notification : l'occurrence
+        # est considérée comme notifiée.
+        return reponse.success_count > 0
     except Exception as erreur:
         print(f"[notification] Échec de l'envoi : {erreur}")
+        return False
