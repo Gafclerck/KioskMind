@@ -44,6 +44,12 @@ final class _FakeSalesRepo implements SalesRepository {
     required DateTime startDate,
     required DateTime endDate,
   }) async => const <Sale>[];
+
+  @override
+Stream<List<Sale>> watchSalesHistory() {
+  return const Stream.empty();
+}
+
 }
 
 void main() {

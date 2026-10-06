@@ -43,45 +43,27 @@ class _P {
   Color get accent => cs.secondary;
   Color get info => AppColors.info;
 
-  Color get success => dark ? AppColors.successDark : AppColors.successLight;
+  Color get success =>
+      dark ? AppColors.successDark : AppColors.successLight;
 
   BoxDecoration get cardDecoration => BoxDecoration(
-    color: card,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: border),
-  );
+        color: card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      );
 }
-
-// -----------------------------------------------------------------------------
-// DASHBOARD
-// -----------------------------------------------------------------------------
 
 class SalesDashboardPage extends ConsumerStatefulWidget {
   const SalesDashboardPage({super.key});
 
   @override
-  ConsumerState<SalesDashboardPage> createState() => _SalesDashboardPageState();
+  ConsumerState<SalesDashboardPage> createState() =>
+      _SalesDashboardPageState();
 }
 
-class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
-  late Future<List<Sale>> _future;
-
+class _SalesDashboardPageState
+    extends ConsumerState<SalesDashboardPage> {
   _Period _period = _Period.semaine;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  void _load() {
-    _future = ref.read(getSalesHistoryProvider).call();
-  }
-
-  Future<void> _refresh() async {
-    setState(_load);
-    await _future;
-  }
 
   String _getUserFirstName(String? fullName) {
     final name = fullName?.trim() ?? '';
@@ -98,29 +80,56 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
     switch (period) {
       case _Period.jour:
-        final start = DateTime(now.year, now.month, now.day);
+        final start = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        );
 
         return DateTimeRange(
           start: start,
-          end: start.add(const Duration(days: 1)),
+          end: start.add(
+            const Duration(days: 1),
+          ),
         );
 
       case _Period.semaine:
-        final today = DateTime(now.year, now.month, now.day);
+        final today = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        );
+
         final daysFromMonday = today.weekday - 1;
-        final start = today.subtract(Duration(days: daysFromMonday));
+
+        final start = today.subtract(
+          Duration(days: daysFromMonday),
+        );
 
         return DateTimeRange(
           start: start,
-          end: start.add(const Duration(days: 7)),
+          end: start.add(
+            const Duration(days: 7),
+          ),
         );
 
       case _Period.mois:
-        final start = DateTime(now.year, now.month, 1);
+        final quarterStartMonth =
+            ((now.month - 1) ~/ 3) * 3 + 1;
+
+        final start = DateTime(
+          now.year,
+          quarterStartMonth,
+          1,
+        );
 
         return DateTimeRange(
           start: start,
-          end: DateTime(now.year, now.month + 1, 1),
+          end: DateTime(
+            now.year,
+            quarterStartMonth + 3,
+            1,
+          ),
         );
     }
   }
@@ -135,7 +144,10 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     );
   }
 
-  List<Sale> _filterSales(List<Sale> sales, DateTimeRange range) {
+  List<Sale> _filterSales(
+    List<Sale> sales,
+    DateTimeRange range,
+  ) {
     return sales.where((sale) {
       return !sale.dateTime.isBefore(range.start) &&
           sale.dateTime.isBefore(range.end);
@@ -147,7 +159,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
   }
 
   List<Sale> _validSales(List<Sale> sales) {
-    return sales.where((sale) => !_isCancelled(sale)).toList();
+    return sales
+        .where((sale) => !_isCancelled(sale))
+        .toList();
   }
 
   double _totalRevenue(List<Sale> sales) {
@@ -171,12 +185,22 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     return total;
   }
 
-  (List<String>, List<double>) _buildChart(List<Sale> sales) {
+  (List<String>, List<double>) _buildChart(
+    List<Sale> sales,
+  ) {
     final validSales = _validSales(sales);
 
     switch (_period) {
       case _Period.jour:
-        final labels = ['00h', '04h', '08h', '12h', '16h', '20h', '24h'];
+        final labels = [
+          '00h',
+          '04h',
+          '08h',
+          '12h',
+          '16h',
+          '20h',
+          '24h',
+        ];
 
         final values = List<double>.filled(7, 0);
 
@@ -199,7 +223,15 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         return (labels, values);
 
       case _Period.semaine:
-        final labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+        final labels = [
+          'Lun',
+          'Mar',
+          'Mer',
+          'Jeu',
+          'Ven',
+          'Sam',
+          'Dim',
+        ];
 
         final values = List<double>.filled(7, 0);
 
@@ -214,32 +246,56 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         return (labels, values);
 
       case _Period.mois:
-        final labels = ['S1', 'S2', 'S3', 'S4'];
+        final now = DateTime.now();
 
-        final values = List<double>.filled(4, 0);
+        final quarterStartMonth =
+            ((now.month - 1) ~/ 3) * 3 + 1;
+
+        const monthLabels = [
+          'Jan',
+          'Fév',
+          'Mar',
+          'Avr',
+          'Mai',
+          'Juin',
+          'Juil',
+          'Août',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Déc',
+        ];
+
+        final labels = [
+          monthLabels[quarterStartMonth - 1],
+          monthLabels[quarterStartMonth],
+          monthLabels[quarterStartMonth + 1],
+        ];
+
+        final values = List<double>.filled(3, 0);
 
         for (final sale in validSales) {
-          final day = sale.dateTime.day;
+          final monthIndex =
+              sale.dateTime.month - quarterStartMonth;
 
-          var index = (day - 1) ~/ 7;
-
-          if (index > 3) {
-            index = 3;
+          if (monthIndex >= 0 && monthIndex < 3) {
+            values[monthIndex] += sale.total;
           }
-
-          values[index] += sale.total;
         }
 
         return (labels, values);
     }
   }
 
-  Map<String, double> _productQuantities(List<Sale> sales) {
+  Map<String, double> _productQuantities(
+    List<Sale> sales,
+  ) {
     final quantities = <String, double>{};
 
     for (final sale in _validSales(sales)) {
       for (final item in sale.items) {
-        quantities[item.name] = (quantities[item.name] ?? 0) + item.qty;
+        quantities[item.name] =
+            (quantities[item.name] ?? 0) + item.qty;
       }
     }
 
@@ -264,7 +320,8 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         }
       }
 
-      categories[category] = (categories[category] ?? 0) + entry.value;
+      categories[category] =
+          (categories[category] ?? 0) + entry.value;
     }
 
     return categories;
@@ -282,7 +339,8 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     for (final sale in validSales) {
       final hour = sale.dateTime.hour;
 
-      hourly[hour] = (hourly[hour] ?? 0) + sale.total;
+      hourly[hour] =
+          (hourly[hour] ?? 0) + sale.total;
     }
 
     if (hourly.isEmpty) {
@@ -300,9 +358,15 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
         '${endHour.toString().padLeft(2, '0')}h00';
   }
 
-  double _growth(List<Sale> current, List<Sale> previous) {
-    final currentRevenue = _totalRevenue(current);
-    final previousRevenue = _totalRevenue(previous);
+  double _growth(
+    List<Sale> current,
+    List<Sale> previous,
+  ) {
+    final currentRevenue =
+        _totalRevenue(current);
+
+    final previousRevenue =
+        _totalRevenue(previous);
 
     if (previousRevenue == 0) {
       if (currentRevenue == 0) {
@@ -312,167 +376,262 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
       return 100;
     }
 
-    return ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+    return ((currentRevenue - previousRevenue) /
+            previousRevenue) *
+        100;
   }
-
-  // ---------------------------------------------------------------------------
-  // BUILD
-  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final productsAsync = ref.watch(productsProvider);
-    final profileAsync = ref.watch(userProfileProvider);
+    final salesAsync =
+        ref.watch(salesHistoryStreamProvider);
+
+    final productsAsync =
+        ref.watch(productsProvider);
+
+    final profileAsync =
+        ref.watch(userProfileProvider);
 
     return Scaffold(
       body: SafeArea(
-        child: FutureBuilder<List<Sale>>(
-          future: _future,
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(color: p.primary),
-              );
-            }
+        child: salesAsync.when(
+          loading: () {
+            return Center(
+              child: CircularProgressIndicator(
+                color: p.primary,
+              ),
+            );
+          },
+          error: (error, stackTrace) {
+            return _ErrorState(
+              message:
+                  'Impossible de charger les statistiques.',
+              onRetry: () {
+                ref.invalidate(
+                  salesHistoryStreamProvider,
+                );
+              },
+            );
+          },
+          data: (allSales) {
+            final todayRange =
+                _currentRange(_Period.jour);
 
-            if (snap.hasError || !snap.hasData) {
-              return _ErrorState(
-                message: 'Impossible de charger les statistiques.',
-                onRetry: _refresh,
-              );
-            }
-
-            final allSales = snap.data ?? [];
-
-            final todayRange = _currentRange(_Period.jour);
-            final todaySales = _filterSales(allSales, todayRange);
-
-            final currentRange = _currentRange(_period);
-            final currentSales = _filterSales(allSales, currentRange);
-
-            final previousRange = _previousRange(_period);
-            final previousSales = _filterSales(allSales, previousRange);
-
-            final revenue = _totalRevenue(todaySales);
-            final cost = _totalCost(todaySales);
-            final margin = revenue - cost;
-
-            final validTodaySales = _validSales(todaySales);
-
-            final basket = validTodaySales.isNotEmpty
-                ? revenue / validTodaySales.length
-                : 0.0;
-
-            final growth = _growth(currentSales, previousSales);
-
-            final (labels, values) = _buildChart(currentSales);
-
-            final products = productsAsync.valueOrNull ?? [];
-
-            final totalUnits = products.fold<int>(
-              0,
-              (sum, product) => sum + product.quantity,
+            final todaySales =
+                _filterSales(
+              allSales,
+              todayRange,
             );
 
-            final categoriesCount = products
-                .map((product) => product.category.trim())
-                .where((category) => category.isNotEmpty)
-                .toSet()
-                .length;
+            final currentRange =
+                _currentRange(_period);
+
+            final currentSales =
+                _filterSales(
+              allSales,
+              currentRange,
+            );
+
+            final previousRange =
+                _previousRange(_period);
+
+            final previousSales =
+                _filterSales(
+              allSales,
+              previousRange,
+            );
+
+            final revenue =
+                _totalRevenue(todaySales);
+
+            final cost =
+                _totalCost(todaySales);
+
+            final margin =
+                revenue - cost;
+
+            final validTodaySales =
+                _validSales(todaySales);
+
+            final basket =
+                validTodaySales.isNotEmpty
+                    ? revenue /
+                        validTodaySales.length
+                    : 0.0;
+
+            final growth =
+                _growth(
+              currentSales,
+              previousSales,
+            );
+
+            final (labels, values) =
+                _buildChart(currentSales);
+
+            final products =
+                productsAsync.valueOrNull ?? [];
+
+            final totalUnits =
+                products.fold<int>(
+              0,
+              (sum, product) =>
+                  sum + product.quantity,
+            );
+
+            final categoriesCount =
+                products
+                    .map(
+                      (product) =>
+                          product.category.trim(),
+                    )
+                    .where(
+                      (category) =>
+                          category.isNotEmpty,
+                    )
+                    .toSet()
+                    .length;
 
             final alertProducts =
                 products
                     .where(
-                      (product) => product.quantity <= product.alertThreshold,
+                      (product) =>
+                          product.quantity <=
+                          product.alertThreshold,
                     )
                     .toList()
-                  ..sort((a, b) => a.quantity.compareTo(b.quantity));
+                  ..sort(
+                    (a, b) =>
+                        a.quantity.compareTo(
+                      b.quantity,
+                    ),
+                  );
 
-            final alertCount = alertProducts.length;
+            final alertCount =
+                alertProducts.length;
 
-            final productQuantities = _productQuantities(currentSales);
+            final productQuantities =
+                _productQuantities(
+              currentSales,
+            );
 
-            final categoryQuantities = _categoryQuantities(
+            final categoryQuantities =
+                _categoryQuantities(
               currentSales,
               products,
             );
 
-            final bestProduct = productQuantities.isEmpty
-                ? 'Aucun produit'
-                : (productQuantities.entries.toList()
-                      ..sort((a, b) => b.value.compareTo(a.value)))
-                    .first
-                    .key;
+            final bestProduct =
+                productQuantities.isEmpty
+                    ? 'Aucun produit'
+                    : (productQuantities.entries
+                          .toList()
+                        ..sort(
+                          (a, b) =>
+                              b.value.compareTo(
+                            a.value,
+                          ),
+                        ))
+                        .first
+                        .key;
 
-            final peakHour = _peakHour(currentSales);
+            final peakHour =
+                _peakHour(currentSales);
 
             return RefreshIndicator(
-              onRefresh: _refresh,
+              onRefresh: () async {
+                ref.invalidate(
+                  salesHistoryStreamProvider,
+                );
+              },
               color: p.primary,
               child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                physics:
+                    const AlwaysScrollableScrollPhysics(),
+                padding:
+                    const EdgeInsets.fromLTRB(
+                  16,
+                  12,
+                  16,
+                  32,
+                ),
                 children: [
-                  // HEADER
                   _Header(
                     name: _getUserFirstName(
-                      profileAsync.valueOrNull?.fullName,
+                      profileAsync
+                          .valueOrNull
+                          ?.fullName,
                     ),
                     alertCount: alertCount,
                   ),
 
                   const SizedBox(height: 20),
 
-                  // KPI
                   _KpiGrid(
                     revenue: revenue,
                     margin: margin,
                     totalUnits: totalUnits,
-                    categoriesCount: categoriesCount,
+                    categoriesCount:
+                        categoriesCount,
                     basket: basket,
                     alertCount: alertCount,
                     growth: _growth(
                       todaySales,
                       _filterSales(
                         allSales,
-                        _previousRange(_Period.jour),
+                        _previousRange(
+                          _Period.jour,
+                        ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // ACTIONS RAPIDES
-                  _SectionTitle('Actions rapides', p),
+                  _SectionTitle(
+                    'Actions rapides',
+                    p,
+                  ),
 
                   const SizedBox(height: 12),
 
                   _QuickActions(
                     onAddProduct: () {
                       try {
-                        context.push(AppRoutes.addProduct);
+                        context.push(
+                          AppRoutes.addProduct,
+                        );
                       } catch (_) {
-                        _toast('Ajouter produit');
+                        _toast(
+                          'Ajouter produit',
+                        );
                       }
                     },
                     onNewSale: () {
                       try {
-                        context.push(AppRoutes.createSale);
+                        context.push(
+                          AppRoutes.createSale,
+                        );
                       } catch (_) {
-                        _toast('Nouvelle vente');
+                        _toast(
+                          'Nouvelle vente',
+                        );
                       }
                     },
                     onScan: () {
-                      _toast('Scanner bientôt disponible');
+                      _toast(
+                        'Scanner bientôt disponible',
+                      );
                     },
                   ),
 
                   const SizedBox(height: 24),
 
-                  // STATISTIQUES
-                  _SectionTitle('Statistiques', p),
+                  _SectionTitle(
+                    'Statistiques',
+                    p,
+                  ),
 
                   const SizedBox(height: 12),
 
@@ -487,7 +646,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  // GRAPHIQUE
                   _SalesChartCard(
                     labels: labels,
                     values: values,
@@ -495,21 +653,19 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 12),
 
-                  // CATEGORIES
                   _CategoriesCard(
-                    quantities: categoryQuantities,
+                    quantities:
+                        categoryQuantities,
                   ),
 
                   const SizedBox(height: 12),
 
-                  // TOP PRODUITS
                   _TopProductsCard(
                     qty: productQuantities,
                   ),
 
                   const SizedBox(height: 12),
 
-                  // INSIGHTS
                   _InsightsRow(
                     bestProduct: bestProduct,
                     growth: growth,
@@ -518,8 +674,10 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ALERTES STOCK
-                  _SectionTitle('Alertes stock', p),
+                  _SectionTitle(
+                    'Alertes stock',
+                    p,
+                  ),
 
                   const SizedBox(height: 12),
 
@@ -529,14 +687,17 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                   const SizedBox(height: 24),
 
-                  // ACTIVITE RECENTE
-                  _SectionTitle('Activité récente', p),
+                  _SectionTitle(
+                    'Activité récente',
+                    p,
+                  ),
 
                   const SizedBox(height: 12),
 
                   _RecentActivity(
                     sales: allSales,
-                    alertProducts: alertProducts,
+                    alertProducts:
+                        alertProducts,
                   ),
                 ],
               ),
@@ -555,10 +716,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// HEADER
-// -----------------------------------------------------------------------------
 
 class _Header extends StatelessWidget {
   final String name;
@@ -618,131 +775,179 @@ class _Header extends StatelessWidget {
         : const Color(0xFFD98228);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+      padding:
+          const EdgeInsets.fromLTRB(
+        15,
+        12,
+        11,
+        12,
+      ),
       decoration: BoxDecoration(
         color: headerBackground,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius:
+            BorderRadius.circular(20),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment:
+            CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize:
+                  MainAxisSize.min,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.baseline,
+                  textBaseline:
+                      TextBaseline.alphabetic,
                   children: [
                     Text(
                       'Bonjour, ',
-                      style: p.t.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style:
+                          p.t.bodySmall?.copyWith(
+                        fontSize: 12,
+                        fontWeight:
+                            FontWeight.w600,
                         color: p.primary,
                       ),
                     ),
                     Flexible(
                       child: Text(
                         name,
-                        overflow: TextOverflow.ellipsis,
-                        style: p.t.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        overflow:
+                            TextOverflow.ellipsis,
+                        style:
+                            p.t.titleLarge?.copyWith(
+                          fontSize: 18,
+                          fontWeight:
+                              FontWeight.w700,
                           color: p.dark
                               ? p.text
-                              : const Color(0xFF164D46),
+                              : const Color(
+                                  0xFF164D46,
+                                ),
                         ),
                       ),
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 8),
-
+                const SizedBox(height: 5),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 6,
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  decoration: BoxDecoration(
+                  decoration:
+                      BoxDecoration(
                     color: statusBackground,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius:
+                        BorderRadius.circular(8),
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize:
+                        MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.check_circle_outline_rounded,
-                        size: 14,
+                        Icons
+                            .check_circle_outline_rounded,
+                        size: 13,
                         color: p.accent,
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(
+                        width: 4,
+                      ),
                       Text(
                         'Votre boutique est sous contrôle',
-                        style: p.t.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        style:
+                            p.t.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight:
+                              FontWeight.w600,
                           color: statusText,
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 5),
-
+                const SizedBox(height: 3),
                 Text(
                   _formatDate(),
-                  style: p.t.labelSmall?.copyWith(
+                  style:
+                      p.t.labelSmall?.copyWith(
+                    fontSize: 10,
                     color: p.muted,
                   ),
                 ),
               ],
             ),
           ),
-
           Row(
             children: [
               Stack(
-                clipBehavior: Clip.none,
+                clipBehavior:
+                    Clip.none,
                 children: [
                   Container(
-                    width: 43,
-                    height: 43,
-                    decoration: BoxDecoration(
+                    width: 38,
+                    height: 38,
+                    decoration:
+                        BoxDecoration(
                       color: p.card,
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius:
+                          BorderRadius.circular(
+                        12,
+                      ),
                     ),
                     child: Icon(
-                      Icons.notifications_none_rounded,
+                      Icons
+                          .notifications_none_rounded,
                       color: p.primary,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
-
                   if (alertCount > 0)
                     Positioned(
                       right: -4,
                       top: -5,
                       child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 19,
-                          minHeight: 19,
+                        constraints:
+                            const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
+                        padding:
+                            const EdgeInsets
+                                .symmetric(
+                          horizontal: 3,
+                        ),
+                        decoration:
+                            BoxDecoration(
                           color: p.accent,
-                          shape: BoxShape.circle,
+                          shape:
+                              BoxShape.circle,
                           border: Border.all(
-                            color: headerBackground,
+                            color:
+                                headerBackground,
                             width: 2,
                           ),
                         ),
                         child: Center(
                           child: Text(
-                            alertCount > 9 ? '9+' : '$alertCount',
-                            style: p.t.labelSmall?.copyWith(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: p.onPrimary,
+                            alertCount > 9
+                                ? '9+'
+                                : '$alertCount',
+                            style:
+                                p.t.labelSmall
+                                    ?.copyWith(
+                              fontSize: 8,
+                              fontWeight:
+                                  FontWeight.w700,
+                              color:
+                                  p.onPrimary,
                             ),
                           ),
                         ),
@@ -750,20 +955,21 @@ class _Header extends StatelessWidget {
                     ),
                 ],
               ),
-
-              const SizedBox(width: 9),
-
+              const SizedBox(width: 7),
               Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(
+                width: 38,
+                height: 38,
+                decoration:
+                    BoxDecoration(
                   color: p.card,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius:
+                      BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.person_outline_rounded,
+                  Icons
+                      .person_outline_rounded,
                   color: p.primary,
-                  size: 22,
+                  size: 20,
                 ),
               ),
             ],
@@ -773,10 +979,6 @@ class _Header extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// KPI
-// -----------------------------------------------------------------------------
 
 class _KpiGrid extends StatelessWidget {
   final double revenue;
@@ -801,24 +1003,36 @@ class _KpiGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final growthText = growth >= 0
+    final safeMargin =
+        margin < 0 ? 0.0 : margin;
+
+    final growthText = growth > 0
         ? '+${growth.toStringAsFixed(1)}% vs hier'
-        : '${growth.toStringAsFixed(1)}% vs hier';
+        : growth < 0
+            ? '${growth.toStringAsFixed(1)}% vs hier'
+            : '0% vs hier';
+
+    final marginPercent = revenue > 0
+        ? ((safeMargin / revenue) * 100)
+            .clamp(0, 100)
+        : 0.0;
 
     return GridView.count(
       crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
+      crossAxisSpacing: 6,
+      mainAxisSpacing: 6,
       shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.4,
+      physics:
+          const NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.1,
       children: [
         _KpiCard(
           title: 'Ventes du jour',
           value: _money(revenue),
           color: p.success,
           trend: growthText,
-          trendUp: growth >= 0,
+          trendUp: growth > 0,
+          trendDown: growth < 0,
         ),
         _KpiCard(
           title: 'Produits en stock',
@@ -827,18 +1041,22 @@ class _KpiGrid extends StatelessWidget {
           trend: '$categoriesCount catégories',
         ),
         _KpiCard(
-          title: 'Bénéfice (est.)',
-          value: _money(margin),
+          title: 'Bénéfice',
+          value: _money(safeMargin),
           color: p.info,
-          trend: 'Marge réelle',
+          trend:
+              'Marge réelle ${marginPercent.toStringAsFixed(1)} %',
         ),
         _KpiCard(
           title: 'Alertes',
           value: '$alertCount',
-          color: p.error,
+          color: alertCount > 0
+              ? p.accent
+              : p.success,
           trend: alertCount > 0
-              ? 'Stock faible'
-              : 'Stock sous contrôle',
+              ? '$alertCount ${alertCount == 1 ? 'alerte' : 'alertes'}'
+              : 'Tout est sous contrôle',
+          alert: true,
         ),
       ],
     );
@@ -851,6 +1069,8 @@ class _KpiCard extends StatelessWidget {
   final Color color;
   final String trend;
   final bool trendUp;
+  final bool trendDown;
+  final bool alert;
 
   const _KpiCard({
     required this.title,
@@ -858,54 +1078,189 @@ class _KpiCard extends StatelessWidget {
     required this.color,
     required this.trend,
     this.trendUp = false,
+    this.trendDown = false,
+    this.alert = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    if (alert) {
+      final hasAlerts = value != '0';
+
+      return Container(
+        padding:
+            const EdgeInsets.symmetric(
+          horizontal: 9,
+          vertical: 6,
+        ),
+        decoration: p.cardDecoration,
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Alertes',
+              maxLines: 1,
+              overflow:
+                  TextOverflow.ellipsis,
+              style:
+                  p.t.bodySmall?.copyWith(
+                color: p.muted,
+                fontSize: 12,
+                fontWeight:
+                    FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 1),
+            if (hasAlerts)
+              Expanded(
+                child: Stack(
+                  children: [
+                    Align(
+                      alignment:
+                          Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style:
+                            p.t.titleLarge
+                                ?.copyWith(
+                          fontSize: 24,
+                          height: 1,
+                          fontWeight:
+                              FontWeight.w700,
+                          color: p.accent,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Icon(
+                        Icons.warning_rounded,
+                        size: 42,
+                        color: p.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Expanded(
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    Icon(
+                      Icons
+                          .check_circle_rounded,
+                      size: 32,
+                      color: p.success,
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Tout est sous contrôle',
+                      maxLines: 1,
+                      overflow:
+                          TextOverflow.ellipsis,
+                      textAlign:
+                          TextAlign.center,
+                      style:
+                          p.t.bodySmall?.copyWith(
+                        color: p.success,
+                        fontSize: 10,
+                        fontWeight:
+                            FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    Color trendColor = p.muted;
+    IconData? trendIcon;
+
+    if (trendUp) {
+      trendColor = p.success;
+      trendIcon =
+          Icons.trending_up_rounded;
+    } else if (trendDown) {
+      trendColor = p.accent;
+      trendIcon =
+          Icons.trending_down_rounded;
+    }
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 6,
+      ),
       decoration: p.cardDecoration,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: p.t.bodyMedium?.copyWith(
+            maxLines: 1,
+            overflow:
+                TextOverflow.ellipsis,
+            style:
+                p.t.bodySmall?.copyWith(
               color: p.muted,
-              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              fontWeight:
+                  FontWeight.w600,
             ),
           ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: p.t.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: color,
+          Expanded(
+            child: Align(
+              alignment:
+                  Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment:
+                    Alignment.center,
+                child: Text(
+                  value,
+                  style:
+                      p.t.titleLarge?.copyWith(
+                    fontSize: 22,
+                    height: 1.0,
+                    fontWeight:
+                        FontWeight.w700,
+                    color: color,
+                  ),
+                ),
               ),
             ),
           ),
           Row(
             children: [
-              if (trendUp) ...[
+              if (trendIcon != null) ...[
                 Icon(
-                  Icons.trending_up,
+                  trendIcon,
                   size: 14,
-                  color: p.success,
+                  color: trendColor,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 3),
               ],
               Flexible(
                 child: Text(
                   trend,
-                  overflow: TextOverflow.ellipsis,
-                  style: p.t.bodySmall?.copyWith(
-                    color: trendUp ? p.success : p.muted,
-                    fontWeight: FontWeight.w600,
+                  maxLines: 1,
+                  overflow:
+                      TextOverflow.ellipsis,
+                  style:
+                      p.t.bodySmall?.copyWith(
+                    color: trendColor,
+                    fontSize: 11,
+                    height: 1.0,
+                    fontWeight:
+                        FontWeight.w600,
                   ),
                 ),
               ),
@@ -916,10 +1271,6 @@ class _KpiCard extends StatelessWidget {
     );
   }
 }
-
-// -----------------------------------------------------------------------------
-// ACTIONS RAPIDES
-// -----------------------------------------------------------------------------
 
 class _QuickActions extends StatelessWidget {
   final VoidCallback onAddProduct;
@@ -938,7 +1289,8 @@ class _QuickActions extends StatelessWidget {
       children: [
         Expanded(
           child: _ActionChip(
-            icon: Icons.add_circle_outline,
+            icon:
+                Icons.add_circle_outline,
             label: 'Ajouter produit',
             onTap: onAddProduct,
           ),
@@ -946,7 +1298,8 @@ class _QuickActions extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _ActionChip(
-            icon: Icons.shopping_bag_outlined,
+            icon:
+                Icons.shopping_bag_outlined,
             label: 'Nouvelle vente',
             onTap: onNewSale,
             primary: true,
@@ -976,24 +1329,31 @@ class _ActionChip extends StatelessWidget {
     final p = _P.of(context);
 
     final bg = primary
-        ? p.accent.withValues(alpha: 0.18)
+        ? p.accent.withValues(
+            alpha: 0.18,
+          )
         : p.soft;
 
-    final fg = primary ? p.accent : p.onSoft;
+    final fg =
+        primary ? p.accent : p.onSoft;
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius:
+          BorderRadius.circular(14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius:
+            BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
+          padding:
+              const EdgeInsets.symmetric(
             vertical: 10,
             horizontal: 8,
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+                MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
@@ -1004,10 +1364,14 @@ class _ActionChip extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  textAlign: TextAlign.center,
-                  style: p.t.labelMedium?.copyWith(
+                  textAlign:
+                      TextAlign.center,
+                  style:
+                      p.t.labelMedium
+                          ?.copyWith(
                     color: fg,
-                    fontWeight: FontWeight.w700,
+                    fontWeight:
+                        FontWeight.w700,
                     height: 1.1,
                   ),
                 ),
@@ -1020,11 +1384,8 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// SELECTEUR DE PERIODE
-// -----------------------------------------------------------------------------
-
-class _PeriodSelector extends StatelessWidget {
+class _PeriodSelector
+    extends StatelessWidget {
   final _Period value;
   final ValueChanged<_Period> onChanged;
 
@@ -1033,10 +1394,11 @@ class _PeriodSelector extends StatelessWidget {
     required this.onChanged,
   });
 
-  static const Map<_Period, String> _labels = {
+  static const Map<_Period, String>
+      _labels = {
     _Period.jour: 'Jour',
     _Period.semaine: 'Semaine',
-    _Period.mois: 'Mois',
+    _Period.mois: 'Trimestre',
   };
 
   @override
@@ -1044,48 +1406,78 @@ class _PeriodSelector extends StatelessWidget {
     final p = _P.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding:
+          const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: p.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: p.border),
+        borderRadius:
+            BorderRadius.circular(13),
+        border: Border.all(
+          color: p.border.withValues(
+            alpha: 0.7,
+          ),
+        ),
       ),
       child: Row(
-        children: _Period.values.map((period) {
-          final selected = period == value;
+        children: _Period.values.map(
+          (period) {
+            final selected =
+                period == value;
 
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(period),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? p.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  _labels[period]!,
-                  style: p.t.labelLarge?.copyWith(
-                    color: selected ? p.onPrimary : p.muted,
-                    fontWeight: FontWeight.w700,
+            return Expanded(
+              child: GestureDetector(
+                onTap: () =>
+                    onChanged(period),
+                child:
+                    AnimatedContainer(
+                  duration:
+                      const Duration(
+                    milliseconds: 180,
+                  ),
+                  curve:
+                      Curves.easeOut,
+                  padding:
+                      const EdgeInsets
+                          .symmetric(
+                    vertical: 8,
+                  ),
+                  decoration:
+                      BoxDecoration(
+                    color: selected
+                        ? p.primary
+                        : Colors.transparent,
+                    borderRadius:
+                        BorderRadius.circular(
+                      10,
+                    ),
+                  ),
+                  child: Text(
+                    _labels[period]!,
+                    textAlign:
+                        TextAlign.center,
+                    style:
+                        p.t.labelMedium
+                            ?.copyWith(
+                      color: selected
+                          ? p.onPrimary
+                          : p.muted,
+                      fontWeight: selected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          },
+        ).toList(),
       ),
     );
   }
 }
 
-// -----------------------------------------------------------------------------
-// GRAPHIQUE DES VENTES
-// -----------------------------------------------------------------------------
-
-class _SalesChartCard extends StatelessWidget {
+class _SalesChartCard
+    extends StatelessWidget {
   final List<String> labels;
   final List<double> values;
 
@@ -1098,88 +1490,280 @@ class _SalesChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final maxV = values.isEmpty
-        ? 1.0
-        : values.reduce(math.max);
+    final hasSales =
+        values.isNotEmpty &&
+        values.any(
+          (value) => value > 0,
+        );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding:
+          const EdgeInsets.fromLTRB(
+        16,
+        15,
+        16,
+        13,
+      ),
       decoration: p.cardDecoration,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           Text(
             'Évolution des ventes',
-            style: p.t.titleMedium,
+            style:
+                p.t.titleMedium?.copyWith(
+              fontWeight:
+                  FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 130,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(values.length, (i) {
-                final isMax = values[i] == maxV && maxV > 0;
+          const SizedBox(height: 3),
+          Text(
+            'Suivez l’évolution de votre activité',
+            style:
+                p.t.bodySmall?.copyWith(
+              color: p.muted,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(height: 15),
+          if (!hasSales)
+            SizedBox(
+              height: 132,
+              child: Center(
+                child: Text(
+                  'Aucune vente pour cette période',
+                  style:
+                      p.t.bodySmall?.copyWith(
+                    color: p.muted,
+                  ),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 132,
+              child: Row(
+                crossAxisAlignment:
+                    CrossAxisAlignment.end,
+                children:
+                    List.generate(
+                  values.length,
+                  (i) {
+                    final value =
+                        values[i];
 
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: TweenAnimationBuilder<double>(
-                              key: ValueKey(
-                                '${labels.length}-$i-${values[i]}',
-                              ),
-                              tween: Tween(
-                                begin: 0,
-                                end: maxV == 0
-                                    ? 0
-                                    : values[i] / maxV,
-                              ),
-                              duration: const Duration(
-                                milliseconds: 500,
-                              ),
-                              curve: Curves.easeOutCubic,
-                              builder: (
-                                context,
-                                factor,
-                                child,
-                              ) {
-                                final height =
-                                    factor.clamp(0.02, 1.0);
+                    final maxV =
+                        values.reduce(
+                      math.max,
+                    );
 
-                                return FractionallySizedBox(
-                                  heightFactor: height,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isMax
-                                          ? p.primary
-                                          : p.primary.withValues(
-                                              alpha: 0.5,
-                                            ),
-                                      borderRadius:
-                                          BorderRadius.circular(6),
+                    final factor =
+                        maxV <= 0
+                            ? 0.0
+                            : (value / maxV)
+                                .clamp(
+                                0.0,
+                                1.0,
+                              );
+
+                    final maxIndex =
+                        values.indexOf(
+                      maxV,
+                    );
+
+                    final isMax =
+                        i == maxIndex &&
+                        value > 0;
+
+                    return Expanded(
+                      child: Padding(
+                        padding:
+                            const EdgeInsets
+                                .symmetric(
+                          horizontal: 3,
+                        ),
+                        child: Column(
+                          mainAxisAlignment:
+                              MainAxisAlignment
+                                  .end,
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                alignment:
+                                    Alignment
+                                        .bottomCenter,
+                                children: [
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    child:
+                                        Container(
+                                      height: 1,
+                                      color: p
+                                          .border
+                                          .withValues(
+                                        alpha:
+                                            0.45,
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
+                                  Align(
+                                    alignment:
+                                        Alignment
+                                            .bottomCenter,
+                                    child:
+                                        TweenAnimationBuilder<
+                                            double>(
+                                      key:
+                                          ValueKey(
+                                        '${labels.length}'
+                                        '-$i-$value',
+                                      ),
+                                      tween:
+                                          Tween(
+                                        begin:
+                                            0.0,
+                                        end:
+                                            factor,
+                                      ),
+                                      duration:
+                                          const Duration(
+                                        milliseconds:
+                                            150,
+                                      ),
+                                      curve:
+                                          Curves
+                                              .easeOutCubic,
+                                      builder:
+                                          (
+                                        context,
+                                        animationValue,
+                                        child,
+                                      ) {
+                                        final height =
+                                            animationValue <=
+                                                    0
+                                                ? 0.015
+                                                : animationValue;
+
+                                        return FractionallySizedBox(
+                                          heightFactor:
+                                              height,
+                                          widthFactor:
+                                              0.46,
+                                          alignment:
+                                              Alignment
+                                                  .bottomCenter,
+                                          child:
+                                              Container(
+                                            decoration:
+                                                BoxDecoration(
+                                              color:
+                                                  isMax
+                                                      ? p.primary
+                                                      : p.primary.withValues(
+                                                          alpha:
+                                                              0.16,
+                                                        ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                5,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                            const SizedBox(
+                              height: 7,
+                            ),
+                            Text(
+                              labels[i],
+                              maxLines: 1,
+                              overflow:
+                                  TextOverflow
+                                      .ellipsis,
+                              textAlign:
+                                  TextAlign.center,
+                              style:
+                                  p.t.labelSmall
+                                      ?.copyWith(
+                                fontSize: 9.5,
+                                color: isMax
+                                    ? p.primary
+                                    : p.muted,
+                                fontWeight:
+                                    isMax
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          labels[i],
-                          style: p.t.labelSmall?.copyWith(
-                            color: p.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          const SizedBox(height: 10),
+          _ChartInfo(
+            text:
+                'Plus la barre est haute, plus vos ventes sont importantes par rapport aux autres périodes.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartInfo extends StatelessWidget {
+  final String text;
+
+  const _ChartInfo({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _P.of(context);
+
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: p.card,
+        borderRadius:
+            BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.insights_rounded,
+            size: 15,
+            color: p.muted,
+          ),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              text,
+              style:
+                  p.t.bodySmall?.copyWith(
+                color: p.muted,
+                fontSize: 9.5,
+                height: 1.3,
+              ),
             ),
           ),
         ],
@@ -1188,11 +1772,8 @@ class _SalesChartCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// CATEGORIES
-// -----------------------------------------------------------------------------
-
-class _CategoriesCard extends StatelessWidget {
+class _CategoriesCard
+    extends StatelessWidget {
   final Map<String, double> quantities;
 
   const _CategoriesCard({
@@ -1203,26 +1784,48 @@ class _CategoriesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final entries = quantities.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries =
+        quantities.entries.toList()
+          ..sort(
+            (a, b) =>
+                b.value.compareTo(a.value),
+          );
 
-    final topEntries = entries.take(3).toList();
+    final topEntries =
+        entries.take(3).toList();
 
     if (topEntries.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: p.cardDecoration,
+        padding:
+            const EdgeInsets.all(16),
+        decoration:
+            p.cardDecoration,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
             Text(
               'Top catégories',
-              style: p.t.titleMedium,
+              style:
+                  p.t.titleMedium?.copyWith(
+                fontWeight:
+                    FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 5),
+            Text(
+              'Répartition de vos ventes',
+              style:
+                  p.t.bodySmall?.copyWith(
+                color: p.muted,
+                fontSize: 10,
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               'Aucune vente pour le moment.',
-              style: p.t.bodyMedium?.copyWith(
+              style:
+                  p.t.bodyMedium?.copyWith(
                 color: p.muted,
               ),
             ),
@@ -1231,23 +1834,31 @@ class _CategoriesCard extends StatelessWidget {
       );
     }
 
-    final total = topEntries.fold<double>(
+    final total =
+        topEntries.fold<double>(
       0,
       (sum, item) => sum + item.value,
     );
 
-    final data = <(String, double, Color)>[];
-
     final colors = [
       p.primary,
-      p.primary.withValues(alpha: 0.5),
+      p.primary.withValues(
+        alpha: 0.55,
+      ),
       p.accent,
     ];
 
-    for (var i = 0; i < topEntries.length; i++) {
-      final percentage = total == 0
+    final data =
+        <(String, double, Color)>[];
+
+    for (var i = 0;
+        i < topEntries.length;
+        i++) {
+      final percentage = total <= 0
           ? 0.0
-          : (topEntries[i].value / total) * 100;
+          : (topEntries[i].value /
+                  total) *
+              100;
 
       data.add(
         (
@@ -1259,57 +1870,216 @@ class _CategoriesCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: p.cardDecoration,
-      child: Row(
+      padding:
+          const EdgeInsets.fromLTRB(
+        16,
+        15,
+        16,
+        14,
+      ),
+      decoration:
+          p.cardDecoration,
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 92,
-            height: 92,
-            child: CustomPaint(
-              painter: _DonutPainter(
-                data
-                    .map((item) => (item.$2, item.$3))
-                    .toList(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Top catégories',
-                  style: p.t.titleMedium,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      'Top catégories',
+                      style:
+                          p.t.titleMedium
+                              ?.copyWith(
+                        fontWeight:
+                            FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 3,
+                    ),
+                    Text(
+                      'Répartition de vos ventes',
+                      style:
+                          p.t.bodySmall
+                              ?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                for (final item in data)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
+              ),
+              Icon(
+                Icons
+                    .pie_chart_outline_rounded,
+                size: 19,
+                color: p.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            crossAxisAlignment:
+                CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 112,
+                height: 112,
+                child: Stack(
+                  alignment:
+                      Alignment.center,
+                  children: [
+                    TweenAnimationBuilder<
+                        double>(
+                      tween: Tween(
+                        begin: 0,
+                        end: 1,
+                      ),
+                      duration:
+                          const Duration(
+                        milliseconds: 350,
+                      ),
+                      curve:
+                          Curves.easeOutCubic,
+                      builder: (
+                        context,
+                        animationValue,
+                        child,
+                      ) {
+                        return CustomPaint(
+                          size:
+                              const Size(
+                            112,
+                            112,
+                          ),
+                          painter:
+                              _DonutPainter(
+                            data
+                                .map(
+                                  (item) => (
+                                    item.$2 *
+                                        animationValue,
+                                    item.$3,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        );
+                      },
+                    ),
+                    Column(
+                      mainAxisSize:
+                          MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: item.$3,
-                            shape: BoxShape.circle,
+                        Text(
+                          '${topEntries.length}',
+                          style: p
+                              .t.titleLarge
+                              ?.copyWith(
+                            fontWeight:
+                                FontWeight.w800,
+                            color:
+                                p.primary,
+                            height: 1,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${item.$1} (${item.$2.round()}%)',
-                            overflow: TextOverflow.ellipsis,
-                            style: p.t.bodySmall,
+                        const SizedBox(
+                          height: 3,
+                        ),
+                        Text(
+                          'Top',
+                          style:
+                              p.t.labelSmall
+                                  ?.copyWith(
+                            color:
+                                p.muted,
+                            fontSize: 9,
                           ),
                         ),
                       ],
                     ),
-                  ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  children: [
+                    for (
+                      var i = 0;
+                      i < data.length;
+                      i++
+                    )
+                      Padding(
+                        padding:
+                            EdgeInsets.only(
+                          bottom:
+                              i ==
+                                      data.length -
+                                          1
+                                  ? 0
+                                  : 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 9,
+                              height: 9,
+                              decoration:
+                                  BoxDecoration(
+                                color:
+                                    data[i].$3,
+                                shape:
+                                    BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 8,
+                            ),
+                            Expanded(
+                              child: Text(
+                                data[i].$1,
+                                maxLines: 1,
+                                overflow:
+                                    TextOverflow
+                                        .ellipsis,
+                                style: p
+                                    .t.bodySmall
+                                    ?.copyWith(
+                                  fontWeight:
+                                      FontWeight
+                                          .w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 8,
+                            ),
+                            Text(
+                              '${data[i].$2.round()}%',
+                              style: p
+                                  .t.labelMedium
+                                  ?.copyWith(
+                                color:
+                                    p.primary,
+                                fontWeight:
+                                    FontWeight
+                                        .w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1317,20 +2087,29 @@ class _CategoriesCard extends StatelessWidget {
   }
 }
 
-class _DonutPainter extends CustomPainter {
+class _DonutPainter
+    extends CustomPainter {
   final List<(double, Color)> slices;
 
   _DonutPainter(this.slices);
 
   @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = 16.0;
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    const stroke = 17.0;
 
-    final rect = (Offset.zero & size).deflate(stroke / 2);
+    final rect =
+        (Offset.zero & size).deflate(
+      stroke / 2,
+    );
 
-    final total = slices.fold<double>(
+    final total =
+        slices.fold<double>(
       0,
-      (total, slice) => total + slice.$1,
+      (total, slice) =>
+          total + slice.$1,
     );
 
     if (total <= 0) {
@@ -1343,18 +2122,24 @@ class _DonutPainter extends CustomPainter {
       final value = slice.$1;
       final color = slice.$2;
 
-      final sweep = value / total * 2 * math.pi;
+      final sweep =
+          value / total * 2 * math.pi;
 
       final paint = Paint()
         ..color = color
-        ..style = PaintingStyle.stroke
+        ..style =
+            PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.butt;
+        ..strokeCap =
+            StrokeCap.round;
 
       canvas.drawArc(
         rect,
         start,
-        sweep - 0.04,
+        math.max(
+          0,
+          sweep - 0.045,
+        ),
         false,
         paint,
       );
@@ -1364,16 +2149,16 @@ class _DonutPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DonutPainter oldDelegate) {
-    return oldDelegate.slices != slices;
+  bool shouldRepaint(
+    covariant _DonutPainter oldDelegate,
+  ) {
+    return oldDelegate.slices !=
+        slices;
   }
 }
 
-// -----------------------------------------------------------------------------
-// TOP PRODUITS
-// -----------------------------------------------------------------------------
-
-class _TopProductsCard extends StatelessWidget {
+class _TopProductsCard
+    extends StatelessWidget {
   final Map<String, double> qty;
 
   const _TopProductsCard({
@@ -1384,72 +2169,111 @@ class _TopProductsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
-    final entries = qty.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries =
+        qty.entries.toList()
+          ..sort(
+            (a, b) =>
+                b.value.compareTo(a.value),
+          );
 
-    final top = entries.take(3).toList();
+    final top =
+        entries.take(3).toList();
 
-    final maxQ = top.isEmpty ? 1.0 : top.first.value;
+    final maxQ =
+        top.isEmpty
+            ? 1.0
+            : top.first.value;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: p.cardDecoration,
+      padding:
+          const EdgeInsets.fromLTRB(
+        16,
+        15,
+        16,
+        14,
+      ),
+      decoration:
+          p.cardDecoration,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
-          Text(
-            'Produits les plus vendus',
-            style: p.t.titleMedium,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      'Produits les plus vendus',
+                      style:
+                          p.t.titleMedium
+                              ?.copyWith(
+                        fontWeight:
+                            FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 3,
+                    ),
+                    Text(
+                      'Vos produits les plus populaires',
+                      style:
+                          p.t.bodySmall
+                              ?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.bar_chart_rounded,
+                size: 20,
+                color: p.primary,
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           if (top.isEmpty)
-            Text(
-              'Aucune vente pour le moment.',
-              style: p.t.bodyMedium?.copyWith(
-                color: p.muted,
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(
+                vertical: 18,
+              ),
+              child: Center(
+                child: Text(
+                  'Aucune vente pour le moment.',
+                  style: p
+                      .t.bodyMedium
+                      ?.copyWith(
+                    color: p.muted,
+                  ),
+                ),
               ),
             ),
-          for (final entry in top)
+          for (
+            var i = 0;
+            i < top.length;
+            i++
+          )
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          entry.key,
-                          overflow: TextOverflow.ellipsis,
-                          style: p.t.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${entry.value.round()} vendus',
-                        style: p.t.bodySmall?.copyWith(
-                          color: p.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: maxQ == 0
-                          ? 0
-                          : entry.value / maxQ,
-                      minHeight: 8,
-                      backgroundColor: p.soft,
-                      color: p.primary,
-                    ),
-                  ),
-                ],
+              padding:
+                  EdgeInsets.only(
+                bottom:
+                    i == top.length - 1
+                        ? 0
+                        : 13,
+              ),
+              child: _TopProductRow(
+                rank: i + 1,
+                name: top[i].key,
+                quantity: top[i].value,
+                maxQuantity: maxQ,
               ),
             ),
         ],
@@ -1458,11 +2282,131 @@ class _TopProductsCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// INSIGHTS
-// -----------------------------------------------------------------------------
+class _TopProductRow
+    extends StatelessWidget {
+  final int rank;
+  final String name;
+  final double quantity;
+  final double maxQuantity;
 
-class _InsightsRow extends StatelessWidget {
+  const _TopProductRow({
+    required this.rank,
+    required this.name,
+    required this.quantity,
+    required this.maxQuantity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _P.of(context);
+
+    final progress =
+        maxQuantity <= 0
+            ? 0.0
+            : (quantity / maxQuantity)
+                .clamp(0.0, 1.0);
+
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 25,
+              height: 25,
+              alignment:
+                  Alignment.center,
+              decoration:
+                  BoxDecoration(
+                color: rank == 1
+                    ? p.primary
+                    : p.primary.withValues(
+                        alpha: 0.08,
+                      ),
+                shape:
+                    BoxShape.circle,
+              ),
+              child: Text(
+                '$rank',
+                style:
+                    p.t.labelSmall?.copyWith(
+                  color: rank == 1
+                      ? p.onPrimary
+                      : p.primary,
+                  fontWeight:
+                      FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow:
+                    TextOverflow.ellipsis,
+                style:
+                    p.t.bodyMedium?.copyWith(
+                  fontWeight:
+                      FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${quantity.round()} vendus',
+              style:
+                  p.t.labelSmall?.copyWith(
+                color: p.muted,
+                fontWeight:
+                    FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        ClipRRect(
+          borderRadius:
+              BorderRadius.circular(10),
+          child:
+              TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin: 0.0,
+              end: progress,
+            ),
+            duration:
+                const Duration(
+              milliseconds: 300,
+            ),
+            curve:
+                Curves.easeOutCubic,
+            builder: (
+              context,
+              value,
+              child,
+            ) {
+              return LinearProgressIndicator(
+                value: value,
+                minHeight: 7,
+                backgroundColor:
+                    p.soft,
+                color: rank == 1
+                    ? p.primary
+                    : p.primary.withValues(
+                        alpha: 0.55,
+                      ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InsightsRow
+    extends StatelessWidget {
   final String bestProduct;
   final double growth;
   final String peakHour;
@@ -1487,46 +2431,122 @@ class _InsightsRow extends StatelessWidget {
           children: [
             Expanded(
               child: _InsightCard(
-                label: 'Meilleur produit',
+                label:
+                    'Meilleur produit',
                 value: bestProduct,
+                icon:
+                    Icons.star_rounded,
+                iconColor: p.accent,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: _InsightCard(
                 label: 'Croissance',
                 value: growthText,
-                valueColor:
-                    growth >= 0 ? p.success : p.error,
+                icon: growth >= 0
+                    ? Icons
+                        .trending_up_rounded
+                    : Icons
+                        .trending_down_rounded,
+                iconColor: growth >= 0
+                    ? p.success
+                    : p.accent,
+                valueColor: growth >= 0
+                    ? p.success
+                    : p.accent,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: p.cardDecoration,
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 15,
+            vertical: 13,
+          ),
+          decoration:
+              p.cardDecoration,
           child: Row(
             children: [
-              Icon(
-                Icons.schedule_rounded,
-                color: p.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Heure de pointe des ventes',
-                  style: p.t.bodyMedium?.copyWith(
-                    color: p.muted,
+              Container(
+                width: 36,
+                height: 36,
+                decoration:
+                    BoxDecoration(
+                  color: p.primary
+                      .withValues(
+                    alpha: 0.08,
                   ),
+                  shape:
+                      BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.schedule_rounded,
+                  color: p.primary,
+                  size: 19,
                 ),
               ),
-              Text(
-                peakHour,
-                style: p.t.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: p.primary,
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment
+                          .start,
+                  children: [
+                    Text(
+                      'Heure de pointe',
+                      style: p
+                          .t.bodySmall
+                          ?.copyWith(
+                        color: p.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 2,
+                    ),
+                    Text(
+                      'Moment où vous vendez le plus',
+                      style: p
+                          .t.bodyMedium
+                          ?.copyWith(
+                        fontWeight:
+                            FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets
+                        .symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration:
+                    BoxDecoration(
+                  color: p.primary
+                      .withValues(
+                    alpha: 0.08,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    9,
+                  ),
+                ),
+                child: Text(
+                  peakHour,
+                  style: p
+                      .t.labelMedium
+                      ?.copyWith(
+                    fontWeight:
+                        FontWeight.w800,
+                    color: p.primary,
+                  ),
                 ),
               ),
             ],
@@ -1537,41 +2557,128 @@ class _InsightsRow extends StatelessWidget {
   }
 }
 
-class _InsightCard extends StatelessWidget {
+class _InsightCard
+    extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final IconData icon;
+  final Color? iconColor;
 
   const _InsightCard({
     required this.label,
     required this.value,
+    required this.icon,
     this.valueColor,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = _P.of(context);
 
+    final color =
+        iconColor ?? p.primary;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: p.cardDecoration,
+      padding:
+          const EdgeInsets.fromLTRB(
+        13,
+        13,
+        13,
+        14,
+      ),
+      decoration:
+          p.cardDecoration,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Container(
+                width: 31,
+                height: 31,
+                decoration:
+                    BoxDecoration(
+                  color: color.withValues(
+                    alpha: 0.10,
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(
+                    9,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 17,
+                  color: color,
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                Icons
+                    .arrow_forward_ios_rounded,
+                size: 11,
+                color: p.muted.withValues(
+                  alpha: 0.6,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
           Text(
             label,
-            style: p.t.bodySmall?.copyWith(
+            maxLines: 1,
+            overflow:
+                TextOverflow.ellipsis,
+            style:
+                p.t.bodySmall?.copyWith(
               color: p.muted,
+              fontSize: 10,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: p.t.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? p.primary,
+          const SizedBox(height: 4),
+          TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin: 0.0,
+              end: 1.0,
+            ),
+            duration:
+                const Duration(
+              milliseconds: 250,
+            ),
+            curve: Curves.easeOut,
+            builder: (
+              context,
+              animation,
+              child,
+            ) {
+              return Opacity(
+                opacity: animation,
+                child: Transform.translate(
+                  offset: Offset(
+                    0,
+                    4 *
+                        (1 - animation),
+                  ),
+                  child: child,
+                ),
+              );
+            },
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow:
+                  TextOverflow.ellipsis,
+              style:
+                  p.t.titleMedium?.copyWith(
+                fontWeight:
+                    FontWeight.w800,
+                color:
+                    valueColor ??
+                        p.primary,
+              ),
             ),
           ),
         ],
@@ -1580,11 +2687,8 @@ class _InsightCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ALERTES STOCK
-// -----------------------------------------------------------------------------
-
-class _StockAlertsCard extends StatelessWidget {
+class _StockAlertsCard
+    extends StatelessWidget {
   final List<dynamic> products;
 
   const _StockAlertsCard({
@@ -1596,82 +2700,114 @@ class _StockAlertsCard extends StatelessWidget {
     final p = _P.of(context);
 
     return Container(
-      decoration: p.cardDecoration,
+      decoration:
+          p.cardDecoration,
       child: Column(
         children: [
           if (products.isEmpty)
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding:
+                  const EdgeInsets.all(
+                20,
+              ),
               child: Row(
                 children: [
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: BoxDecoration(
+                    decoration:
+                        BoxDecoration(
                       color: p.soft,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius:
+                          BorderRadius.circular(
+                        12,
+                      ),
                     ),
                     child: Icon(
-                      Icons.check_circle_outline_rounded,
+                      Icons
+                          .check_circle_outline_rounded,
                       color: p.primary,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(
+                    width: 12,
+                  ),
                   Expanded(
                     child: Text(
                       'Aucune alerte de stock.',
-                      style: p.t.bodyMedium?.copyWith(
+                      style: p
+                          .t.bodyMedium
+                          ?.copyWith(
                         color: p.muted,
-                        fontWeight: FontWeight.w600,
+                        fontWeight:
+                            FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          for (var i = 0;
-              i < products.length && i < 4;
-              i++) ...[
+          for (
+            var i = 0;
+            i < products.length &&
+                i < 4;
+            i++
+          ) ...[
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(
+              contentPadding:
+                  const EdgeInsets
+                      .symmetric(
                 horizontal: 12,
                 vertical: 2,
               ),
               leading: Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration:
+                    BoxDecoration(
                   color: p.errorSoft,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
                 ),
                 child: Icon(
-                  Icons.warning_amber_rounded,
+                  Icons
+                      .warning_amber_rounded,
                   color: p.error,
                   size: 22,
                 ),
               ),
               title: Text(
                 products[i].name,
-                style: p.t.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                style:
+                    p.t.bodyMedium
+                        ?.copyWith(
+                  fontWeight:
+                      FontWeight.w700,
                 ),
               ),
               subtitle: Text(
                 'Il reste ${products[i].quantity} '
                 'unité${products[i].quantity > 1 ? 's' : ''}',
-                style: p.t.bodySmall?.copyWith(
+                style:
+                    p.t.bodySmall?.copyWith(
                   color: p.muted,
                 ),
               ),
               trailing: Text(
                 'Réapprovisionner',
-                style: p.t.labelSmall?.copyWith(
+                style:
+                    p.t.labelSmall
+                        ?.copyWith(
                   color: p.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight:
+                      FontWeight.w700,
                 ),
               ),
             ),
-            if (i < products.length - 1 && i < 3)
+            if (i < products.length - 1 &&
+                i < 3)
               Divider(
                 height: 1,
                 indent: 16,
@@ -1685,11 +2821,8 @@ class _StockAlertsCard extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ACTIVITE RECENTE
-// -----------------------------------------------------------------------------
-
-class _RecentActivity extends StatelessWidget {
+class _RecentActivity
+    extends StatelessWidget {
   final List<Sale> sales;
   final List<dynamic> alertProducts;
 
@@ -1705,22 +2838,32 @@ class _RecentActivity extends StatelessWidget {
     final validSales =
         sales
             .where(
-              (sale) => sale.status.toUpperCase() != 'CANCELLED',
+              (sale) =>
+                  sale.status
+                      .toUpperCase() !=
+                  'CANCELLED',
             )
             .toList()
           ..sort(
-            (a, b) => b.dateTime.compareTo(a.dateTime),
+            (a, b) =>
+                b.dateTime.compareTo(
+              a.dateTime,
+            ),
           );
 
-    final recentSales = validSales.take(3).toList();
+    final recentSales =
+        validSales.take(3).toList();
 
     final children = <Widget>[];
 
-    if (recentSales.isEmpty && alertProducts.isEmpty) {
+    if (recentSales.isEmpty &&
+        alertProducts.isEmpty) {
       children.add(
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: p.cardDecoration,
+          padding:
+              const EdgeInsets.all(16),
+          decoration:
+              p.cardDecoration,
           child: Row(
             children: [
               Icon(
@@ -1731,7 +2874,9 @@ class _RecentActivity extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Aucune activité récente.',
-                  style: p.t.bodyMedium?.copyWith(
+                  style: p
+                      .t.bodyMedium
+                      ?.copyWith(
                     color: p.muted,
                   ),
                 ),
@@ -1742,30 +2887,42 @@ class _RecentActivity extends StatelessWidget {
       );
     }
 
-    for (final sale in recentSales) {
-      final productSummary = sale.items
-          .map(
-            (item) =>
-                '${_formatQuantity(item.qty)}x ${item.name}',
-          )
-          .join(', ');
+    for (final sale
+        in recentSales) {
+      final productSummary =
+          sale.items
+              .map(
+                (item) =>
+                    '${_formatQuantity(item.qty)}x ${item.name}',
+              )
+              .join(', ');
 
       children.add(
         Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: p.cardDecoration,
+          margin:
+              const EdgeInsets.only(
+            bottom: 10,
+          ),
+          padding:
+              const EdgeInsets.all(14),
+          decoration:
+              p.cardDecoration,
           child: Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(
+                decoration:
+                    BoxDecoration(
                   color: p.soft,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
                 ),
                 child: Icon(
-                  Icons.shopping_cart_outlined,
+                  Icons
+                      .shopping_cart_outlined,
                   color: p.onSoft,
                 ),
               ),
@@ -1773,20 +2930,31 @@ class _RecentActivity extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      CrossAxisAlignment
+                          .start,
                   children: [
                     Text(
                       'Vente : $productSummary',
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: p.t.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      overflow:
+                          TextOverflow.ellipsis,
+                      style: p
+                          .t.bodyMedium
+                          ?.copyWith(
+                        fontWeight:
+                            FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(
+                      height: 2,
+                    ),
                     Text(
-                      _relativeDate(sale.dateTime),
-                      style: p.t.bodySmall?.copyWith(
+                      _relativeDate(
+                        sale.dateTime,
+                      ),
+                      style: p
+                          .t.bodySmall
+                          ?.copyWith(
                         color: p.muted,
                       ),
                     ),
@@ -1796,8 +2964,11 @@ class _RecentActivity extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '+${_money(sale.total)}',
-                style: p.t.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                style: p
+                    .t.bodyMedium
+                    ?.copyWith(
+                  fontWeight:
+                      FontWeight.w700,
                   color: p.success,
                 ),
               ),
@@ -1808,24 +2979,35 @@ class _RecentActivity extends StatelessWidget {
     }
 
     if (alertProducts.isNotEmpty) {
-      final product = alertProducts.first;
+      final product =
+          alertProducts.first;
 
       children.add(
         Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: p.cardDecoration,
+          margin:
+              const EdgeInsets.only(
+            bottom: 10,
+          ),
+          padding:
+              const EdgeInsets.all(14),
+          decoration:
+              p.cardDecoration,
           child: Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(
+                decoration:
+                    BoxDecoration(
                   color: p.errorSoft,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
                 ),
                 child: Icon(
-                  Icons.warning_amber_rounded,
+                  Icons
+                      .warning_amber_rounded,
                   color: p.error,
                 ),
               ),
@@ -1833,19 +3015,27 @@ class _RecentActivity extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      CrossAxisAlignment
+                          .start,
                   children: [
                     Text(
                       'Stock bas : ${product.name}',
-                      style: p.t.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      style: p
+                          .t.bodyMedium
+                          ?.copyWith(
+                        fontWeight:
+                            FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(
+                      height: 2,
+                    ),
                     Text(
                       'Il reste ${product.quantity} unité'
                       '${product.quantity > 1 ? 's' : ''}',
-                      style: p.t.bodySmall?.copyWith(
+                      style: p
+                          .t.bodySmall
+                          ?.copyWith(
                         color: p.muted,
                       ),
                     ),
@@ -1855,8 +3045,11 @@ class _RecentActivity extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Alerte',
-                style: p.t.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                style: p
+                    .t.bodyMedium
+                    ?.copyWith(
+                  fontWeight:
+                      FontWeight.w700,
                   color: p.error,
                 ),
               ),
@@ -1866,19 +3059,29 @@ class _RecentActivity extends StatelessWidget {
       );
     }
 
-    return Column(children: children);
+    return Column(
+      children: children,
+    );
   }
 
-  static String _formatQuantity(double quantity) {
-    if (quantity == quantity.roundToDouble()) {
-      return quantity.toInt().toString();
+  static String _formatQuantity(
+    double quantity,
+  ) {
+    if (quantity ==
+        quantity.roundToDouble()) {
+      return quantity
+          .toInt()
+          .toString();
     }
 
     return quantity.toString();
   }
 
-  static String _relativeDate(DateTime date) {
-    final difference = DateTime.now().difference(date);
+  static String _relativeDate(
+    DateTime date,
+  ) {
+    final difference =
+        DateTime.now().difference(date);
 
     if (difference.inMinutes < 1) {
       return 'À l’instant';
@@ -1900,11 +3103,8 @@ class _RecentActivity extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// ETAT ERREUR
-// -----------------------------------------------------------------------------
-
-class _ErrorState extends StatelessWidget {
+class _ErrorState
+    extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
@@ -1919,9 +3119,11 @@ class _ErrorState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding:
+            const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize:
+              MainAxisSize.min,
           children: [
             Icon(
               Icons.error_outline,
@@ -1931,13 +3133,15 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               message,
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
               style: p.t.bodyLarge,
             ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,
-              child: const Text('Réessayer'),
+              child:
+                  const Text('Réessayer'),
             ),
           ],
         ),
@@ -1946,18 +3150,20 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// TITRES
-// -----------------------------------------------------------------------------
-
-class _SectionTitle extends StatelessWidget {
+class _SectionTitle
+    extends StatelessWidget {
   final String text;
   final _P p;
 
-  const _SectionTitle(this.text, this.p);
+  const _SectionTitle(
+    this.text,
+    this.p,
+  );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Text(
       text,
       style: p.t.titleLarge,
@@ -1965,17 +3171,19 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// FORMATAGE
-// -----------------------------------------------------------------------------
-
 String _money(num value) {
-  final string = value.round().toString();
+  final string =
+      value.round().toString();
 
   final buffer = StringBuffer();
 
-  for (var i = 0; i < string.length; i++) {
-    final fromEnd = string.length - i;
+  for (
+    var i = 0;
+    i < string.length;
+    i++
+  ) {
+    final fromEnd =
+        string.length - i;
 
     buffer.write(string[i]);
 

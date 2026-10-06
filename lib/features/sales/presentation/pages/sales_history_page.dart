@@ -21,7 +21,7 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final getSalesHistory = ref.watch(getSalesHistoryProvider);
+    final salesAsync = ref.watch(salesHistoryStreamProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -35,53 +35,27 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              ref.invalidate(getSalesHistoryProvider);
-            },
-            icon: Icon(
-              Icons.refresh_rounded,
+      ),
+      body: salesAsync.when(
+        loading: () {
+          return Center(
+            child: CircularProgressIndicator(
               color: colorScheme.primary,
             ),
-          ),
-        ],
-      ),
-      body: FutureBuilder<List<Sale>>(
-        future: getSalesHistory(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: colorScheme.primary,
+          );
+        },
+        error: (error, stackTrace) {
+          return Center(
+            child: Text(
+              'Impossible de charger les ventes.',
+              style: TextStyle(
+                color: colorScheme.onSurface,
               ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Impossible de charger les ventes.',
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      ref.invalidate(getSalesHistoryProvider);
-                    },
-                    child: const Text('Réessayer'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final sales = _filterSales(snapshot.data ?? []);
+            ),
+          );
+        },
+        data: (allSales) {
+          final sales = _filterSales(allSales);
 
           if (sales.isEmpty) {
             return _emptyState();
@@ -96,33 +70,24 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
             (sum, sale) => sum + sale.total,
           );
 
-          return RefreshIndicator(
-            color: colorScheme.primary,
-            onRefresh: () async {
-              ref.invalidate(getSalesHistoryProvider);
-              await Future<void>.delayed(
-                const Duration(milliseconds: 300),
-              );
-            },
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                _periodSelector(),
-                const SizedBox(height: 16),
-                _summaryCard(total, completedSales.length),
-                const SizedBox(height: 20),
-                Text(
-                  '${sales.length} vente${sales.length > 1 ? 's' : ''}',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              _periodSelector(),
+              const SizedBox(height: 16),
+              _summaryCard(total, completedSales.length),
+              const SizedBox(height: 20),
+              Text(
+                '${sales.length} vente${sales.length > 1 ? 's' : ''}',
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(height: 12),
-                ...sales.map((sale) => _saleCard(sale)),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              ...sales.map((sale) => _saleCard(sale)),
+            ],
           );
         },
       ),
@@ -460,15 +425,11 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
     if (!mounted || action == null) return;
 
     if (action == 'edit') {
-      final updated = await Navigator.of(context).push<bool>(
+      await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => UpdateSalePage(sale: sale),
         ),
       );
-
-      if (updated == true && mounted) {
-        ref.invalidate(getSalesHistoryProvider);
-      }
 
       return;
     }
@@ -523,8 +484,6 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
       await ref.read(cancelSaleProvider)(sale.id!);
 
       if (!mounted) return;
-
-      ref.invalidate(getSalesHistoryProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -628,13 +587,40 @@ class _SalesHistoryPageState extends ConsumerState<SalesHistoryPage> {
   Widget _emptyState() {
     final colorScheme = Theme.of(context).colorScheme;
 
+    String message;
+
+    switch (_selectedPeriod) {
+      case 'Aujourd’hui':
+        message = 'Il n’y a pas encore eu de vente aujourd’hui.';
+        break;
+
+      case 'Cette semaine':
+        message = 'Il n’y a pas encore eu de vente cette semaine.';
+        break;
+
+      case 'Ce mois':
+        message = 'Il n’y a pas encore eu de vente ce mois-ci.';
+        break;
+
+      case 'Personnalisé':
+        message = 'Il n’y a pas de vente pour cette période.';
+        break;
+
+      default:
+        message = 'Aucune vente pour cette période.';
+    }
+
     return Center(
-      child: Text(
-        'Aucune vente',
-        style: TextStyle(
-          color: colorScheme.onSurface,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

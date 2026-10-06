@@ -111,6 +111,12 @@ final class _FakeSalesRepository implements SalesRepository {
   }) async {
     return sales.values.toList();
   }
+
+  @override
+Stream<List<Sale>> watchSalesHistory() {
+  return const Stream.empty();
+}
+
 }
 
 ProductSnapshot _product(
