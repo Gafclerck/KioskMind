@@ -26,5 +26,4 @@ class AlertsRepositoryImpl implements AlertsRepository {
           return alerts;
         });
   }
-
 }

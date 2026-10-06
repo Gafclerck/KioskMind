@@ -31,54 +31,52 @@ class AppRouterNotifier extends ChangeNotifier {
 
   final Ref _ref;
 
-String? redirect(BuildContext context, GoRouterState state) {
-  final AsyncValue<String?> authState = _ref.read(authStateProvider);
-  final bool hasSeenOnboarding = _ref.read(onboardingSeenProvider);
-  final String location = state.matchedLocation;
+  String? redirect(BuildContext context, GoRouterState state) {
+    final AsyncValue<String?> authState = _ref.read(authStateProvider);
+    final bool hasSeenOnboarding = _ref.read(onboardingSeenProvider);
+    final String location = state.matchedLocation;
 
-  // Keep splash while the initial auth state is unknown
-  if (authState.isLoading) {
-    return location == AppRoutes.splash ? null : AppRoutes.splash;
-  }
-
-  final bool isLoggedIn = authState.valueOrNull != null;
-
-  // The splash is not a destination, it is the window the app shows while it finds
-  // out who the merchant is. Once that is known, the same rules as anywhere else
-  // apply, and the splash is replaced by the page this session belongs on.
-  if (location == AppRoutes.splash) {
-    if (!hasSeenOnboarding) {
-      return AppRoutes.onboarding;
+    // Keep splash while the initial auth state is unknown
+    if (authState.isLoading) {
+      return location == AppRoutes.splash ? null : AppRoutes.splash;
     }
-    return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
+
+    final bool isLoggedIn = authState.valueOrNull != null;
+
+    // The splash is not a destination, it is the window the app shows while it finds
+    // out who the merchant is. Once that is known, the same rules as anywhere else
+    // apply, and the splash is replaced by the page this session belongs on.
+    if (location == AppRoutes.splash) {
+      if (!hasSeenOnboarding) {
+        return AppRoutes.onboarding;
+      }
+      return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
+    }
+
+    // 1. If user hasn't completed onboarding yet, force onboarding
+    if (!hasSeenOnboarding) {
+      return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
+    }
+
+    // 2. If onboarding was already seen, do not allow staying on onboarding page
+    if (location == AppRoutes.onboarding) {
+      return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
+    }
+
+    // 3. Public routes allowed without being authenticated
+    const List<String> publicRoutes = [AppRoutes.login, AppRoutes.signup];
+    if (!isLoggedIn) {
+      return publicRoutes.contains(location) ? null : AppRoutes.login;
+    }
+
+    // 4. Authenticated users should not stay on login/signup
+    if (publicRoutes.contains(location)) {
+      return AppRoutes.dashboard;
+    }
+
+    // Allow navigation to protected route
+    return null;
   }
-
-  // 1. If user hasn't completed onboarding yet, force onboarding
-  if (!hasSeenOnboarding) {
-    return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
-  }
-
-  // 2. If onboarding was already seen, do not allow staying on onboarding page
-  if (location == AppRoutes.onboarding) {
-    return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
-  }
-
-  // 3. Public routes allowed without being authenticated
-  const List<String> publicRoutes = [AppRoutes.login, AppRoutes.signup];
-  if (!isLoggedIn) {
-    return publicRoutes.contains(location) ? null : AppRoutes.login;
-  }
-
-  // 4. Authenticated users should not stay on login/signup
-  if (publicRoutes.contains(location)) {
-    return AppRoutes.dashboard;
-  }
-
-  // Allow navigation to protected route
-  return null;
-}
-
-
 }
 
 /// Central GoRouter provider for the application.
