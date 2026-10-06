@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/core/localization/generated/app_localizations.dart';
 import 'package:kiosk_mind/core/voice_services/speech_recognizer_port.dart';
+import 'package:kiosk_mind/core/voice_services/tts_port.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/handler_call_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/presentation/widgets/voice_panel.dart';
@@ -156,6 +157,61 @@ void main() {
       // them: it is the largest text on the green area and the label would only push
       // it onto a second line.
       expect(find.text('vendu deux sa'), findsOneWidget);
+    });
+  });
+
+  group('a device whose voice is missing', () {
+    testWidgets(
+      'says the recap will not be read aloud, without touching the mic',
+      (WidgetTester tester) async {
+        final PanelHarness harness = PanelHarness()
+          ..tts.availabilityValue = TtsAvailability.localeUnavailable;
+        await harness.pump(tester);
+
+        expect(
+          find.text('Synthèse vocale indisponible sur cet appareil'),
+          findsOneWidget,
+        );
+
+        // The banner is information: the microphone is still there and still opens.
+        expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+        await harness.listen(tester);
+        expect(harness.recognizer.listenCount, 1);
+      },
+    );
+
+    testWidgets(
+      'says the engine has not answered, and that it may yet answer',
+      (WidgetTester tester) async {
+        final PanelHarness harness = PanelHarness()
+          ..tts.availabilityValue = TtsAvailability.engineUnreachable;
+        await harness.pump(tester);
+
+        expect(
+          find.text(
+            'La voix ne répond pas pour l\'instant. Réessayez dans un instant',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('shows no banner when the voice works', (
+      WidgetTester tester,
+    ) async {
+      final PanelHarness harness = PanelHarness();
+      await harness.pump(tester);
+
+      expect(
+        find.text('Synthèse vocale indisponible sur cet appareil'),
+        findsNothing,
+      );
+      expect(
+        find.text(
+          'La voix ne répond pas pour l\'instant. Réessayez dans un instant',
+        ),
+        findsNothing,
+      );
     });
   });
 
