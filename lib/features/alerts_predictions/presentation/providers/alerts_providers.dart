@@ -4,16 +4,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiosk_mind/features/alerts_predictions/data/repositories/alert_repository_impl.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/entities/alert.dart';
-import 'package:kiosk_mind/features/alerts_predictions/domain/repositories/alerts_repository.dart';
 import 'package:kiosk_mind/firebase_options.dart';
 
 // ── Test local avec l'émulateur (alerts_predictions uniquement) ──────
-// Mettre à false pour revenir à la vraie base de production.
+// Activé uniquement au lancement : flutter run --dart-define=ALERTS_EMULATOR=true
+// Désactivé par défaut : impossible de livrer une build qui lit
+// l'émulateur en production.
 // Rien d'autre dans l'app n'est affecté : on utilise une SECONDE
 // instance Firebase, nommée, totalement indépendante de
 // FirebaseFirestore.instance (celle que product_repository_impl.dart
 // et le reste de l'app continuent d'utiliser normalement).
-const bool _kUseEmulator = true;
+const bool _kUseEmulator = bool.fromEnvironment('ALERTS_EMULATOR');
 
 // Doit correspondre à l'UID du document "users/{...}" créé par
 // scripts/test_manual_v2.py — pas besoin de l'Auth emulator, puisqu'on

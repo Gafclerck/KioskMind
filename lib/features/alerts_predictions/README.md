@@ -90,22 +90,27 @@ predictions_quotidiennes()
 
 ## Afficher les alertes dans l'app Flutter (`AlertPredictionScreen`)
 
-Dans `alerts_providers.dart`, la constante en tête de fichier contrôle
-la source de données :
+La source de données se choisit au **lancement**, par `dart-define`
+(`alerts_providers.dart`) :
 
-```dart
-const bool _kUseEmulator = true;   // local (émulateur)
-const bool _kUseEmulator = false;  // production (vraie base Firebase)
+```bash
+flutter run --dart-define=ALERTS_EMULATOR=true   # local (émulateur)
+flutter run                                     # production (vraie base)
 ```
 
-Quand `_kUseEmulator = true`, l'app lit une **instance Firestore
+La constante vaut `bool.fromEnvironment('ALERTS_EMULATOR')` : elle est
+**désactivée par défaut**, il est donc impossible de livrer une build
+qui lit l'émulateur — plus besoin de re-modifier le code avant de
+commettre.
+
+Quand `ALERTS_EMULATOR` est défini, l'app lit une **instance Firestore
 secondaire**, isolée du reste de l'app (qui continue de parler à la
-vraie base normalement) — aucun autre fichier n'est affecté.
+vraie base normalement) — aucun autre fichier n'est affecté. L'adresse
+`10.0.2.2` correspond à l'émulateur Android (un simulateur iOS/macOS
+nécessite `127.0.0.1`).
 
 L'UID utilisé en mode émulateur est fixe (`test_alerts_uid`), pas
 besoin d'une vraie connexion ni de l'Auth emulator.
-
-**⚠️ Remettre `_kUseEmulator = false` avant de committer pour de bon.**
 
 ## Tester l'envoi réel de notifications (FCM)
 
