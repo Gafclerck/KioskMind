@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:kiosk_mind/core/theme/app_colors.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/entities/alert.dart';
+import 'package:kiosk_mind/features/alerts_predictions/presentation/alert_messages.dart';
 import 'package:kiosk_mind/features/alerts_predictions/presentation/providers/alerts_providers.dart';
 import 'package:kiosk_mind/features/alerts_predictions/presentation/widgets/card_alert.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/pages/record_stock_movement_page.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
+import 'package:kiosk_mind/routing/app_routes.dart';
 
 class AlertPredictionScreen extends ConsumerWidget {
   const AlertPredictionScreen({super.key});
@@ -21,6 +26,13 @@ class AlertPredictionScreen extends ConsumerWidget {
           titleAppBar,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Centre de notifications',
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () => context.push(AppRoutes.notificationCenter),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -65,7 +77,9 @@ class AlertPredictionScreen extends ConsumerWidget {
                     }
                     return Column(
                       spacing: 10,
-                      children: alerts.map(_buildCard).toList(),
+                      children: alerts
+                          .map((alert) => _buildCard(context, ref, alert))
+                          .toList(),
                     );
                   },
                   loading: () => const Padding(
@@ -85,7 +99,7 @@ class AlertPredictionScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCard(Alert alert) {
+  Widget _buildCard(BuildContext context, WidgetRef ref, Alert alert) {
     final statut = switch (alert.type) {
       AlertType.lowStock || AlertType.negativeStock => StatutAlert.urgent,
       AlertType.predictedStockout => StatutAlert.prevision,
@@ -94,21 +108,37 @@ class AlertPredictionScreen extends ConsumerWidget {
     return CardAlert(
       statutAlert: statut,
       productNameWithStock: alert.productName,
-      alertMessage: _messagePour(alert),
+      alertMessage: messageAlerte(alert),
+      onPressed: () => _ouvrirReapprovisionnement(context, ref, alert),
     );
   }
 
-  String _messagePour(Alert alert) {
-    switch (alert.type) {
-      case AlertType.lowStock:
-        return "Stock bas : il ne reste que ${alert.stockAtCreation} unité(s).";
-      case AlertType.negativeStock:
-        return "Stock négatif (${alert.stockAtCreation}) : vérifiez vos ventes récentes.";
-      case AlertType.predictedStockout:
-        final jours = alert.estimatedDaysLeft;
-        return jours != null
-            ? "Rupture prévue dans environ $jours jour(s)."
-            : "Rupture de stock prévue prochainement.";
+  /// UC7 : ouvre le formulaire d'entrée de stock (réapprovisionnement)
+  /// pour le produit concerné par l'alerte.
+  Future<void> _ouvrirReapprovisionnement(
+    BuildContext context,
+    WidgetRef ref,
+    Alert alert,
+  ) async {
+    final produits = ref.watch(productsProvider).valueOrNull;
+    final produit = produits?.where((p) => p.id == alert.productId).firstOrNull;
+
+    if (produit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Produit introuvable — il a peut-être été supprimé."),
+        ),
+      );
+      return;
     }
+
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => RecordStockMovementPage(
+          product: produit,
+          initialDirection: StockMovementDirection.inbound,
+        ),
+      ),
+    );
   }
 }

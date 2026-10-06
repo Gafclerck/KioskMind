@@ -7,11 +7,17 @@ class CardAlert extends StatelessWidget {
   final StatutAlert statutAlert;
   final String productNameWithStock;
   final String alertMessage;
+
+  /// Action du bouton (« Commander » / « Planifier »).
+  /// null => bouton désactivé (pas d'action connue).
+  final VoidCallback? onPressed;
+
   const CardAlert({
     super.key,
     required this.statutAlert,
     required this.productNameWithStock,
     required this.alertMessage,
+    this.onPressed,
   });
 
   @override
@@ -85,7 +91,7 @@ class CardAlert extends StatelessWidget {
                           backgroundColor: AppColors.error,
                           foregroundColor: AppColors.lightBackground,
                         ),
-                        onPressed: () {},
+                        onPressed: onPressed,
                         child: Row(
                           children: [
                             const Text("Commander"),
@@ -166,7 +172,7 @@ class CardAlert extends StatelessWidget {
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.lightBackground,
                         ),
-                        onPressed: () {},
+                        onPressed: onPressed,
                         child: Row(
                           children: [
                             Text("Commander"),
@@ -248,7 +254,7 @@ class CardAlert extends StatelessWidget {
                           backgroundColor: AppColors.primary,
                           foregroundColor: AppColors.lightBackground,
                         ),
-                        onPressed: () {},
+                        onPressed: onPressed,
                         child: Row(
                           children: [
                             Text("Planifier"),
