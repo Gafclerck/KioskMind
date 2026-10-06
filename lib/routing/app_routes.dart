@@ -13,4 +13,5 @@ abstract final class AppRoutes {
   static const String settingsPrivacy = '/profile/settings/privacy';
   static const String export = '/export';
   static const String notificationsAlert = '/notificationsAlert';
+  static const String notificationCenter = '/notification-center';
 }

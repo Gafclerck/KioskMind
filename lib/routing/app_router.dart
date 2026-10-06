@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/alert_prediction_screen.dart';
+import 'package:kiosk_mind/features/alerts_predictions/presentation/screens/notification_center_screen.dart';
 
 import '../core/storage/app_preferences_provider.dart';
 import '../features/auth/presentation/pages/login_page.dart';
@@ -154,6 +155,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.notificationsAlert,
         builder: (context, state) => const AlertPredictionScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notificationCenter,
+        builder: (context, state) => const ScreenNotificationCenter(),
       ),
     ],
   );
