@@ -57,6 +57,7 @@ import '../domain/registry/kiosk_registry.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/intent_input.dart';
 import '../domain/entities/intent_result.dart';
+import '../domain/entities/parse_route.dart';
 import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
 import '../domain/ports/cloud_intent_parser.dart';
@@ -78,6 +79,7 @@ import '../domain/services/command_validator.dart';
 import '../domain/services/decision_policy.dart';
 import '../domain/services/french_number_parser.dart';
 import '../domain/services/intent_detector.dart';
+import '../domain/services/local_only_parser.dart';
 import '../domain/services/text_normalizer.dart';
 import '../domain/usecases/execute_command.dart';
 import '../domain/usecases/handle_utterance.dart';
@@ -597,7 +599,9 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   final String systemPrompt = (await ref.watch(
     kioskRegistryProvider.future,
   )).buildSystemPrompt();
-  final ParseOutcomeJournal journal = ref.watch(voiceParseOutcomeJournalProvider);
+  final ParseOutcomeJournal journal = ref.watch(
+    voiceParseOutcomeJournalProvider,
+  );
 
   // 1. Explicit Rodium AI key provided
   if (rodiumApiKey.isNotEmpty) {
@@ -642,28 +646,62 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   }
 
   // 3. Fallback to Firebase Cloud Functions default
-  return RemoteCloudIntentParser(catalogReader: catalogReader, journal: journal);
+  return RemoteCloudIntentParser(
+    catalogReader: catalogReader,
+    journal: journal,
+  );
 });
+
+/// Whether a gateway key is present, and the cloud can therefore be tried at all.
+///
+/// A key is the only thing that opens the cloud, because no callable function is
+/// deployed behind [voiceCloudIntentParserProvider]'s last branch: `firebase.json`
+/// declares no `functions` section and `functions/` holds no source. Treating that
+/// branch as a working third option is what let a build with no key reach the network
+/// once per utterance and come back with nothing, paying the probe and the timeout to
+/// learn a fact it could have known at startup.
+final Provider<bool> voiceHasCloudCredentialProvider = Provider<bool>(
+  (Ref ref) =>
+      ref.watch(voiceRodiumApiKeyProvider).isNotEmpty ||
+      ref.watch(voiceGeminiApiKeyProvider).isNotEmpty,
+);
 
 /// The parser used by the turn executor.
 ///
-/// When [voiceEnableCloudProvider] is true, uses [CascadingParser] combining
-/// the cloud model and the local rule parser under a strict time budget.
-/// When false, delegates directly to [voiceRuleBasedParserProvider].
+/// With the cloud enabled and a key to call it with, this is a [CascadingParser]:
+/// the model under a strict time budget, the rules behind it. Without one, it is a
+/// [LocalOnlyParser], which answers the same way and records the reason. Handing back
+/// the bare rules parser, as this used to, answered identically and explained nothing,
+/// which is how a missing key went unnoticed behind a working-looking assistant.
 final FutureProvider<IntentParser> voiceParserProvider =
     FutureProvider<IntentParser>((Ref ref) async {
       final RuleBasedParser local = await ref.watch(
         voiceRuleBasedParserProvider.future,
       );
+      final ParseOutcomeJournal journal = ref.watch(
+        voiceParseOutcomeJournalProvider,
+      );
+
       if (!ref.watch(voiceEnableCloudProvider)) {
-        return local;
+        return LocalOnlyParser(
+          local: local,
+          reason: ParseRouteReason.localOnly,
+          journal: journal,
+        );
+      }
+      if (!ref.watch(voiceHasCloudCredentialProvider)) {
+        return LocalOnlyParser(
+          local: local,
+          reason: ParseRouteReason.noCredential,
+          journal: journal,
+        );
       }
       return CascadingParser(
         local: local,
         cloud: await ref.watch(voiceCloudIntentParserProvider.future),
         connectivity: ref.watch(voiceConnectivityProbeProvider),
         circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
-        journal: ref.watch(voiceParseOutcomeJournalProvider),
+        journal: journal,
         timeBudget: const Duration(milliseconds: 2000),
       );
     });
@@ -781,6 +819,7 @@ voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
 /// have.
 final FutureProvider<KioskRegistry> kioskRegistryProvider =
     FutureProvider<KioskRegistry>(
-      (Ref ref) async =>
-          KioskRegistry.fromCatalog(await ref.watch(voiceIntentsProvider.future)),
+      (Ref ref) async => KioskRegistry.fromCatalog(
+        await ref.watch(voiceIntentsProvider.future),
+      ),
     );

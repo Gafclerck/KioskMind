@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/catalog/in_memory_product_catalog.dart';
-import 'package:kiosk_mind/features/voice_assistant/data/parsers/rule_based_parser.dart';
+import 'package:kiosk_mind/features/voice_assistant/data/diagnostics/in_memory_parse_outcome_journal.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_proposal.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_outcome.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/entities/parse_route.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/cloud_intent_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/cascading_parser.dart';
+import 'package:kiosk_mind/features/voice_assistant/domain/services/local_only_parser.dart';
 
 ProductSnapshot _product(
   String id, {
@@ -51,6 +53,16 @@ final class _StubConnectivityProbe implements ConnectivityProbe {
   Future<bool> get isOnline => Future<bool>.value(online);
 }
 
+/// A probe that counts, so a test can assert a route that was never taken.
+final class _CountingConnectivityProbe implements ConnectivityProbe {
+  _CountingConnectivityProbe(this.delegate);
+
+  final Future<bool> Function() delegate;
+
+  @override
+  Future<bool> get isOnline => delegate();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -64,7 +76,7 @@ void main() {
 
   group('Cascading DI Wiring', () {
     test(
-      'defaults to RuleBasedParser when voiceEnableCloud is false',
+      'defaults to LocalOnlyParser when voiceEnableCloud is false',
       () async {
         final container = ProviderContainer(
           overrides: [
@@ -76,28 +88,96 @@ void main() {
 
         final parser = await container.read(voiceParserProvider.future);
 
-        expect(parser, isA<RuleBasedParser>());
+        expect(parser, isA<LocalOnlyParser>());
+        expect((parser as LocalOnlyParser).reason, ParseRouteReason.localOnly);
       },
     );
 
-    test('uses CascadingParser when voiceEnableCloud is true', () async {
-      final stubCloud = _StubCloudParser();
-      final stubConnectivity = _StubConnectivityProbe(online: true);
+    test(
+      'says noCredential instead of reaching the network without a key',
+      () async {
+        final stubConnectivity = _StubConnectivityProbe(online: true);
+        int probeCount = 0;
+        final countingProbe = _CountingConnectivityProbe(() {
+          probeCount += 1;
+          return stubConnectivity.isOnline;
+        });
 
-      final container = ProviderContainer(
-        overrides: [
-          voiceMockCatalogProvider.overrideWith((ref) async => catalog),
-          voiceEnableCloudProvider.overrideWithValue(true),
-          voiceCloudIntentParserProvider.overrideWith((ref) async => stubCloud),
-          voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceEnableCloudProvider.overrideWithValue(true),
+            voiceRodiumApiKeyProvider.overrideWithValue(''),
+            voiceGeminiApiKeyProvider.overrideWithValue(''),
+            voiceConnectivityProbeProvider.overrideWithValue(countingProbe),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final parser = await container.read(voiceParserProvider.future);
+        final parser = await container.read(voiceParserProvider.future);
 
-      expect(parser, isA<CascadingParser>());
-    });
+        expect(parser, isA<LocalOnlyParser>());
+        expect(
+          (parser as LocalOnlyParser).reason,
+          ParseRouteReason.noCredential,
+        );
+
+        // Le verrou cree par ce choix: sans cle, pas de sonde reseau par utterance,
+        // donc pas de 600 ms de latence payee pour apprendre un fait connu au demarrage.
+        await parser.parse('vendu deux sucres');
+        expect(probeCount, equals(0));
+      },
+    );
+
+    test(
+      'records the reason in the journal so a silent device is explainable',
+      () async {
+        final journal = InMemoryParseOutcomeJournal();
+
+        final container = ProviderContainer(
+          overrides: [
+            voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceEnableCloudProvider.overrideWithValue(true),
+            voiceRodiumApiKeyProvider.overrideWithValue(''),
+            voiceGeminiApiKeyProvider.overrideWithValue(''),
+            voiceParseOutcomeJournalProvider.overrideWithValue(journal),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final parser = await container.read(voiceParserProvider.future);
+        await parser.parse('quel est mon stock');
+
+        expect(journal.events, hasLength(1));
+        expect(journal.events.single.reason, ParseRouteReason.noCredential);
+        expect(journal.events.single.utterance, equals('quel est mon stock'));
+      },
+    );
+
+    test(
+      'uses CascadingParser when cloud is on and a key is present',
+      () async {
+        final stubCloud = _StubCloudParser();
+        final stubConnectivity = _StubConnectivityProbe(online: true);
+
+        final container = ProviderContainer(
+          overrides: [
+            voiceMockCatalogProvider.overrideWith((ref) async => catalog),
+            voiceEnableCloudProvider.overrideWithValue(true),
+            voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
+            voiceCloudIntentParserProvider.overrideWith(
+              (ref) async => stubCloud,
+            ),
+            voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final parser = await container.read(voiceParserProvider.future);
+
+        expect(parser, isA<CascadingParser>());
+      },
+    );
 
     test(
       'HandleUtterance delegates through cascade and uses cloud proposal',
@@ -116,6 +196,7 @@ void main() {
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
             voiceEnableCloudProvider.overrideWithValue(true),
+            voiceRodiumApiKeyProvider.overrideWithValue('rd_sk_test_123'),
             voiceCloudIntentParserProvider.overrideWith(
               (ref) async => stubCloud,
             ),
