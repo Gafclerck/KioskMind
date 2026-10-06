@@ -1,18 +1,25 @@
 /// Build-time switch of the voice composition root.
 ///
-/// Mocks are the default so the demo runs before `sales` and `products_stock`
-/// deliver their use cases. Once a real handler exists for an intent, build
-/// with `--dart-define=VOICE_USE_MOCKS=false` and override per provider in
-/// tests.
+/// Defaults to the real handlers. Mocks were the default while `sales` and
+/// `products_stock` had no use case to call, which is no longer the case, and a
+/// default that keeps answering from a fixture makes a working assistant look
+/// broken: every command the rules can hear succeeds against sample products the
+/// merchant has never stocked, and the ones that need the model never arrive.
+///
+/// Opt back in with `--dart-define=VOICE_USE_MOCKS=true` to demo the voice without a
+/// catalogue, or override `voiceUseMocksProvider` per test.
 const bool kVoiceUseMocks = bool.fromEnvironment(
   'VOICE_USE_MOCKS',
-  defaultValue: true,
+  defaultValue: false,
 );
 
 /// Whether the cascading parser attempts the cloud language model when online.
 ///
-/// Can be disabled with `--dart-define=VOICE_ENABLE_CLOUD=false` or overridden
-/// per provider in tests.
+/// Off by default too, and for the same reason a missing key is worth naming rather
+/// than hiding: turning the cloud on is a deployment decision, and it only means
+/// something once a key is present. With the cloud off or the key absent,
+/// `voiceParserProvider` builds a `LocalOnlyParser` that records which of the two it
+/// was. Silently answering from the rules is the one outcome nobody could diagnose.
 const bool kVoiceEnableCloud = bool.fromEnvironment(
   'VOICE_ENABLE_CLOUD',
   defaultValue: false,

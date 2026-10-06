@@ -11,6 +11,14 @@
   "voiceMicSpeaking": "Je vous réponds",
   "voiceMicUnavailable": "Micro indisponible",
   "voiceMicRefused": "Micro autorisé ? Sinon, utilisez la saisie manuelle",
+  "voiceTtsUnavailable": "Synthèse vocale indisponible sur cet appareil",
+  "@voiceTtsUnavailable": {
+    "description": "Montré quand l'appareil n'a pas de voix pour la langue de la boutique. L'écrit reste disponible, la lecture audio ne l'est pas."
+  },
+  "voiceTtsEngineUnreachable": "La voix ne répond pas pour l'instant. Réessayez dans un instant",
+  "@voiceTtsEngineUnreachable": {
+    "description": "Montré quand le moteur de synthèse n'a pas répondu (il peut devenir prêt plus tard) : la lecture reviendra toute seule."
+  },
   "voiceHeardLabel": "Entendu",
   "voiceQuestionProduct": "Quel produit ?",
   "voiceQuestionProductInLine": "Quel produit pour la première ligne ?",
@@ -59,6 +67,42 @@
     }
   },
   "voiceCurrency": "francs",
+  "voiceSheetTitle": "Copilote vocal",
+  "@voiceSheetTitle": {
+    "description": "Titre de la feuille de session vocale."
+  },
+  "voiceClose": "Fermer l'assistant vocal",
+  "@voiceClose": {
+    "description": "Libellé du bouton qui ferme la session vocale."
+  },
+  "voiceWaveformLabel": "Niveau du micro",
+  "@voiceWaveformLabel": {
+    "description": "Libellé de l'onde audio, lu par les lecteurs d'écran."
+  },
+  "voiceDetectedProducts": "Produits détectés",
+  "@voiceDetectedProducts": {
+    "description": "Titre de la liste, quand une confirmation est en attente."
+  },
+  "voiceRecordedProducts": "Ce qui a été enregistré",
+  "@voiceRecordedProducts": {
+    "description": "Titre de la liste, quand la commande a déjà été exécutée."
+  },
+  "voiceTotalLabel": "Montant total",
+  "@voiceTotalLabel": {
+    "description": "Libellé du montant total d'une vente."
+  },
+  "voiceRetry": "Réessayer",
+  "@voiceRetry": {
+    "description": "Bouton qui rouvre le microphone pour redire la commande."
+  },
+  "voiceConfirm": "Confirmer",
+  "@voiceConfirm": {
+    "description": "Bouton qui accepte une confirmation en attente."
+  },
+  "voiceNewCommand": "Nouvelle commande",
+  "@voiceNewCommand": {
+    "description": "Bouton qui enchaîne sur une nouvelle commande."
+  },
   "voiceSaleCancelled": "Vente annulée",
   "voiceNothingToUndo": "Rien à annuler",
   "voiceUndoFailed": "Annulation impossible",
@@ -122,5 +166,135 @@
     "placeholders": {
       "unit": {"type": "String"}
     }
-  }
+  },
+
+  "voiceRecapOperationSale": "Vente",
+  "voiceRecapOperationRestock": "Approvisionnement",
+  "voiceRecapOperationCancel": "Annulation de la vente",
+  "voiceRecapOperationStockOut": "Sortie de stock",
+  "voiceRecapOperationCreateProduct": "Création de produit",
+  "voiceRecapOperationUpdatePrice": "Changement de prix",
+  "voiceRecapOperationNavigate": "Navigation",
+  "voiceRecapOperationExport": "Export des ventes",
+  "voiceRecapOperationDailyStats": "Bilan du jour",
+  "voiceRecapOperationLowStock": "État des stocks",
+  "voiceRecapOperationProductPrice": "Prix du produit",
+  "voiceRecapOperationSalesHistory": "Historique des ventes",
+  "voiceRecapOperationBusinessInfo": "Informations de la boutique",
+  "voiceRecapOperationStock": "État du stock",
+  "voiceRecapOperationGeneric": "Opération",
+
+  "voiceRecapProductName": "produit {name}",
+  "@voiceRecapProductName": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "voiceRecapAmountFor": "{name} à {amount}",
+  "@voiceRecapAmountFor": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "voiceRecapNewPrice": "nouveau prix {amount}",
+  "@voiceRecapNewPrice": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "voiceRecapPrice": "prix {amount}",
+  "@voiceRecapPrice": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "voiceRecapPurchasePrice": "prix d'achat {amount}",
+  "@voiceRecapPurchasePrice": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "voiceRecapQuantity": "quantité {qty}",
+  "@voiceRecapQuantity": {
+    "placeholders": {
+      "qty": {"type": "String"}
+    }
+  },
+  "voiceRecapInitialQty": "stock initial {qty}",
+  "@voiceRecapInitialQty": {
+    "placeholders": {
+      "qty": {"type": "String"}
+    }
+  },
+  "voiceRecapReason": "motif {reason}",
+  "@voiceRecapReason": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  },
+  "voiceRecapNote": "note {note}",
+  "@voiceRecapNote": {
+    "placeholders": {
+      "note": {"type": "String"}
+    }
+  },
+  "voiceRecapDestination": "vers {destination}",
+  "@voiceRecapDestination": {
+    "placeholders": {
+      "destination": {"type": "String"}
+    }
+  },
+  "voiceRecapFormat": "format {format}",
+  "@voiceRecapFormat": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "voiceRecapPeriod": "période {period}",
+  "@voiceRecapPeriod": {
+    "placeholders": {
+      "period": {"type": "String"}
+    }
+  },
+  "voiceRecapDate": "date {date}",
+  "@voiceRecapDate": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "voiceRecapLevel": "niveau {level}",
+  "@voiceRecapLevel": {
+    "placeholders": {
+      "level": {"type": "String"}
+    }
+  },
+  "voiceRecapLimit": "{limit} dernières ventes",
+  "@voiceRecapLimit": {
+    "placeholders": {
+      "limit": {"type": "String"}
+    }
+  },
+
+  "voiceReasonBreakage": "casse",
+  "voiceReasonLoss": "perte",
+  "voiceReasonDonation": "don",
+  "voiceReasonAdjustment": "ajustement",
+
+  "voiceDestinationDashboard": "l'accueil",
+  "voiceDestinationStock": "le stock",
+  "voiceDestinationSalesHistory": "l'historique des ventes",
+  "voiceDestinationProfile": "le profil",
+
+  "voicePeriodDay": "la journée",
+  "voicePeriodWeek": "la semaine",
+  "voicePeriodMonth": "le mois",
+  "voicePeriodAll": "tout l'historique",
+
+  "voiceDateToday": "aujourd'hui",
+  "voiceDateYesterday": "hier",
+
+  "voiceLevelOutOfStock": "en rupture",
+  "voiceLevelLow": "stock bas",
+  "voiceLevelAll": "tout"
 }

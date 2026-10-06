@@ -32,12 +32,19 @@ import 'package:kiosk_mind/features/voice_assistant/domain/usecases/handle_utter
 import 'package:kiosk_mind/features/voice_assistant/domain/usecases/undo_last_command.dart';
 import 'package:kiosk_mind/features/products_stock/domain/entities/stock_movement.dart';
 import 'package:kiosk_mind/features/products_stock/domain/repositories/stock_movement_repository.dart';
-import 'package:kiosk_mind/features/products_stock/domain/usecases/record_stock_movement.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/providers/product_providers.dart';
 import 'package:kiosk_mind/features/sales/domain/entities/sale.dart';
 import 'package:kiosk_mind/features/sales/domain/repositories/sales_repository.dart';
-import 'package:kiosk_mind/features/sales/domain/usecases/cancel_sale.dart';
-import 'package:kiosk_mind/features/sales/domain/usecases/record_sale.dart';
+import 'dart:typed_data';
+import 'package:kiosk_mind/features/products_stock/domain/entities/product.dart';
+import 'package:kiosk_mind/features/products_stock/domain/repositories/product_repository.dart';
+import 'package:kiosk_mind/features/sales/domain/entities/daily_stats.dart';
+import 'package:kiosk_mind/features/sales/domain/repositories/daily_stats_repository.dart';
+import 'package:kiosk_mind/features/export_reporting/domain/models/export_file.dart';
+import 'package:kiosk_mind/features/export_reporting/domain/models/export_format.dart';
+import 'package:kiosk_mind/features/export_reporting/domain/services/export_generator.dart';
+import 'package:kiosk_mind/features/export_reporting/domain/services/share_export_gateway.dart';
+import 'package:kiosk_mind/features/export_reporting/presentation/providers/export_providers.dart';
 import 'package:kiosk_mind/features/sales/presentation/providers/sales_provider.dart';
 import 'package:kiosk_mind/features/voice_assistant/di/voice_dependencies.dart';
 
@@ -87,6 +94,52 @@ final class _FakeStockMovementRepo implements StockMovementRepository {
       const Stream<List<StockMovement>>.empty();
 }
 
+final class _FakeDailyStatsRepo implements DailyStatsRepository {
+  @override
+  Future<List<DailyStats>> getDailyStats({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async => const <DailyStats>[];
+}
+
+final class _FakeProductRepo implements ProductRepository {
+  @override
+  Future<void> createProduct(Product product) async {}
+
+  @override
+  Future<void> updateProduct(Product product) async {}
+
+  @override
+  Future<void> deleteProduct(String productId) async {}
+
+  @override
+  Stream<List<Product>> watchProducts() => const Stream<List<Product>>.empty();
+
+  @override
+  Future<List<Product>> getProducts() async => const <Product>[];
+
+  @override
+  Future<Product?> getProductById(String productId) async => null;
+}
+
+final class _FakeExportGenerator implements ExportGenerator {
+  @override
+  Future<ExportFile> generateSalesExport({
+    required List<Sale> sales,
+    required List<Product> products,
+    required ExportFormat format,
+  }) async => ExportFile(
+    bytes: Uint8List(0),
+    filename: 'test.pdf',
+    mimeType: 'application/pdf',
+  );
+}
+
+final class _FakeShareGateway implements ShareExportGateway {
+  @override
+  Future<void> share(ExportFile file) async {}
+}
+
 /// The catalog the composition root would build, without loading the asset.
 InMemoryProductCatalog buildCatalogFromDisk() {
   return InMemoryProductCatalog(
@@ -121,9 +174,9 @@ void main() {
 
   group('the mock flag', () {
     test(
-      'defaults to true so the demo runs before the real use cases land',
+      'defaults to false so the assistant answers from the real catalogue',
       () {
-        expect(kVoiceUseMocks, isTrue);
+        expect(kVoiceUseMocks, isFalse);
       },
     );
 
@@ -132,6 +185,40 @@ void main() {
       addTearDown(container.dispose);
 
       expect(container.read(voiceUseMocksProvider), kVoiceUseMocks);
+    });
+
+    test('reaches the fixtures only when someone asks for them', () {
+      // Un build qui repond depuis la fixture est indiscernable d'un assistant qui
+      // marche: les commandes que les regles savent entendre reussissent contre des
+      // produits que le commerçant n'a jamais stockes. Le retour au mock doit donc
+      // etre un choix ecrit, pas un defaut.
+      final ProviderContainer container = ProviderContainer(
+        overrides: [voiceUseMocksProvider.overrideWithValue(true)],
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(voiceUseMocksProvider), isTrue);
+    });
+  });
+
+  group('the cloud flag', () {
+    test('is off by default, so a missing key is a recorded finding', () {
+      // Le cloud et le mock sont tous deux eteints par defaut, mais ils ne veut pas
+      // dire la meme chose: l'un enregistre `localOnly`, l'autre `noCredential`.
+      expect(kVoiceEnableCloud, isFalse);
+    });
+
+    test('needs a key to be worth turning on', () {
+      final ProviderContainer container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(voiceRodiumApiKeyProvider),
+        isEmpty,
+        reason: 'a build without RODIUM_API_KEY must record noCredential',
+      );
+      expect(container.read(voiceGeminiApiKeyProvider), isEmpty);
+      expect(container.read(voiceHasCloudCredentialProvider), isFalse);
     });
   });
 
@@ -150,7 +237,7 @@ void main() {
   });
 
   group('the composition root', () {
-    test('wires the four handlers when mocks are requested', () async {
+    test('wires all handlers when mocks are requested', () async {
       final ProviderContainer container = buildContainer(
         catalog: buildCatalogFromDisk(),
       );
@@ -163,20 +250,37 @@ void main() {
       expect(handlers.recordRestock, isNotNull);
       expect(handlers.queryStock, isNotNull);
       expect(handlers.cancelLastSale, isNotNull);
+      expect(handlers.queryDailyStats, isNotNull);
+      expect(handlers.queryLowStock, isNotNull);
+      expect(handlers.queryProductPrice, isNotNull);
+      expect(handlers.recordStockOut, isNotNull);
+      expect(handlers.navigateToPage, isNotNull);
+      expect(handlers.exportSalesReport, isNotNull);
+      expect(handlers.createProduct, isNotNull);
+      expect(handlers.updateProductPrice, isNotNull);
+      expect(handlers.querySalesHistory, isNotNull);
+      expect(handlers.queryBusinessInfo, isNotNull);
     });
 
-    test('wires the four real handlers when mocks are disabled', () async {
+    test('wires all real handlers when mocks are disabled', () async {
       final InMemoryProductCatalog catalog = buildCatalogFromDisk();
       final _FakeSalesRepo salesRepo = _FakeSalesRepo();
       final _FakeStockMovementRepo stockRepo = _FakeStockMovementRepo();
+      final _FakeDailyStatsRepo dailyStatsRepo = _FakeDailyStatsRepo();
+      final _FakeProductRepo productRepo = _FakeProductRepo();
+      final _FakeExportGenerator exportGenerator = _FakeExportGenerator();
+      final _FakeShareGateway shareGateway = _FakeShareGateway();
 
       final ProviderContainer container = ProviderContainer(
         overrides: <Override>[
           voiceUseMocksProvider.overrideWithValue(false),
           voiceCatalogReaderProvider.overrideWith((Ref ref) async => catalog),
-          recordSaleProvider.overrideWithValue(RecordSale(salesRepo)),
-          cancelSaleProvider.overrideWithValue(CancelSale(salesRepo)),
-          recordStockInProvider.overrideWithValue(RecordStockIn(stockRepo)),
+          salesRepositoryProvider.overrideWithValue(salesRepo),
+          dailyStatsRepositoryProvider.overrideWithValue(dailyStatsRepo),
+          stockMovementRepositoryProvider.overrideWithValue(stockRepo),
+          productRepositoryProvider.overrideWithValue(productRepo),
+          salesExportGeneratorProvider.overrideWithValue(exportGenerator),
+          shareExportGatewayProvider.overrideWithValue(shareGateway),
         ],
       );
       addTearDown(container.dispose);
@@ -189,6 +293,16 @@ void main() {
       expect(handlers.recordRestock, isNotNull);
       expect(handlers.queryStock, isNotNull);
       expect(handlers.cancelLastSale, isNotNull);
+      expect(handlers.queryDailyStats, isNotNull);
+      expect(handlers.queryLowStock, isNotNull);
+      expect(handlers.queryProductPrice, isNotNull);
+      expect(handlers.recordStockOut, isNotNull);
+      expect(handlers.navigateToPage, isNotNull);
+      expect(handlers.exportSalesReport, isNotNull);
+      expect(handlers.createProduct, isNotNull);
+      expect(handlers.updateProductPrice, isNotNull);
+      expect(handlers.querySalesHistory, isNotNull);
+      expect(handlers.queryBusinessInfo, isNotNull);
     });
 
     test('records every call into the shared journal', () async {

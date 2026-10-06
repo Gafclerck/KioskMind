@@ -1,3 +1,4 @@
+import '../entities/clarification_slot.dart';
 import '../entities/doubt.dart';
 import '../entities/product_snapshot.dart';
 import '../entities/voice_lexicon.dart';
@@ -35,13 +36,17 @@ final class AnswerReading {
   ///
   /// The value keeps the shape the completion expects: a [ProductSnapshot] for a
   /// product, a number for a quantity, a bool for a yes or a no.
-  Object? read(String utterance, {required DoubtKind asked}) {
+  Object? read(
+    String utterance, {
+    required DoubtKind asked,
+    ClarificationSlot? slot,
+  }) {
     final NormalizedText text = normalizer.normalize(utterance);
     if (text.isEmpty) {
       return null;
     }
-    if (asked.answersByYesOrNo) {
-      return _readsAgreement(text.tokens);
+    if (slot == ClarificationSlot.confirmed || asked.answersByYesOrNo) {
+      return _readsAgreement(text);
     }
     if (asked.answersByQuantity) {
       return _readsQuantity(text.tokens);
@@ -54,11 +59,23 @@ final class AnswerReading {
 
   /// Whether the answer accepts what was read back.
   ///
-  /// Only a yes settles a confirmation. A refusal and words that mean nothing here
-  /// are the same thing to the session, which is right: neither of them is consent
-  /// to record a sale, and treating gibberish as a no is the safe reading.
-  bool _readsAgreement(List<String> tokens) =>
-      tokens.any(kAffirmativeWords.contains);
+  /// Only an affirmative answer settles a confirmation. A refusal or words that
+  /// contain negative markers are safely treated as non-agreement so that no sale
+  /// is recorded without consent.
+  bool _readsAgreement(NormalizedText text) {
+    final List<String> tokens = text.tokens;
+    if (tokens.any(kNegativeWords.contains)) {
+      return false;
+    }
+    if (tokens.any(kAffirmativeWords.contains)) {
+      return true;
+    }
+    final String flat = text.text;
+    if (flat.contains('cest bon') || flat.contains('vas y')) {
+      return true;
+    }
+    return false;
+  }
 
   /// The first number said, wherever it comes in the answer.
   ///

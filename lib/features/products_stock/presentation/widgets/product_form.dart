@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/app_toast.dart';
 import '../../domain/constants/product_options.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/services/product_image_upload_service.dart';
+import '../providers/product_image_upload_service_provider.dart';
+import 'product_image.dart';
 
-class ProductForm extends StatefulWidget {
+class ProductForm extends ConsumerStatefulWidget {
   const ProductForm({
     super.key,
     this.initialProduct,
@@ -19,19 +24,23 @@ class ProductForm extends StatefulWidget {
   final void Function(Product product) onSubmit;
 
   @override
-  State<ProductForm> createState() => _ProductFormState();
+  ConsumerState<ProductForm> createState() => _ProductFormState();
 }
 
-class _ProductFormState extends State<ProductForm> {
+class _ProductFormState extends ConsumerState<ProductForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
-  late final TextEditingController _imageUrl;
   late final TextEditingController _purchasePrice;
   late final TextEditingController _salePrice;
   late final TextEditingController _alertThreshold;
   late String _category;
   late String _unit;
   late int _quantity;
+
+  /// Photo déjà enregistrée, ou en cours d'envoi. Volontairement pas un
+  /// contrôleur : l'utilisateur ne saisit plus d'URL, il choisit une image.
+  String? _imageUrl;
+  bool _isUploadingImage = false;
 
   bool get _isCreation => widget.initialProduct == null;
 
@@ -40,7 +49,6 @@ class _ProductFormState extends State<ProductForm> {
     super.initState();
     final p = widget.initialProduct;
     _name = TextEditingController(text: p?.name ?? '');
-    _imageUrl = TextEditingController(text: p?.imageUrl ?? '');
     _purchasePrice = TextEditingController(
       text: p?.purchasePrice.toString() ?? '',
     );
@@ -51,12 +59,17 @@ class _ProductFormState extends State<ProductForm> {
     _category = p?.category ?? productCategories.first;
     _unit = p?.unit ?? productUnits.first;
     _quantity = p?.quantity ?? 0;
+    _imageUrl = p?.imageUrl;
+    // L'initiale de la photo est reprise du nom : elle doit suivre la saisie.
+    _name.addListener(_onNameChanged);
   }
+
+  void _onNameChanged() => setState(() {});
 
   @override
   void dispose() {
+    _name.removeListener(_onNameChanged);
     _name.dispose();
-    _imageUrl.dispose();
     _purchasePrice.dispose();
     _salePrice.dispose();
     _alertThreshold.dispose();
@@ -69,14 +82,37 @@ class _ProductFormState extends State<ProductForm> {
   String? _requiredNumber(String? value) =>
       int.tryParse(value?.trim() ?? '') == null ? 'Saisissez un nombre' : null;
 
-  String? _optionalImageUrl(String? value) {
-    final url = value?.trim() ?? '';
-    if (url.isEmpty) return null;
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return 'URL invalide (ex: https://exemple.com/photo.jpg)';
+  /// Ouvre la galerie et téléverse la photo choisie. L'upload part dès la
+  /// sélection : le document produit n'existe pas encore à la création, et
+  /// attendre l'enregistrement ferait perdre la photo en cas d'échec.
+  Future<void> _pickImage() async {
+    if (_isUploadingImage) {
+      return;
     }
-    return null;
+    setState(() => _isUploadingImage = true);
+
+    String? url;
+    String? error;
+    try {
+      url = await ref.read(productImageUploadServiceProvider).pickAndUpload();
+    } on ProductImageUploadException catch (e) {
+      error = e.message;
+    } catch (_) {
+      error = 'Impossible de téléverser la photo, réessayez';
+    }
+
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isUploadingImage = false);
+    if (error != null) {
+      AppToast.show(ref, message: error, type: AppToastType.error);
+      return;
+    }
+    // null : l'utilisateur a annulé la galerie, on ne touche à rien.
+    if (url != null) {
+      setState(() => _imageUrl = url);
+    }
   }
 
   void _submit() {
@@ -86,7 +122,7 @@ class _ProductFormState extends State<ProductForm> {
       Product(
         id: widget.initialProduct?.id ?? '',
         name: _name.text.trim(),
-        imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
+        imageUrl: _imageUrl,
         category: _category,
         unit: _unit,
         purchasePrice: int.parse(_purchasePrice.text.trim()),
@@ -117,16 +153,34 @@ class _ProductFormState extends State<ProductForm> {
                   validator: _requiredText,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  key: const ValueKey<String>('product_form_image_url'),
-                  controller: _imageUrl,
-                  decoration: const InputDecoration(
-                    labelText: "Photo du produit (URL)",
-                    hintText: 'Optionnel - https://exemple.com/photo.jpg',
-                    prefixIcon: Icon(Icons.image_outlined),
-                  ),
-                  keyboardType: TextInputType.url,
-                  validator: _optionalImageUrl,
+                Row(
+                  children: [
+                    ProductImage(
+                      key: const ValueKey<String>('product_form_photo'),
+                      name: _name.text,
+                      imageUrl: _imageUrl,
+                      radius: 28,
+                      isBusy: _isUploadingImage,
+                      onTap: _pickImage,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey<String>('product_form_pick_photo'),
+                        onPressed: _isUploadingImage
+                            ? null
+                            : () => _pickImage(),
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: Text(
+                          _isUploadingImage
+                              ? 'Téléversement…'
+                              : _imageUrl == null
+                              ? 'Choisir une photo'
+                              : 'Changer la photo',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Row(

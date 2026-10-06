@@ -20,6 +20,7 @@ void main() {
     name: 'Savon de menage',
     qty: 2,
     unit: 'PIECE',
+    unitPrice: 250,
   );
 
   group('a sale', () {
@@ -36,6 +37,14 @@ void main() {
       final SaleRecorded sale = outcome! as SaleRecorded;
       expect(sale.lines, <VoiceRecapLine>[soapLine]);
       expect(sale.total, 500);
+    });
+
+    test('carries the price each line was actually valued at', () {
+      final SaleRecorded sale = outcomeOfValue(result)! as SaleRecorded;
+
+      // The card on screen says "2 x 250", so the price has to be the one the
+      // handler applied and not the catalog's, which a doubt may have changed.
+      expect(sale.lines.single.unitPrice, 250);
     });
   });
 
@@ -58,7 +67,7 @@ void main() {
 
       expect(outcome, isA<RestockRecorded>());
       expect((outcome! as RestockRecorded).lines, const <VoiceRecapLine>[
-        (name: 'Sucre', qty: 10, unit: null),
+        (name: 'Sucre', qty: 10, unit: null, unitPrice: null),
       ]);
     });
   });

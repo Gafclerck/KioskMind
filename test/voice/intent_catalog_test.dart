@@ -26,8 +26,8 @@ const String valid = '''
           "description": "Lignes de la vente.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
               "description": "Nom prononce."
             },
@@ -56,8 +56,8 @@ const String valid = '''
           "description": "Lignes de l approvisionnement.",
           "lineSlots": [
             {
-              "name": "productName",
-              "type": "product_name",
+              "name": "productId",
+              "type": "product_reference",
               "required": true,
               "description": "Nom prononce."
             },
@@ -80,10 +80,10 @@ const String valid = '''
       "examples": ["stock du sucre"],
       "slots": [
         {
-          "name": "productName",
-          "type": "product_name",
+          "name": "productId",
+          "type": "product_reference",
           "required": true,
-          "description": "Nom du produit.",
+          "description": "Identifiant du produit.",
           "lineSlots": []
         }
       ]
@@ -95,6 +95,183 @@ const String valid = '''
       "description": "Annuler la derniere vente.",
       "triggers": ["annule"],
       "examples": ["annule la derniere vente"],
+      "slots": []
+    },
+    {
+      "id": "query_daily_stats",
+      "handler": "query_daily_stats",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les statistiques ou le bilan des ventes d'une journee.",
+      "triggers": ["chiffre daffaires"],
+      "examples": ["quel est mon chiffre d'affaires aujourd'hui"],
+      "slots": [
+        {
+          "name": "date",
+          "type": "string",
+          "required": false,
+          "description": "Date cible.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_low_stock",
+      "handler": "query_low_stock",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter la liste des produits en rupture.",
+      "triggers": ["produits en rupture"],
+      "examples": ["quels sont les produits en rupture"],
+      "slots": []
+    },
+    {
+      "id": "query_product_price",
+      "handler": "query_product_price",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter le prix d'un produit.",
+      "triggers": ["combien coute"],
+      "examples": ["combien coûte le lait"],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_reference",
+          "required": true,
+          "description": "Nom du produit.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "record_stock_out",
+      "handler": "record_stock_out",
+      "onlineOnly": true,
+      "risk": "WRITE_REVERSIBLE",
+      "description": "Enregistrer une diminution manuelle de stock.",
+      "triggers": ["perte de"],
+      "examples": ["perte de deux savons"],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_reference",
+          "required": true,
+          "description": "Produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "qty",
+          "type": "quantity",
+          "required": true,
+          "description": "Quantite.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "navigate_to_page",
+      "handler": "navigate_to_page",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Naviguer vers un ecran.",
+      "triggers": ["va a"],
+      "examples": ["va à l'accueil"],
+      "slots": [
+        {
+          "name": "destination",
+          "type": "string",
+          "required": true,
+          "description": "Destination.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "export_sales_report",
+      "handler": "export_sales_report",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Exporter un rapport.",
+      "triggers": ["exporter les ventes"],
+      "examples": ["exporte mes ventes en PDF"],
+      "slots": [
+        {
+          "name": "format",
+          "type": "string",
+          "required": true,
+          "description": "Format.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "create_product",
+      "handler": "create_product",
+      "onlineOnly": true,
+      "risk": "WRITE_SENSITIVE",
+      "description": "Creer un produit.",
+      "triggers": ["creer produit"],
+      "examples": ["crée le produit Coca"],
+      "slots": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "Nom.",
+          "lineSlots": []
+        },
+        {
+          "name": "price",
+          "type": "money",
+          "required": true,
+          "description": "Prix.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "update_product_price",
+      "handler": "update_product_price",
+      "onlineOnly": true,
+      "risk": "WRITE_SENSITIVE",
+      "description": "Mettre a jour le prix.",
+      "triggers": ["change le prix"],
+      "examples": ["le sucre passe à 700"],
+      "slots": [
+        {
+          "name": "productId",
+          "type": "product_reference",
+          "required": true,
+          "description": "Produit.",
+          "lineSlots": []
+        },
+        {
+          "name": "newPrice",
+          "type": "money",
+          "required": true,
+          "description": "Nouveau prix.",
+          "lineSlots": []
+        }
+      ]
+    },
+    {
+      "id": "query_sales_history",
+      "handler": "query_sales_history",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les dernieres ventes.",
+      "triggers": ["dernieres ventes"],
+      "examples": ["quelles sont les dernières ventes"],
+      "slots": []
+    },
+    {
+      "id": "query_business_info",
+      "handler": "query_business_info",
+      "onlineOnly": true,
+      "risk": "READ",
+      "description": "Consulter les infos du commerce.",
+      "triggers": ["infos boutique"],
+      "examples": ["infos sur mon kiosque"],
       "slots": []
     }
   ]
@@ -118,6 +295,16 @@ void main() {
         'record_restock',
         'query_stock',
         'cancel_last_sale',
+        'query_daily_stats',
+        'query_low_stock',
+        'query_product_price',
+        'record_stock_out',
+        'navigate_to_page',
+        'export_sales_report',
+        'create_product',
+        'update_product_price',
+        'query_sales_history',
+        'query_business_info',
       ]);
     });
 
@@ -143,9 +330,9 @@ void main() {
       expect(items.required, isTrue);
       expect(
         items.lineSlots.map((SlotDefinition s) => s.name).toList(),
-        <String>['productName', 'qty'],
+        <String>['productId', 'qty'],
       );
-      expect(items.lineSlots.first.type, SlotType.productName);
+      expect(items.lineSlots.first.type, SlotType.productReference);
     });
 
     test('keeps triggers and examples apart', () {
@@ -342,7 +529,10 @@ void main() {
     });
 
     test('validates', () {
-      expect(parseIntentCatalog(shipped).ids, hasLength(4));
+      final IntentCatalog catalog = parseIntentCatalog(shipped);
+      expect(catalog.ids, hasLength(14));
+      expect(catalog.offlineIntents, hasLength(4));
+      expect(catalog.onlineIntents, hasLength(14));
     });
 
     test('declares one handler per port, and the handler matches the id', () {
@@ -370,8 +560,8 @@ void main() {
           for (final SlotDefinition line in slot.lineSlots) line.name,
       ];
 
-      expect(lineNames('record_sale'), contains('unitPrice'));
-      expect(lineNames('record_restock'), contains('unitCost'));
+      expect(lineNames('record_sale'), contains('spokenUnitPrice'));
+      expect(lineNames('record_restock'), contains('spokenUnitCost'));
       expect(
         catalog.byId('cancel_last_sale')!.slots,
         isEmpty,
@@ -396,7 +586,7 @@ void main() {
           for (final SlotDefinition line in lines) {
             expect(
               line.required,
-              line.name == 'productName' || line.name == 'qty',
+              line.name == 'productId' || line.name == 'qty',
               reason: '$intentId.${line.name}',
             );
           }

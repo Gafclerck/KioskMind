@@ -47,8 +47,8 @@ void main() {
     test('a sale is read with its lines and its total in words', () {
       const SaleRecorded sale = SaleRecorded(
         lines: <VoiceRecapLine>[
-          (name: 'Savon de ménage', qty: 2, unit: 'PIECE'),
-          (name: 'Riz parfumé', qty: 1, unit: 'KG'),
+          (name: 'Savon de ménage', qty: 2, unit: 'PIECE', unitPrice: 250),
+          (name: 'Riz parfumé', qty: 1, unit: 'KG', unitPrice: 500),
         ],
         total: 750,
       );
@@ -60,9 +60,32 @@ void main() {
       );
     });
 
+    test(
+      'a done message with customSpeechText renders the formulated speech',
+      () {
+        const SaleRecorded sale = SaleRecorded(
+          lines: <VoiceRecapLine>[
+            (name: 'Savon de ménage', qty: 2, unit: 'PIECE', unitPrice: 250),
+          ],
+          total: 500,
+        );
+
+        const DoneMessage message = DoneMessage(
+          sale,
+          customSpeechText:
+              "C'est noté ! Vente de 2 savons enregistrée pour 500 FCFA.",
+        );
+
+        expect(
+          voiceMessageText(l10n, message),
+          "C'est noté ! Vente de 2 savons enregistrée pour 500 FCFA.",
+        );
+      },
+    );
+
     test('a restock has no unit to say, so it says none', () {
       const RestockRecorded restock = RestockRecorded(<VoiceRecapLine>[
-        (name: 'Sucre', qty: 10, unit: null),
+        (name: 'Sucre', qty: 10, unit: null, unitPrice: null),
       ]);
 
       expect(
@@ -86,7 +109,7 @@ void main() {
 
     test('a cancelled sale says so', () {
       const SaleCancelled cancelled = SaleCancelled(<VoiceRecapLine>[
-        (name: 'Sucre', qty: 1, unit: 'SACHET'),
+        (name: 'Sucre', qty: 1, unit: 'SACHET', unitPrice: 400),
       ]);
 
       expect(

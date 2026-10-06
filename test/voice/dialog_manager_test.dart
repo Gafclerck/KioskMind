@@ -192,6 +192,32 @@ void main() {
       expect(manager.pending!.slot, ClarificationSlot.confirmed);
       expect(manager.turns, 0);
     });
+
+    test(
+      'une confirmation apres deux clarifications ne bascule pas en saisie manuelle',
+      () {
+        final DialogManager manager = managerWith();
+        manager.ask(
+          _clarification(DoubtKind.missingProduct),
+          proposal: _withLines(),
+        );
+        manager.ask(
+          _clarification(DoubtKind.missingQuantity),
+          proposal: _withLines(),
+        );
+        expect(manager.turns, 2);
+
+        manager.ask(
+          _confirmation(DoubtKind.implausibleQuantity),
+          proposal: _withLines(),
+        );
+
+        expect(manager.state, VoiceDialogState.waitingForConfirmation);
+        expect(manager.awaitsManualEntry, isFalse);
+        expect(manager.pending, isNotNull);
+        expect(manager.pending!.slot, ClarificationSlot.confirmed);
+      },
+    );
   });
 
   group('limite de tours', () {
@@ -332,6 +358,58 @@ void main() {
 
       expect(manager.awaitsManualEntry, isTrue);
     });
+
+    test(
+      'une confirmation utilise confirmationTimeout (30s) et n expire pas a 15s',
+      () {
+        final DialogManager manager = managerWith();
+        manager.ask(
+          _confirmation(DoubtKind.implausibleQuantity),
+          proposal: _withLines(),
+        );
+
+        // A 15s (bien au-dela du delai clarification de 10s), la confirmation est toujours active
+        clock.elapse(const Duration(seconds: 15));
+        expect(manager.state, VoiceDialogState.waitingForConfirmation);
+        expect(manager.awaitsManualEntry, isFalse);
+        expect(manager.pending, isNotNull);
+
+        // A 31s (au-dela du confirmationTimeout et sessionTimeout de 30s), elle expire
+        clock.elapse(const Duration(seconds: 16));
+        expect(manager.state, VoiceDialogState.expired);
+        expect(manager.awaitsManualEntry, isTrue);
+        expect(manager.pending, isNull);
+      },
+    );
+
+    test(
+      'confirmationTimeout est configurable independamment de questionTimeout',
+      () {
+        final DialogManager manager = managerWith(
+          config: const VoiceConfig().copyWith(
+            questionTimeout: const Duration(seconds: 5),
+            confirmationTimeout: const Duration(seconds: 15),
+            sessionTimeout: const Duration(seconds: 30),
+          ),
+        );
+        manager.ask(
+          _confirmation(DoubtKind.implausibleQuantity),
+          proposal: _withLines(),
+        );
+
+        // A 10s : au-dela de questionTimeout (5s), mais dans confirmationTimeout (15s)
+        clock.elapse(const Duration(seconds: 10));
+        expect(manager.state, VoiceDialogState.waitingForConfirmation);
+        expect(manager.awaitsManualEntry, isFalse);
+        expect(manager.pending, isNotNull);
+
+        // A 16s : au-dela de confirmationTimeout (15s), mais avant sessionTimeout (30s)
+        clock.elapse(const Duration(seconds: 6));
+        expect(manager.state, VoiceDialogState.idle);
+        expect(manager.awaitsManualEntry, isTrue);
+        expect(manager.pending, isNull);
+      },
+    );
   });
 
   group('fenetre d annulation', () {

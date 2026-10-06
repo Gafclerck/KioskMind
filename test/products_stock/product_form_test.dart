@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kiosk_mind/features/products_stock/domain/entities/product.dart';
 import 'package:kiosk_mind/features/products_stock/presentation/widgets/product_form.dart';
+import 'package:kiosk_mind/features/products_stock/presentation/widgets/product_image.dart';
 
 Widget _form(void Function(Product) onSubmit, {Product? initialProduct}) =>
     MaterialApp(
@@ -55,45 +56,6 @@ void main() {
     expect(submitted!.imageUrl, isNull);
   });
 
-  testWidgets('trims and keeps a valid image URL', (tester) async {
-    Product? submitted;
-    await tester.pumpWidget(_form((p) => submitted = p));
-
-    await tester.enterText(_field('name'), 'Sac de Riz');
-    await tester.enterText(
-      _field('image_url'),
-      '  https://exemple.com/r.jpg  ',
-    );
-    await tester.enterText(_field('purchase_price'), '4200');
-    await tester.enterText(_field('sale_price'), '5000');
-    await tester.enterText(_field('alert_threshold'), '3');
-
-    await tester.tap(find.text('Enregistrer'));
-    await tester.pump();
-
-    expect(submitted!.imageUrl, 'https://exemple.com/r.jpg');
-  });
-
-  testWidgets('rejects a malformed image URL', (tester) async {
-    Product? submitted;
-    await tester.pumpWidget(_form((p) => submitted = p));
-
-    await tester.enterText(_field('name'), 'Sac de Riz');
-    await tester.enterText(_field('image_url'), 'pas une url');
-    await tester.enterText(_field('purchase_price'), '4200');
-    await tester.enterText(_field('sale_price'), '5000');
-    await tester.enterText(_field('alert_threshold'), '3');
-
-    await tester.tap(find.text('Enregistrer'));
-    await tester.pump();
-
-    expect(
-      find.text('URL invalide (ex: https://exemple.com/photo.jpg)'),
-      findsOneWidget,
-    );
-    expect(submitted, isNull);
-  });
-
   testWidgets('prefills the fields when editing an existing product', (
     tester,
   ) async {
@@ -114,7 +76,7 @@ void main() {
     );
 
     expect(
-      tester.widget<TextFormField>(_field('image_url')).controller!.text,
+      tester.widget<ProductImage>(_field('photo')).imageUrl,
       'https://exemple.com/r.jpg',
     );
 

@@ -22,21 +22,36 @@ abstract interface class IntentHandler<TInput extends IntentInput, TOutput> {
 /// is turned into a call.
 const String kCancelLastSaleIntent = 'cancel_last_sale';
 
+/// Offline-supported intents for core kiosk cashier transactions.
+const Set<String> kCoreOfflineIntentIds = <String>{
+  'record_sale',
+  'record_restock',
+  'query_stock',
+  kCancelLastSaleIntent,
+};
+
+/// Online-only tool intents.
+const Set<String> kOnlineOnlyIntentIds = <String>{
+  'query_daily_stats',
+  'query_low_stock',
+  'query_product_price',
+  'record_stock_out',
+  'navigate_to_page',
+  'export_sales_report',
+  'create_product',
+  'update_product_price',
+  'query_sales_history',
+  'query_business_info',
+};
+
 /// Every intent the module can route, in catalog order.
 ///
 /// The catalog validates its `handler` values against this set, so a command
 /// cannot be described in `voice/intent_catalog.json` without a port able to
 /// execute it.
-///
-/// Adding a command means a catalog entry, a handler, and a binding registered at
-/// composition: the executor, the parser and the validator stay as they are. An
-/// intent whose input type is not declared here needs a new [IntentHandler] type,
-/// which is why this set and the handler field of [VoiceHandlers] still exist.
 const Set<String> kSupportedIntentIds = <String>{
-  'record_sale',
-  'record_restock',
-  'query_stock',
-  kCancelLastSaleIntent,
+  ...kCoreOfflineIntentIds,
+  ...kOnlineOnlyIntentIds,
 };
 
 typedef RecordSaleHandler = IntentHandler<SaleIntentInput, RecordSaleResult>;
@@ -47,6 +62,36 @@ typedef QueryStockHandler = IntentHandler<QueryStockInput, QueryStockResult>;
 
 typedef CancelLastSaleHandler =
     IntentHandler<CancelLastSaleInput, CancelLastSaleResult>;
+
+typedef QueryDailyStatsHandler =
+    IntentHandler<QueryDailyStatsInput, QueryDailyStatsResult>;
+
+typedef QueryLowStockHandler =
+    IntentHandler<QueryLowStockInput, QueryLowStockResult>;
+
+typedef QueryProductPriceHandler =
+    IntentHandler<QueryProductPriceInput, QueryProductPriceResult>;
+
+typedef RecordStockOutHandler =
+    IntentHandler<RecordStockOutInput, RecordStockOutResult>;
+
+typedef NavigateToPageHandler =
+    IntentHandler<NavigateToPageInput, NavigateToPageResult>;
+
+typedef ExportSalesReportHandler =
+    IntentHandler<ExportSalesReportInput, ExportSalesReportResult>;
+
+typedef CreateProductHandler =
+    IntentHandler<CreateProductInput, CreateProductResult>;
+
+typedef UpdateProductPriceHandler =
+    IntentHandler<UpdateProductPriceInput, UpdateProductPriceResult>;
+
+typedef QuerySalesHistoryHandler =
+    IntentHandler<QuerySalesHistoryInput, QuerySalesHistoryResult>;
+
+typedef QueryBusinessInfoHandler =
+    IntentHandler<QueryBusinessInfoInput, QueryBusinessInfoResult>;
 
 /// The handler ports the executor may call, at most one per intent.
 ///
@@ -59,10 +104,30 @@ final class VoiceHandlers {
     this.recordRestock,
     this.queryStock,
     this.cancelLastSale,
+    this.queryDailyStats,
+    this.queryLowStock,
+    this.queryProductPrice,
+    this.recordStockOut,
+    this.navigateToPage,
+    this.exportSalesReport,
+    this.createProduct,
+    this.updateProductPrice,
+    this.querySalesHistory,
+    this.queryBusinessInfo,
   });
 
   final RecordSaleHandler? recordSale;
   final RecordRestockHandler? recordRestock;
   final QueryStockHandler? queryStock;
   final CancelLastSaleHandler? cancelLastSale;
+  final QueryDailyStatsHandler? queryDailyStats;
+  final QueryLowStockHandler? queryLowStock;
+  final QueryProductPriceHandler? queryProductPrice;
+  final RecordStockOutHandler? recordStockOut;
+  final NavigateToPageHandler? navigateToPage;
+  final ExportSalesReportHandler? exportSalesReport;
+  final CreateProductHandler? createProduct;
+  final UpdateProductPriceHandler? updateProductPrice;
+  final QuerySalesHistoryHandler? querySalesHistory;
+  final QueryBusinessInfoHandler? queryBusinessInfo;
 }

@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 
+/// The screen the app shows while it finds out who the merchant is.
+///
+/// It deliberately navigates nowhere. Where a session belongs is decided in one
+/// place, `AppRouterNotifier.redirect`, which reacts to the real state of
+/// authentication and onboarding. This page used to decide it as well, on a fixed
+/// three second timer, and hardcoded to `/onboarding`.
+///
+/// That was wrong twice over. A merchant who had already onboarded and signed in
+/// watched the carousel for three seconds before the router corrected it, and a
+/// widget test could not get past the splash without spending three seconds of fake
+/// time first. The timer also outlived the widget that created it, so every test that
+/// mounted the app failed with a pending timer even when it asserted nothing about
+/// navigation. Deciding once, from the state that actually decides it, leaves the
+/// splash free to be a splash.
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -53,12 +66,6 @@ class _SplashPageState extends State<SplashPage>
     );
 
     _controller.forward();
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-
-      context.go('/onboarding');
-    });
   }
 
   @override

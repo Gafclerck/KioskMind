@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'cloud_call_failure.dart';
+
 typedef HttpJsonPoster =
     Future<Map<String, dynamic>> Function(
       Uri uri,
@@ -24,6 +26,7 @@ typedef HttpJsonPoster =
 final class DirectGeminiCaller {
   DirectGeminiCaller({
     required this.apiKey,
+    required this.systemPrompt,
     this.model = 'gemini-1.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
     HttpJsonPoster? httpPoster,
@@ -32,27 +35,14 @@ final class DirectGeminiCaller {
   final String apiKey;
   final String model;
   final Duration timeout;
-  final HttpJsonPoster _httpPoster;
 
-  static const String _systemPrompt =
-      "Tu es l'assistant de caisse de KioskMind pour les commerçants d'Afrique de l'Ouest.\n"
-      "Analyse la phrase prononcée par le commerçant et identifie son intention parmi :\n"
-      "- 'record_sale' : vente d'un ou plusieurs produits.\n"
-      "- 'record_restock' : approvisionnement ou entrée en stock.\n"
-      "- 'query_stock' : demande d'information sur le stock restant.\n"
-      "- 'cancel_last_sale' : annulation de la dernière vente.\n\n"
-      "RÈGLE D'ANCRAGE STRICTE (D5) :\n"
-      "Tu dois OBLIGATOIREMENT et UNIQUEMENT utiliser les 'id' des produits qui figurent explicitement dans le catalogue fourni.\n"
-      "N'invente JAMAIS d'identifiant de produit qui n'est pas dans le catalogue.\n\n"
-      "FORMAT DE RÉPONSE OBLIGATOIRE EN JSON PUR :\n"
-      "- Pour une vente :\n"
-      "  {\"intentId\": \"record_sale\", \"items\": [{\"productId\": \"<id_catalogue>\", \"qty\": 2.0, \"spokenUnitPrice\": 500}]}\n"
-      "- Pour un réapprovisionnement :\n"
-      "  {\"intentId\": \"record_restock\", \"items\": [{\"productId\": \"<id_catalogue>\", \"qty\": 5.0, \"spokenUnitCost\": 400}]}\n"
-      "- Pour une question de stock :\n"
-      "  {\"intentId\": \"query_stock\", \"productId\": \"<id_catalogue>\"}\n"
-      "- Pour une annulation :\n"
-      "  {\"intentId\": \"cancel_last_sale\"}";
+  /// What the model is told the shop can do, built from the catalog by
+  /// [KioskRegistry.buildSystemPrompt]. Required rather than defaulted: a caller
+  /// that forgot it would otherwise reach the network with a prompt describing a
+  /// different list of commands than the app has, and nothing would say so.
+  final String systemPrompt;
+
+  final HttpJsonPoster _httpPoster;
 
   Future<Map<String, dynamic>> call(
     String functionName,
@@ -73,7 +63,7 @@ final class DirectGeminiCaller {
     final Map<String, dynamic> requestBody = <String, dynamic>{
       'system_instruction': <String, dynamic>{
         'parts': <Map<String, dynamic>>[
-          <String, dynamic>{'text': _systemPrompt},
+          <String, dynamic>{'text': systemPrompt},
         ],
       },
       'contents': <Map<String, dynamic>>[
@@ -142,6 +132,10 @@ final class DirectGeminiCaller {
         return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
+    } on CloudCallFailure {
+      // Reported as itself rather than as an empty answer: an invalid key looks
+      // exactly like a model that had nothing to say until it does not.
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[DirectGeminiCaller] Error: $e');
@@ -181,11 +175,11 @@ final class DirectGeminiCaller {
           return Map<String, dynamic>.from(decoded);
         }
       } else {
-        if (kDebugMode) {
-          debugPrint(
-            '[DirectGeminiCaller] HTTP ${response.statusCode}: $responseBody',
-          );
-        }
+        throw CloudCallFailure.fromResponse(
+          'Gemini',
+          response.statusCode,
+          responseBody,
+        );
       }
       return const <String, dynamic>{};
     } finally {

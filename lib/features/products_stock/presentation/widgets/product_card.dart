@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/formatting/money.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/stock_movement.dart';
+import 'product_image.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({
@@ -37,18 +39,13 @@ class ProductCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
+                  ProductImage(
+                    name: product.name,
+                    imageUrl: product.imageUrl,
                     radius: 20,
-                    backgroundColor: scheme.primaryContainer,
-                    child: Text(
-                      product.name.characters.first.toUpperCase(),
-                      style: TextStyle(
-                        color: scheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,15 +129,7 @@ class ProductCard extends StatelessWidget {
     return unit.endsWith('s') ? unit : '${unit}s';
   }
 
-  String _formatPrice(int value) {
-    final digits = value.toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-      buffer.write(digits[i]);
-    }
-    return '${buffer.toString()} F';
-  }
+  String _formatPrice(int value) => formatCfa(value, suffix: 'F');
 }
 
 /// Badge d'état du stock, partagé par la carte et la fiche produit.

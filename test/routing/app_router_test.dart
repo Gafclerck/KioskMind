@@ -46,10 +46,9 @@ final class _FakeSalesRepo implements SalesRepository {
   }) async => const <Sale>[];
 
   @override
-Stream<List<Sale>> watchSalesHistory() {
-  return const Stream.empty();
-}
-
+  Stream<List<Sale>> watchSalesHistory() {
+    return Stream.value(const <Sale>[]);
+  }
 }
 
 void main() {

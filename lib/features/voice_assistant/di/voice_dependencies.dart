@@ -9,6 +9,8 @@ import '../../../core/voice_services/platform_tts.dart';
 import '../../../core/voice_services/speech_recognizer_port.dart';
 import '../../../core/voice_services/tts_port.dart';
 import '../../../core/voice_services/voice_service_settings.dart';
+import '../../../features/export_reporting/presentation/providers/export_providers.dart';
+import '../../../features/navigation/navigation_index_provider.dart';
 import '../../../features/products_stock/presentation/providers/product_providers.dart';
 import '../../../features/sales/presentation/providers/sales_provider.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
@@ -20,24 +22,42 @@ import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
 import '../data/connectivity/data_connection_probe.dart';
+import '../data/diagnostics/in_memory_parse_outcome_journal.dart';
+import '../data/diagnostics/logging_parse_outcome_journal.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
+import '../data/formulator/ai_message_formulator.dart';
+import '../data/formulator/cascading_message_formulator.dart';
+import '../data/formulator/offline_natural_formulator.dart';
 import '../data/handlers/call_journal.dart';
 import '../data/handlers/journaling_intent_handler.dart';
 import '../data/handlers/mock/mock_voice_handlers.dart';
 import '../data/handlers/real/real_cancel_last_sale_handler.dart';
+import '../data/handlers/real/real_create_product_handler.dart';
+import '../data/handlers/real/real_export_report_handler.dart';
+import '../data/handlers/real/real_navigate_handler.dart';
+import '../data/handlers/real/real_query_business_info_handler.dart';
+import '../data/handlers/real/real_query_daily_stats_handler.dart';
+import '../data/handlers/real/real_query_low_stock_handler.dart';
+import '../data/handlers/real/real_query_product_price_handler.dart';
+import '../data/handlers/real/real_query_sales_history_handler.dart';
 import '../data/handlers/real/real_query_stock_handler.dart';
 import '../data/handlers/real/real_record_restock_handler.dart';
 import '../data/handlers/real/real_record_sale_handler.dart';
+import '../data/handlers/real/real_record_stock_out_handler.dart';
+import '../data/handlers/real/real_update_product_price_handler.dart';
 import '../data/parsers/direct_gemini_caller.dart';
 import '../data/parsers/remote_cloud_intent_parser.dart';
 import '../data/parsers/rodium_ai_caller.dart';
 import '../data/parsers/rule_based_parser.dart';
 import '../domain/dialog/dialog_manager.dart';
+import '../domain/ports/message_formulator.dart';
+import '../domain/registry/kiosk_registry.dart';
 import '../domain/entities/intent_definition.dart';
 import '../domain/entities/intent_input.dart';
 import '../domain/entities/intent_result.dart';
+import '../domain/entities/parse_route.dart';
 import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
 import '../domain/ports/cloud_intent_parser.dart';
@@ -47,6 +67,7 @@ import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
 import '../domain/ports/intent_parser.dart';
 import '../domain/ports/intent_registry.dart';
+import '../domain/ports/parse_outcome_journal.dart';
 import '../domain/ports/product_catalog_reader.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
@@ -58,6 +79,7 @@ import '../domain/services/command_validator.dart';
 import '../domain/services/decision_policy.dart';
 import '../domain/services/french_number_parser.dart';
 import '../domain/services/intent_detector.dart';
+import '../domain/services/local_only_parser.dart';
 import '../domain/services/text_normalizer.dart';
 import '../domain/usecases/execute_command.dart';
 import '../domain/usecases/handle_utterance.dart';
@@ -150,6 +172,94 @@ voiceRealRecordRestockHandlerProvider = FutureProvider<RecordRestockHandler>((
   );
 });
 
+final FutureProvider<QueryDailyStatsHandler>
+voiceRealQueryDailyStatsHandlerProvider =
+    FutureProvider<QueryDailyStatsHandler>((Ref ref) async {
+      return RealQueryDailyStatsHandler(ref.watch(getSalesDashboardProvider));
+    });
+
+final FutureProvider<QueryLowStockHandler>
+voiceRealQueryLowStockHandlerProvider = FutureProvider<QueryLowStockHandler>((
+  Ref ref,
+) async {
+  return RealQueryLowStockHandler(
+    await ref.watch(voiceCatalogReaderProvider.future),
+  );
+});
+
+final FutureProvider<QueryProductPriceHandler>
+voiceRealQueryProductPriceHandlerProvider =
+    FutureProvider<QueryProductPriceHandler>((Ref ref) async {
+      return RealQueryProductPriceHandler(
+        await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
+
+final FutureProvider<RecordStockOutHandler>
+voiceRealRecordStockOutHandlerProvider = FutureProvider<RecordStockOutHandler>((
+  Ref ref,
+) async {
+  return RealRecordStockOutHandler(
+    recordStockOut: ref.watch(recordStockOutProvider),
+    catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+  );
+});
+
+final Provider<NavigateToPageHandler> voiceRealNavigateHandlerProvider =
+    Provider<NavigateToPageHandler>((Ref ref) {
+      return RealNavigateHandler(
+        navigator: (int tabIndex, String destination) {
+          ref.read(navigationIndexProvider.notifier).goTo(tabIndex);
+        },
+      );
+    });
+
+final FutureProvider<ExportSalesReportHandler>
+voiceRealExportReportHandlerProvider = FutureProvider<ExportSalesReportHandler>(
+  (Ref ref) async {
+    return RealExportReportHandler(
+      exportGenerator: ref.watch(salesExportGeneratorProvider),
+      shareGateway: ref.watch(shareExportGatewayProvider),
+      getSalesHistory: ref.watch(getSalesHistoryProvider),
+      productRepository: ref.watch(productRepositoryProvider),
+    );
+  },
+);
+
+final FutureProvider<CreateProductHandler>
+voiceRealCreateProductHandlerProvider = FutureProvider<CreateProductHandler>((
+  Ref ref,
+) async {
+  return RealCreateProductHandler(
+    createProduct: ref.watch(createProductProvider),
+  );
+});
+
+final FutureProvider<UpdateProductPriceHandler>
+voiceRealUpdateProductPriceHandlerProvider =
+    FutureProvider<UpdateProductPriceHandler>((Ref ref) async {
+      return RealUpdateProductPriceHandler(
+        updateProduct: ref.watch(updateProductProvider),
+        productRepository: ref.watch(productRepositoryProvider),
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+      );
+    });
+
+final FutureProvider<QuerySalesHistoryHandler>
+voiceRealQuerySalesHistoryHandlerProvider =
+    FutureProvider<QuerySalesHistoryHandler>((Ref ref) async {
+      return RealQuerySalesHistoryHandler(ref.watch(getSalesHistoryProvider));
+    });
+
+final FutureProvider<QueryBusinessInfoHandler>
+voiceRealQueryBusinessInfoHandlerProvider =
+    FutureProvider<QueryBusinessInfoHandler>((Ref ref) async {
+      return RealQueryBusinessInfoHandler(
+        catalogReader: await ref.watch(voiceCatalogReaderProvider.future),
+        getSalesHistory: ref.watch(getSalesHistoryProvider),
+      );
+    });
+
 /// The handlers the executor will call.
 ///
 /// Dispatches to real feature handlers when VOICE_USE_MOCKS=false, or to
@@ -175,6 +285,71 @@ voiceHandlersProvider = FutureProvider<VoiceHandlers>((Ref ref) async {
       cancelLastSale:
           JournalingIntentHandler<CancelLastSaleInput, CancelLastSaleResult>(
             await ref.watch(voiceRealCancelLastSaleHandlerProvider.future),
+            journal,
+          ),
+      queryDailyStats:
+          JournalingIntentHandler<QueryDailyStatsInput, QueryDailyStatsResult>(
+            await ref.watch(voiceRealQueryDailyStatsHandlerProvider.future),
+            journal,
+          ),
+      queryLowStock:
+          JournalingIntentHandler<QueryLowStockInput, QueryLowStockResult>(
+            await ref.watch(voiceRealQueryLowStockHandlerProvider.future),
+            journal,
+          ),
+      queryProductPrice:
+          JournalingIntentHandler<
+            QueryProductPriceInput,
+            QueryProductPriceResult
+          >(
+            await ref.watch(voiceRealQueryProductPriceHandlerProvider.future),
+            journal,
+          ),
+      recordStockOut:
+          JournalingIntentHandler<RecordStockOutInput, RecordStockOutResult>(
+            await ref.watch(voiceRealRecordStockOutHandlerProvider.future),
+            journal,
+          ),
+      navigateToPage:
+          JournalingIntentHandler<NavigateToPageInput, NavigateToPageResult>(
+            ref.watch(voiceRealNavigateHandlerProvider),
+            journal,
+          ),
+      exportSalesReport:
+          JournalingIntentHandler<
+            ExportSalesReportInput,
+            ExportSalesReportResult
+          >(
+            await ref.watch(voiceRealExportReportHandlerProvider.future),
+            journal,
+          ),
+      createProduct:
+          JournalingIntentHandler<CreateProductInput, CreateProductResult>(
+            await ref.watch(voiceRealCreateProductHandlerProvider.future),
+            journal,
+          ),
+      updateProductPrice:
+          JournalingIntentHandler<
+            UpdateProductPriceInput,
+            UpdateProductPriceResult
+          >(
+            await ref.watch(voiceRealUpdateProductPriceHandlerProvider.future),
+            journal,
+          ),
+      querySalesHistory:
+          JournalingIntentHandler<
+            QuerySalesHistoryInput,
+            QuerySalesHistoryResult
+          >(
+            await ref.watch(voiceRealQuerySalesHistoryHandlerProvider.future),
+            journal,
+          ),
+      queryBusinessInfo:
+          JournalingIntentHandler<
+            QueryBusinessInfoInput,
+            QueryBusinessInfoResult
+          >(
+            await ref.watch(voiceRealQueryBusinessInfoHandlerProvider.future),
             journal,
           ),
     );
@@ -367,6 +542,16 @@ final Provider<bool> voiceEnableCloudProvider = Provider<bool>(
   (Ref ref) => kVoiceEnableCloud,
 );
 
+/// How every utterance was understood, newest route first.
+///
+/// Written by the cascade, the remote parser and the gateways, and read by whoever is
+/// looking for the reason a command does not work. A device whose journal stays empty
+/// never built a cascade, which is the one finding that needs no other clue.
+final Provider<ParseOutcomeJournal> voiceParseOutcomeJournalProvider =
+    Provider<ParseOutcomeJournal>(
+      (Ref ref) => LoggingParseOutcomeJournal(InMemoryParseOutcomeJournal()),
+    );
+
 /// The Google Gemini API key used for direct Cloud NLU parsing.
 final Provider<String> voiceGeminiApiKeyProvider = Provider<String>(
   (Ref ref) => kGeminiApiKey,
@@ -411,6 +596,12 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   final ProductCatalogReader catalogReader = await ref.watch(
     voiceCatalogReaderProvider.future,
   );
+  final String systemPrompt = (await ref.watch(
+    kioskRegistryProvider.future,
+  )).buildSystemPrompt();
+  final ParseOutcomeJournal journal = ref.watch(
+    voiceParseOutcomeJournalProvider,
+  );
 
   // 1. Explicit Rodium AI key provided
   if (rodiumApiKey.isNotEmpty) {
@@ -418,10 +609,12 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
       apiKey: rodiumApiKey,
       model: ref.watch(voiceRodiumModelProvider),
       baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
       cloudCaller: rodiumCaller.call,
+      journal: journal,
     );
   }
 
@@ -432,44 +625,83 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
         apiKey: geminiApiKey,
         model: ref.watch(voiceRodiumModelProvider),
         baseUrl: ref.watch(voiceRodiumBaseUrlProvider),
+        systemPrompt: systemPrompt,
       );
       return RemoteCloudIntentParser(
         catalogReader: catalogReader,
         cloudCaller: rodiumCaller.call,
+        journal: journal,
       );
     }
 
     final DirectGeminiCaller geminiCaller = DirectGeminiCaller(
       apiKey: geminiApiKey,
+      systemPrompt: systemPrompt,
     );
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
       cloudCaller: geminiCaller.call,
+      journal: journal,
     );
   }
 
   // 3. Fallback to Firebase Cloud Functions default
-  return RemoteCloudIntentParser(catalogReader: catalogReader);
+  return RemoteCloudIntentParser(
+    catalogReader: catalogReader,
+    journal: journal,
+  );
 });
+
+/// Whether a gateway key is present, and the cloud can therefore be tried at all.
+///
+/// A key is the only thing that opens the cloud, because no callable function is
+/// deployed behind [voiceCloudIntentParserProvider]'s last branch: `firebase.json`
+/// declares no `functions` section and `functions/` holds no source. Treating that
+/// branch as a working third option is what let a build with no key reach the network
+/// once per utterance and come back with nothing, paying the probe and the timeout to
+/// learn a fact it could have known at startup.
+final Provider<bool> voiceHasCloudCredentialProvider = Provider<bool>(
+  (Ref ref) =>
+      ref.watch(voiceRodiumApiKeyProvider).isNotEmpty ||
+      ref.watch(voiceGeminiApiKeyProvider).isNotEmpty,
+);
 
 /// The parser used by the turn executor.
 ///
-/// When [voiceEnableCloudProvider] is true, uses [CascadingParser] combining
-/// the cloud model and the local rule parser under a strict time budget.
-/// When false, delegates directly to [voiceRuleBasedParserProvider].
+/// With the cloud enabled and a key to call it with, this is a [CascadingParser]:
+/// the model under a strict time budget, the rules behind it. Without one, it is a
+/// [LocalOnlyParser], which answers the same way and records the reason. Handing back
+/// the bare rules parser, as this used to, answered identically and explained nothing,
+/// which is how a missing key went unnoticed behind a working-looking assistant.
 final FutureProvider<IntentParser> voiceParserProvider =
     FutureProvider<IntentParser>((Ref ref) async {
       final RuleBasedParser local = await ref.watch(
         voiceRuleBasedParserProvider.future,
       );
+      final ParseOutcomeJournal journal = ref.watch(
+        voiceParseOutcomeJournalProvider,
+      );
+
       if (!ref.watch(voiceEnableCloudProvider)) {
-        return local;
+        return LocalOnlyParser(
+          local: local,
+          reason: ParseRouteReason.localOnly,
+          journal: journal,
+        );
+      }
+      if (!ref.watch(voiceHasCloudCredentialProvider)) {
+        return LocalOnlyParser(
+          local: local,
+          reason: ParseRouteReason.noCredential,
+          journal: journal,
+        );
       }
       return CascadingParser(
         local: local,
         cloud: await ref.watch(voiceCloudIntentParserProvider.future),
         connectivity: ref.watch(voiceConnectivityProbeProvider),
         circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
+        journal: journal,
         timeBudget: const Duration(milliseconds: 2000),
       );
     });
@@ -541,3 +773,53 @@ Future<List<String>> _shopVocabulary(Ref ref) async {
       .take(ref.watch(voiceServiceSettingsProvider).vocabularyLimit)
       .toList();
 }
+
+/// The natural response formulator (Cascading Cloud AI & Offline Natural).
+final Provider<MessageFormulator>
+voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
+  final ConnectivityProbe connectivity = ref.watch(
+    voiceConnectivityProbeProvider,
+  );
+  final CircuitBreaker circuitBreaker = ref.watch(voiceCircuitBreakerProvider);
+  final String rodiumApiKey = ref.watch(voiceRodiumApiKeyProvider);
+  final String geminiApiKey = ref.watch(voiceGeminiApiKeyProvider);
+
+  final MessageFormulator aiFormulator;
+  if (rodiumApiKey.isNotEmpty) {
+    aiFormulator = AiMessageFormulator(
+      apiKey: rodiumApiKey,
+      endpointUrl: '${ref.watch(voiceRodiumBaseUrlProvider)}/chat/completions',
+    );
+  } else if (geminiApiKey.isNotEmpty) {
+    if (geminiApiKey.startsWith('rd_')) {
+      aiFormulator = AiMessageFormulator(
+        apiKey: geminiApiKey,
+        endpointUrl:
+            '${ref.watch(voiceRodiumBaseUrlProvider)}/chat/completions',
+      );
+    } else {
+      aiFormulator = AiMessageFormulator(apiKey: geminiApiKey);
+    }
+  } else {
+    aiFormulator = const OfflineNaturalFormulator();
+  }
+
+  return CascadingMessageFormulator(
+    aiFormulator: aiFormulator,
+    connectivity: connectivity,
+    circuitBreaker: circuitBreaker,
+  );
+});
+
+/// The commands offered to the language model, read from the shipped catalog.
+///
+/// Asynchronous because the catalog is an asset: the registry has no list of its
+/// own to fall back on, so there is nothing to build it from until the asset is
+/// read, and a prompt built before then would describe commands the app does not
+/// have.
+final FutureProvider<KioskRegistry> kioskRegistryProvider =
+    FutureProvider<KioskRegistry>(
+      (Ref ref) async => KioskRegistry.fromCatalog(
+        await ref.watch(voiceIntentsProvider.future),
+      ),
+    );

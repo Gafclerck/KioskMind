@@ -4,6 +4,7 @@ import '../../domain/entities/clarification_slot.dart';
 import '../../domain/services/spoken_amount_formatter.dart';
 import '../state/voice_message.dart';
 import '../state/voice_outcome.dart';
+import '../state/voice_recap.dart';
 
 /// The sentence the merchant reads, or the one the module speaks.
 ///
@@ -19,12 +20,20 @@ String voiceMessageText(AppLocalizations l10n, VoiceMessage message) {
   return switch (message) {
     QuestionMessage() => _questionText(l10n, message),
     RefusalMessage() => l10n.voiceRefused,
-    DoneMessage(outcome: final VoiceOutcome outcome) => _outcomeText(
-      l10n,
-      outcome,
-      formatter,
-    ),
-    UndoneMessage() => l10n.voiceSaleCancelled,
+    DoneMessage(
+      outcome: final VoiceOutcome outcome,
+      customSpeechText: final String? customText,
+    ) =>
+      customText != null && customText.isNotEmpty
+          ? customText
+          : _outcomeText(l10n, outcome, formatter),
+    UndoneMessage(
+      outcome: final VoiceOutcome _,
+      customSpeechText: final String? customText,
+    ) =>
+      customText != null && customText.isNotEmpty
+          ? customText
+          : l10n.voiceSaleCancelled,
     NothingToUndoMessage() => l10n.voiceNothingToUndo,
     UndoFailedMessage() => l10n.voiceUndoFailed,
     MicUnavailableMessage(fault: final Object fault) =>
@@ -32,6 +41,223 @@ String voiceMessageText(AppLocalizations l10n, VoiceMessage message) {
           ? l10n.voiceMicRefused
           : l10n.voiceMicUnavailable,
     ManualEntryMessage() => l10n.voiceManualTitle,
+  };
+}
+
+/// The command a confirmation is about, as one sentence.
+///
+/// The same facts and the same wording as the recap read after the command runs,
+/// because a merchant who is asked to authorise "create the product X at 500" and
+/// then hears "the price of X was updated to 500" was not asked the question he
+/// answered. An operation with nothing to read returns an empty string, and the
+/// screen shows the transcript instead of an empty confirmation.
+String voiceRecapText(
+  AppLocalizations l10n,
+  VoiceRecap recap,
+  SpokenAmountFormatter amounts,
+) {
+  final List<String> parts = <String>[
+    for (final VoiceRecapLine line in recap.lines)
+      _recapLine(l10n, line, amounts),
+    for (final VoiceRecapDetail detail in recap.details)
+      if (_recapDetail(l10n, recap, detail, amounts) case final String said)
+        said,
+  ];
+  if (parts.isEmpty) {
+    return '';
+  }
+  final String operation = _operationText(l10n, recap.intentId);
+  return parts.length == 1
+      ? '$operation : ${parts.first}'
+      : '$operation : ${parts.join(', ')}';
+}
+
+/// The values of a recap alone, as one phrase.
+///
+/// The panel draws the products of a recap as cards, so printing the same products
+/// again as a sentence would put every line of a sale twice on one screen. What a
+/// card cannot carry is the values the merchant announced, and those are the whole
+/// reason a confirmation is being asked, so they are drawn on their own.
+///
+/// Empty when the recap names no value, so a confirmation about a quantity shows its
+/// cards and nothing else.
+String voiceRecapDetailsText(
+  AppLocalizations l10n,
+  VoiceRecap recap,
+  SpokenAmountFormatter amounts,
+) {
+  return recap.details
+      .map(
+        (VoiceRecapDetail detail) => _recapDetail(l10n, recap, detail, amounts),
+      )
+      .whereType<String>()
+      .join(', ');
+}
+
+/// The name of the operation, as the locale names it.
+///
+/// Keyed by the catalog identifier rather than by a word, so renaming an intent in
+/// the catalog cannot leave a confirmation calling it by its old name: an
+/// identifier nothing knows falls back to the generic wording, which is a weaker
+/// sentence and never a wrong one.
+String _operationText(AppLocalizations l10n, String intentId) {
+  return switch (intentId) {
+    'record_sale' => l10n.voiceRecapOperationSale,
+    'record_restock' => l10n.voiceRecapOperationRestock,
+    'cancel_last_sale' => l10n.voiceRecapOperationCancel,
+    'record_stock_out' => l10n.voiceRecapOperationStockOut,
+    'create_product' => l10n.voiceRecapOperationCreateProduct,
+    'update_product_price' => l10n.voiceRecapOperationUpdatePrice,
+    'navigate_to_page' => l10n.voiceRecapOperationNavigate,
+    'export_sales_report' => l10n.voiceRecapOperationExport,
+    'query_daily_stats' => l10n.voiceRecapOperationDailyStats,
+    'query_low_stock' => l10n.voiceRecapOperationLowStock,
+    'query_product_price' => l10n.voiceRecapOperationProductPrice,
+    'query_sales_history' => l10n.voiceRecapOperationSalesHistory,
+    'query_business_info' => l10n.voiceRecapOperationBusinessInfo,
+    'query_stock' => l10n.voiceRecapOperationStock,
+    _ => l10n.voiceRecapOperationGeneric,
+  };
+}
+
+/// One product of a recap.
+///
+/// A line with no count is a product the command names rather than moves, so it is
+/// said as the name alone: "two units of sugar" for a question about the price of
+/// sugar would be a quantity the merchant never said.
+String _recapLine(
+  AppLocalizations l10n,
+  VoiceRecapLine line,
+  SpokenAmountFormatter amounts,
+) {
+  if (line.qty == 0) {
+    return line.name;
+  }
+  final String? unit = line.unit;
+  if (unit == null) {
+    return l10n.voiceRecapLinePlain(_quantity(line.qty, amounts), line.name);
+  }
+  return l10n.voiceRecapLine(
+    _qtyWithUnit(l10n, line.qty, unit, amounts),
+    line.name,
+  );
+}
+
+/// One value of a recap, or null when it has nothing worth saying.
+///
+/// A detail the merchant did not give is skipped rather than read as a blank, so a
+/// confirmation never asks him to agree to a value that was never spoken.
+String? _recapDetail(
+  AppLocalizations l10n,
+  VoiceRecap recap,
+  VoiceRecapDetail detail,
+  SpokenAmountFormatter amounts,
+) {
+  final double? amount = detail.amount;
+  if (amount != null) {
+    final String spoken = '${amounts(amount)} ${l10n.voiceCurrency}';
+    return switch (detail.key) {
+      'spokenAmount' =>
+        detail.text == null
+            ? spoken
+            : l10n.voiceRecapAmountFor(detail.text!, spoken),
+      'newPrice' => l10n.voiceRecapNewPrice(spoken),
+      'price' => l10n.voiceRecapPrice(spoken),
+      'purchasePrice' => l10n.voiceRecapPurchasePrice(spoken),
+      'qty' => l10n.voiceRecapQuantity(_quantity(amount, amounts)),
+      'initialQty' => l10n.voiceRecapInitialQty(_quantity(amount, amounts)),
+      _ => spoken,
+    };
+  }
+  final String? text = detail.text;
+  if (text == null || text.isEmpty) {
+    return null;
+  }
+  return switch (detail.key) {
+    'name' => l10n.voiceRecapProductName(text),
+    'reason' => l10n.voiceRecapReason(_reasonText(l10n, text)),
+    'note' => l10n.voiceRecapNote(text),
+    'destination' => l10n.voiceRecapDestination(_destinationText(l10n, text)),
+    'format' => l10n.voiceRecapFormat(text.toUpperCase()),
+    'period' => l10n.voiceRecapPeriod(_periodText(l10n, text)),
+    'date' => l10n.voiceRecapDate(_dateText(l10n, text)),
+    'level' => l10n.voiceRecapLevel(_levelText(l10n, text)),
+    'limit' => l10n.voiceRecapLimit(text),
+    _ => text,
+  };
+}
+
+/// The reason a stock loss is given, said in French rather than as a code.
+///
+/// The reason reaches the handler as a machine word because that is what the
+/// catalog and the movement use. Spoken and shown, it is a word the merchant
+/// chose, and a code read aloud is a word he did not choose. A reason the module
+/// does not know is read as it arrived rather than dropped, because losing the
+/// reason is worse than saying an unfamiliar one.
+String _reasonText(AppLocalizations l10n, String reason) {
+  return switch (reason.toLowerCase()) {
+    'breakage' || 'casse' || 'abime' => l10n.voiceReasonBreakage,
+    'loss' ||
+    'perte' ||
+    'perime' ||
+    'peremption' ||
+    'expired' ||
+    'avarie' => l10n.voiceReasonLoss,
+    'donation' || 'don' => l10n.voiceReasonDonation,
+    'manualadjustment' || 'ajustement' => l10n.voiceReasonAdjustment,
+    _ => reason,
+  };
+}
+
+/// The screen a navigation goes to, as the locale names it.
+String _destinationText(AppLocalizations l10n, String destination) {
+  return switch (destination.toLowerCase()) {
+    'dashboard' || 'accueil' => l10n.voiceDestinationDashboard,
+    'stock' ||
+    'produit' ||
+    'produits' ||
+    'inventaire' ||
+    'catalogue' => l10n.voiceDestinationStock,
+    'sales_history' ||
+    'historique' ||
+    'journal' ||
+    'ventes' => l10n.voiceDestinationSalesHistory,
+    'profile' ||
+    'profil' ||
+    'compte' ||
+    'parametre' ||
+    'parametres' => l10n.voiceDestinationProfile,
+    _ => destination,
+  };
+}
+
+/// The span an export covers, as the locale names it.
+String _periodText(AppLocalizations l10n, String period) {
+  return switch (period.toLowerCase()) {
+    'day' || 'jour' => l10n.voicePeriodDay,
+    'week' || 'semaine' => l10n.voicePeriodWeek,
+    'month' || 'mois' => l10n.voicePeriodMonth,
+    'all' || 'tout' || 'total' => l10n.voicePeriodAll,
+    _ => period,
+  };
+}
+
+/// The day a question is about, as the locale names it.
+String _dateText(AppLocalizations l10n, String date) {
+  return switch (date.toLowerCase()) {
+    'today' || "aujourd'hui" => l10n.voiceDateToday,
+    'yesterday' || 'hier' => l10n.voiceDateYesterday,
+    _ => date,
+  };
+}
+
+/// How low a stock question asks, as the locale names it.
+String _levelText(AppLocalizations l10n, String level) {
+  return switch (level.toLowerCase()) {
+    'out_of_stock' || 'rupture' || 'outofstock' => l10n.voiceLevelOutOfStock,
+    'low_stock' || 'critical' || 'faible' || 'bas' => l10n.voiceLevelLow,
+    'all' || 'tout' => l10n.voiceLevelAll,
+    _ => level,
   };
 }
 
@@ -65,7 +291,145 @@ String _outcomeText(
       _qtyWithUnit(l10n, stock.stock, stock.unit, amounts),
     ),
     SaleCancelled() => l10n.voiceSaleCancelled,
+    final DailyStatsRead stats => _dailyStatsText(l10n, stats, amounts),
+    final LowStockRead lowStock => _lowStockText(l10n, lowStock, amounts),
+    final ProductPriceRead price => _productPriceText(l10n, price, amounts),
+    final StockOutRecorded stockOut => _stockOutText(l10n, stockOut, amounts),
+    final PageNavigated nav => _pageNavigatedText(l10n, nav),
+    final ReportExported report => _reportExportedText(l10n, report),
+    final ProductCreated created => _productCreatedText(l10n, created, amounts),
+    final ProductPriceUpdated updated => _productPriceUpdatedText(
+      l10n,
+      updated,
+      amounts,
+    ),
+    final SalesHistoryRead history => _salesHistoryText(l10n, history, amounts),
+    final BusinessInfoRead info => _businessInfoText(l10n, info),
   };
+}
+
+String _dailyStatsText(
+  AppLocalizations l10n,
+  DailyStatsRead stats,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  if (stats.salesCount == 0) {
+    return "Aucune vente enregistrée aujourd'hui.";
+  }
+  final String countStr = stats.salesCount == 1
+      ? '1 vente'
+      : '${stats.salesCount} ventes';
+  final String revStr = '${amounts(stats.totalRevenue)} $currency';
+  final String profStr = '${amounts(stats.totalProfit)} $currency';
+  return "Aujourd'hui : $countStr, total $revStr, bénéfice $profStr.";
+}
+
+String _lowStockText(
+  AppLocalizations l10n,
+  LowStockRead lowStock,
+  SpokenAmountFormatter amounts,
+) {
+  if (lowStock.products.isEmpty) {
+    return 'Aucun produit en rupture ou stock bas.';
+  }
+  final int count = lowStock.products.length;
+  final String header = count == 1
+      ? '1 produit en alerte de stock'
+      : '$count produits en alerte de stock';
+  final String details = lowStock.products
+      .map((p) => '${p.name} (reste ${_quantity(p.stock, amounts)})')
+      .join(', ');
+  return '$header : $details.';
+}
+
+String _productPriceText(
+  AppLocalizations l10n,
+  ProductPriceRead price,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String base =
+      'Le prix de ${price.product} est de ${amounts(price.price)} $currency';
+  if (price.purchasePrice != null && price.purchasePrice! > 0) {
+    return '$base (prix d\'achat : ${amounts(price.purchasePrice!)} $currency).';
+  }
+  return '$base.';
+}
+
+String _stockOutText(
+  AppLocalizations l10n,
+  StockOutRecorded stockOut,
+  SpokenAmountFormatter amounts,
+) {
+  final String qtyStr = _quantity(stockOut.qty, amounts);
+  final String remainingStr = _quantity(stockOut.resultingStock, amounts);
+  return 'Sortie de $qtyStr ${stockOut.product} (${stockOut.reason}) enregistrée. Stock restant : $remainingStr.';
+}
+
+String _pageNavigatedText(AppLocalizations l10n, PageNavigated nav) {
+  return 'Navigation vers ${nav.label}.';
+}
+
+String _reportExportedText(AppLocalizations l10n, ReportExported report) {
+  final String countStr = report.salesCount == 1
+      ? '1 vente'
+      : '${report.salesCount} ventes';
+  return 'Rapport des ventes ($countStr) généré et partagé au format ${report.format.toUpperCase()}.';
+}
+
+String _productCreatedText(
+  AppLocalizations l10n,
+  ProductCreated created,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String priceStr = '${amounts(created.price)} $currency';
+  final String qtyStr = _quantity(created.initialQuantity, amounts);
+  return 'Produit ${created.name} créé à $priceStr avec un stock initial de $qtyStr.';
+}
+
+String _productPriceUpdatedText(
+  AppLocalizations l10n,
+  ProductPriceUpdated updated,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  final String newPriceStr = '${amounts(updated.newPrice)} $currency';
+  final String oldPriceStr = '${amounts(updated.oldPrice)} $currency';
+  return 'Le prix de ${updated.product} a été mis à jour à $newPriceStr (ancien prix : $oldPriceStr).';
+}
+
+String _salesHistoryText(
+  AppLocalizations l10n,
+  SalesHistoryRead history,
+  SpokenAmountFormatter amounts,
+) {
+  final String currency = l10n.voiceCurrency;
+  if (history.sales.isEmpty) {
+    return 'Aucune vente récente trouvée.';
+  }
+  final int count = history.sales.length;
+  final String header = count == 1 ? 'Dernière vente' : 'Dernières ventes';
+  final String details = history.sales
+      .map((s) {
+        final String itemsStr = s.itemsCount == 1
+            ? '1 article'
+            : '${s.itemsCount} articles';
+        return '$itemsStr pour ${amounts(s.total)} $currency';
+      })
+      .join(', ');
+  return '$header : $details.';
+}
+
+String _businessInfoText(AppLocalizations l10n, BusinessInfoRead info) {
+  final String prodStr = info.activeProductsCount == 1
+      ? '1 produit actif'
+      : '${info.activeProductsCount} produits actifs';
+  final String salesStr = info.totalSalesCount == 1
+      ? '1 vente'
+      : '${info.totalSalesCount} ventes';
+  return '${info.storeName} : $prodStr, $salesStr enregistrées.';
 }
 
 /// A sale, its lines and its total in words.
@@ -145,6 +509,26 @@ String _digits(double qty) {
 /// every other code falls back to the piece: a recap that says "piece" where the shop
 /// says "lot" is a word wrong, and a recap that leaves the unit out is a sentence
 /// broken.
+/// The unit a quantity is counted in, as the locale writes it.
+///
+/// The bare noun, with no count and no article: "5 bouteilles × 2,500 F" is what a
+/// card shows, and an article in front of it would give "5 de bouteilles". The count
+/// is in front of it, so the plural still agrees with the quantity.
+String voiceUnitLabel(AppLocalizations l10n, double qty, String? code) {
+  if (code == null) {
+    return l10n.voiceUnitPiece(qty.round());
+  }
+  final int count = qty.round();
+  return switch (_canonicalUnit(code)) {
+    'KG' => l10n.voiceUnitKg(count),
+    'LITRE' => l10n.voiceUnitLitre(count),
+    'SACHET' => l10n.voiceUnitSachet(count),
+    'SAC' => l10n.voiceUnitSac(count),
+    'BOITE' => l10n.voiceUnitBoite(count),
+    _ => l10n.voiceUnitPiece(count),
+  };
+}
+
 String _qtyWithUnit(
   AppLocalizations l10n,
   double qty,

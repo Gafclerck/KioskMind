@@ -11,11 +11,16 @@ import '../../di/voice_dependencies.dart';
 import '../../domain/dialog/dialog_manager.dart';
 import '../../domain/entities/clarification_slot.dart';
 import '../../domain/entities/doubt.dart';
+import '../../domain/entities/command_proposal.dart';
+import '../../domain/entities/fact_result.dart';
 import '../../domain/entities/intent_result.dart';
+import '../../domain/ports/message_formulator.dart';
+import '../../domain/ports/product_catalog_reader.dart';
 import '../../domain/usecases/execute_command.dart';
 import '../../domain/usecases/handle_utterance.dart';
 import 'voice_message.dart';
 import 'voice_outcome.dart';
+import 'voice_recap.dart';
 import 'voice_session_state.dart';
 
 /// The voice session of one container.
@@ -42,6 +47,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   VoiceSessionState build() {
     _startTicking();
     ref.onDispose(_dispose);
+    unawaited(_refreshTtsAvailability());
     return const VoiceSessionState();
   }
 
@@ -57,6 +63,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     _busy = true;
     try {
       await _stopSpeech();
+      ref.read(voiceDialogProvider).touch();
       _set(
         state.copyWith(
           status: VoiceSessionStatus.preparing,
@@ -86,6 +93,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     final SpeechRecognizerPort? recognizer = _recognizer();
     await recognizer?.stop();
     await recognizer?.cancel();
+    await _stopSpeech();
     if (!_disposed && state.status == VoiceSessionStatus.listening) {
       _set(state.copyWith(status: VoiceSessionStatus.idle, lastHeard: ''));
     }
@@ -110,7 +118,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
           .then((HandleUtterance handle) => handle.run(words));
-      _afterTurn(turn);
+      await _afterTurn(turn, userUtterance: words);
     } finally {
       _busy = false;
     }
@@ -130,6 +138,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     }
     _busy = true;
     try {
+      await _stopSpeech();
       _set(state.copyWith(status: VoiceSessionStatus.thinking));
       final VoiceTurn turn = await ref
           .read(voiceHandleUtteranceProvider.future)
@@ -137,7 +146,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
             (HandleUtterance handle) =>
                 handle.applyAnswer(asked: asked, value: value),
           );
-      _afterTurn(turn);
+      await _afterTurn(turn);
     } finally {
       _busy = false;
     }
@@ -218,16 +227,46 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// Turns a finished turn into what the panel shows and the speaker reads.
-  void _afterTurn(VoiceTurn turn) {
+  Future<void> _afterTurn(VoiceTurn turn, {String userUtterance = ''}) async {
     final DialogManager dialog = ref.read(voiceDialogProvider);
     final PendingQuestion? pending = dialog.pending;
-    final VoiceMessage message;
+    VoiceMessage message;
     if (dialog.awaitsManualEntry) {
       message = const ManualEntryMessage();
     } else if (pending == null) {
       message = _messageOfRefusal(turn);
+      if (message is DoneMessage) {
+        try {
+          final MessageFormulator formulator = ref.read(
+            voiceMessageFormulatorProvider,
+          );
+          final List<FactResult> allFacts = <FactResult>[
+            message.outcome.toFactResult(),
+          ];
+          for (final CommandExecution exec in turn.secondaryExecutions) {
+            final VoiceOutcome? secondaryOutcome = outcomeOf(exec);
+            if (secondaryOutcome != null) {
+              allFacts.add(secondaryOutcome.toFactResult());
+            }
+          }
+
+          final String naturalSpeech = formulator.formatSync(
+            userUtterance: userUtterance,
+            facts: allFacts,
+            staticFallback: '',
+          );
+          if (naturalSpeech.isNotEmpty) {
+            message = DoneMessage(
+              message.outcome,
+              customSpeechText: naturalSpeech,
+            );
+          }
+        } catch (_) {
+          // If formulation encounters any issue, retain standard DoneMessage
+        }
+      }
     } else {
-      message = _messageOfQuestion(turn, pending);
+      message = await _messageOfQuestion(turn, pending);
     }
     _set(
       state.copyWith(
@@ -256,12 +295,25 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
     }
     final DoubtKind? doubt = turn.decision.reason;
     return doubt == null
-        ? const MicUnavailableMessage(SpeechFault.unavailable)
+        ? const RefusalMessage(DoubtKind.outOfDomain)
         : RefusalMessage(doubt);
   }
 
   /// The question the session is now waiting on, and what it already knows.
-  VoiceMessage _messageOfQuestion(VoiceTurn turn, PendingQuestion pending) {
+  ///
+  /// A confirmation carries the recap of the command it is about: the merchant is
+  /// asked to authorise a product creation or a price change, and agreeing to a
+  /// transcript is not agreeing to either. The recap is read from the proposal the
+  /// session kept, so it names the command the same way whether the confirmation
+  /// was reached by speech or by a tap.
+  ///
+  /// It reads the catalog for the name of a product the utterance gave as an
+  /// identifier, which is why this is asynchronous. A name the catalog cannot
+  /// supply leaves the recap without that line rather than showing the identifier.
+  Future<VoiceMessage> _messageOfQuestion(
+    VoiceTurn turn,
+    PendingQuestion pending,
+  ) async {
     final ClarificationSlot? slot = pending.slot;
     final DoubtKind doubt = pending.reason;
     if (slot == null) {
@@ -271,7 +323,27 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       doubt: doubt,
       slot: slot,
       candidates: turn.proposal.doubtOf(doubt)?.candidates ?? const [],
+      recap: await _recapOf(turn.proposal),
     );
+  }
+
+  /// The recap of [proposal], or null when it names nothing to authorise.
+  Future<VoiceRecap?> _recapOf(CommandProposal proposal) async {
+    try {
+      final ProductCatalogReader catalog = await ref.read(
+        voiceCatalogReaderProvider.future,
+      );
+      final VoiceRecap? recap = await pendingRecapOf(
+        proposal,
+        catalog.findById,
+      );
+      return (recap != null && recap.hasContent) ? recap : null;
+    } catch (_) {
+      // The catalog is what turns an identifier into a name. Without it the
+      // confirmation still stands and the transcript is still there to read, so a
+      // recap is an addition here and never the reason a question is lost.
+      return null;
+    }
   }
 
   void _afterUndo(Result<CancelLastSaleResult> result) {
@@ -281,7 +353,12 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
         UndoneMessage(
           SaleCancelled(<VoiceRecapLine>[
             for (final SaleLineResult line in value.restored)
-              (name: line.name, qty: line.qty, unit: line.unit),
+              (
+                name: line.name,
+                qty: line.qty,
+                unit: line.unit,
+                unitPrice: line.appliedUnitPrice,
+              ),
           ]),
         ),
       Failed<CancelLastSaleResult>(failure: const NothingToUndo()) =>
@@ -303,6 +380,10 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   /// The microphone is unusable: say why and offer the screens.
   void _microphoneLost(SpeechServiceError fault) {
     final DialogManager dialog = ref.read(voiceDialogProvider);
+    if (!fault.isTerminal && dialog.pending != null) {
+      _set(state.copyWith(status: VoiceSessionStatus.idle, lastHeard: ''));
+      return;
+    }
     dialog.reset();
     _set(
       state.copyWith(
@@ -326,6 +407,24 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
       SpeechReadiness.unsupported => SpeechFault.unsupported,
       SpeechReadiness.unavailable => SpeechFault.unavailable,
     };
+  }
+
+  /// Asks the synthesiser what it can do, so the panel can explain a silence.
+  ///
+  /// Nothing blocks on it: the sheet must appear at once, and the verdict arrives
+  /// a moment later. A synthesiser that cannot be reached leaves the field alone,
+  /// because `unknown` shows nothing and the next probe may do better.
+  Future<void> _refreshTtsAvailability() async {
+    try {
+      final TtsPort tts = ref.read(voiceTtsProvider);
+      final TtsAvailability availability = await tts.availability();
+      if (_disposed || state.ttsAvailability == availability) {
+        return;
+      }
+      _set(state.copyWith(ttsAvailability: availability));
+    } catch (_) {
+      // The engine did not answer. The ticker keeps asking until it does.
+    }
   }
 
   /// Silences the module before the microphone opens.
@@ -380,6 +479,14 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   void _refresh() {
     if (_disposed) {
       return;
+    }
+    // An engine that had not answered may have become reachable since (Chrome
+    // publishes its voices after load, Android finishes a download in the
+    // background), so the panel keeps re-asking while the verdict is that one.
+    // The port answers from its cache until the verdict has aged, so this is a
+    // read, not a conversation with the engine.
+    if (state.ttsAvailability == TtsAvailability.engineUnreachable) {
+      unawaited(_refreshTtsAvailability());
     }
     final DialogManager dialog = ref.read(voiceDialogProvider);
     if (dialog.awaitsManualEntry != state.awaitingManualEntry) {
