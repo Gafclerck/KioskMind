@@ -35,17 +35,22 @@ String? redirect(BuildContext context, GoRouterState state) {
   final bool hasSeenOnboarding = _ref.read(onboardingSeenProvider);
   final String location = state.matchedLocation;
 
-  // Keep splash visible while it handles the initial navigation
-  if (location == AppRoutes.splash) {
-    return null;
-  }
-
-  // Keep splash while initial auth state is unknown
+  // Keep splash while the initial auth state is unknown
   if (authState.isLoading) {
-    return AppRoutes.splash;
+    return location == AppRoutes.splash ? null : AppRoutes.splash;
   }
 
   final bool isLoggedIn = authState.valueOrNull != null;
+
+  // The splash is not a destination, it is the window the app shows while it finds
+  // out who the merchant is. Once that is known, the same rules as anywhere else
+  // apply, and the splash is replaced by the page this session belongs on.
+  if (location == AppRoutes.splash) {
+    if (!hasSeenOnboarding) {
+      return AppRoutes.onboarding;
+    }
+    return isLoggedIn ? AppRoutes.dashboard : AppRoutes.login;
+  }
 
   // 1. If user hasn't completed onboarding yet, force onboarding
   if (!hasSeenOnboarding) {
