@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'cloud_call_failure.dart';
+
 typedef HttpJsonPoster =
     Future<Map<String, dynamic>> Function(
       Uri uri,
@@ -130,6 +132,10 @@ final class DirectGeminiCaller {
         return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
+    } on CloudCallFailure {
+      // Reported as itself rather than as an empty answer: an invalid key looks
+      // exactly like a model that had nothing to say until it does not.
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[DirectGeminiCaller] Error: $e');
@@ -169,11 +175,11 @@ final class DirectGeminiCaller {
           return Map<String, dynamic>.from(decoded);
         }
       } else {
-        if (kDebugMode) {
-          debugPrint(
-            '[DirectGeminiCaller] HTTP ${response.statusCode}: $responseBody',
-          );
-        }
+        throw CloudCallFailure.fromResponse(
+          'Gemini',
+          response.statusCode,
+          responseBody,
+        );
       }
       return const <String, dynamic>{};
     } finally {

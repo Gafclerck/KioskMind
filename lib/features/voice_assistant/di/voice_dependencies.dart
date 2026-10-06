@@ -22,6 +22,8 @@ import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
 import '../data/connectivity/data_connection_probe.dart';
+import '../data/diagnostics/in_memory_parse_outcome_journal.dart';
+import '../data/diagnostics/logging_parse_outcome_journal.dart';
 import '../data/extractors/item_list_extractor.dart';
 import '../data/extractors/line_extractor.dart';
 import '../data/extractors/product_name_resolver.dart';
@@ -64,6 +66,7 @@ import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
 import '../domain/ports/intent_parser.dart';
 import '../domain/ports/intent_registry.dart';
+import '../domain/ports/parse_outcome_journal.dart';
 import '../domain/ports/product_catalog_reader.dart';
 import '../domain/ports/spoken_product_resolver.dart';
 import '../domain/ports/voice_clock.dart';
@@ -537,6 +540,16 @@ final Provider<bool> voiceEnableCloudProvider = Provider<bool>(
   (Ref ref) => kVoiceEnableCloud,
 );
 
+/// How every utterance was understood, newest route first.
+///
+/// Written by the cascade, the remote parser and the gateways, and read by whoever is
+/// looking for the reason a command does not work. A device whose journal stays empty
+/// never built a cascade, which is the one finding that needs no other clue.
+final Provider<ParseOutcomeJournal> voiceParseOutcomeJournalProvider =
+    Provider<ParseOutcomeJournal>(
+      (Ref ref) => LoggingParseOutcomeJournal(InMemoryParseOutcomeJournal()),
+    );
+
 /// The Google Gemini API key used for direct Cloud NLU parsing.
 final Provider<String> voiceGeminiApiKeyProvider = Provider<String>(
   (Ref ref) => kGeminiApiKey,
@@ -584,6 +597,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
   final String systemPrompt = (await ref.watch(
     kioskRegistryProvider.future,
   )).buildSystemPrompt();
+  final ParseOutcomeJournal journal = ref.watch(voiceParseOutcomeJournalProvider);
 
   // 1. Explicit Rodium AI key provided
   if (rodiumApiKey.isNotEmpty) {
@@ -596,6 +610,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
       cloudCaller: rodiumCaller.call,
+      journal: journal,
     );
   }
 
@@ -611,6 +626,7 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
       return RemoteCloudIntentParser(
         catalogReader: catalogReader,
         cloudCaller: rodiumCaller.call,
+        journal: journal,
       );
     }
 
@@ -621,11 +637,12 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
     return RemoteCloudIntentParser(
       catalogReader: catalogReader,
       cloudCaller: geminiCaller.call,
+      journal: journal,
     );
   }
 
   // 3. Fallback to Firebase Cloud Functions default
-  return RemoteCloudIntentParser(catalogReader: catalogReader);
+  return RemoteCloudIntentParser(catalogReader: catalogReader, journal: journal);
 });
 
 /// The parser used by the turn executor.
@@ -646,6 +663,7 @@ final FutureProvider<IntentParser> voiceParserProvider =
         cloud: await ref.watch(voiceCloudIntentParserProvider.future),
         connectivity: ref.watch(voiceConnectivityProbeProvider),
         circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
+        journal: ref.watch(voiceParseOutcomeJournalProvider),
         timeBudget: const Duration(milliseconds: 2000),
       );
     });
