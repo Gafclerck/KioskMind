@@ -14,6 +14,14 @@ class AlertPredictionScreen extends ConsumerWidget {
     final alertsAsync = ref.watch(activeAlertsProvider);
 
     return Scaffold(
+      // La page est poussée par context.push : sans AppBar, aucun retour
+      // possible sur un kiosque (pas de bouton système Android).
+      appBar: AppBar(
+        title: Text(
+          titleAppBar,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -22,10 +30,6 @@ class AlertPredictionScreen extends ConsumerWidget {
               spacing: 10,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  titleAppBar,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                ),
                 Row(
                   children: [
                     Icon(Icons.star, color: AppColors.primary, size: 20),

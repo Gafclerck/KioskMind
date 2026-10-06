@@ -40,9 +40,10 @@ final initialiserNotificationsProvider = FutureProvider.family<void, String>((
   /// Reçoit TOUTES les données de la notif, peu importe lequel des
   /// 3 cas l'a déclenché.
   void traiterDonneesNotification(Map<String, dynamic> data) {
-    // Pour l'instant : redirige vers le centre de notifications.
-    // Pourra pointer vers une fiche produit précise plus tard, une
-    // fois une route dédiée (ex: /produit/:id) ajoutée à app_router.
+    // Ouvre l'écran des alertes/prédictions. Pointeur produit exact
+    // : à faire quand une route dédiée (ex: /produit/:id) existera.
+    // Le centre de notifications (ScreenNotificationCenter) n'est pas
+    // encore câblé aux données — il ne faut donc pas le pousser ici.
     goRouter.push(AppRoutes.notificationsAlert);
   }
 
