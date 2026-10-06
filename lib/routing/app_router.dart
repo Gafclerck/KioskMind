@@ -12,6 +12,7 @@ import '../features/navigation/main_navigation_page.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/export_reporting/presentation/pages/export_page.dart';
 import '../features/products_stock/presentation/pages/add_product_page.dart';
+import '../features/products_stock/presentation/pages/product_detail_route.dart';
 import '../features/profile/presentation/pages/edit_profile_page.dart';
 import '../features/profile/presentation/pages/settings_page.dart';
 import '../features/sales/domain/entities/sale.dart';
@@ -120,6 +121,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.addProduct,
         builder: (context, state) => const AddProductPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.productDetail,
+        builder: (context, state) =>
+            ProductDetailRoute(productId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: AppRoutes.editProfile,

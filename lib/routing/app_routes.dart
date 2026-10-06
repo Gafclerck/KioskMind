@@ -6,6 +6,9 @@ abstract final class AppRoutes {
   static const String dashboard = '/dashboard';
   static const String createSale = '/sales/new';
   static const String addProduct = '/products/new';
+
+  /// Fiche produit (deep-link depuis une notification d'alerte).
+  static const String productDetail = '/product/:id';
   static const String editProfile = '/profile/edit';
   static const String settings = '/profile/settings';
   static const String settingsHelp = '/profile/settings/help';

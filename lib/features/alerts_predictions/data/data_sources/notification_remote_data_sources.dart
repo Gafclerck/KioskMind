@@ -38,11 +38,22 @@ class NotificationRemoteDataSourcesImpl
     required this.firestore,
   });
 
+  static const _canalId = 'kioskmind_alertes';
+  static const _canalNom = 'Alertes KioskMind';
+
   static const _canalAndroid = AndroidNotificationDetails(
-    'kioskmind_alertes',
-    'Alertes KioskMind',
+    _canalId,
+    _canalNom,
     importance: Importance.high,
     priority: Priority.high,
+  );
+
+  /// Le même canal que `CANAL_ALERTES` dans functions/main.py.
+  static const _canalChannel = AndroidNotificationChannel(
+    _canalId,
+    _canalNom,
+    description: 'Alertes de stock et prévisions de rupture',
+    importance: Importance.high,
   );
 
   @override
@@ -88,6 +99,23 @@ class NotificationRemoteDataSourcesImpl
         onTapNotificationLocale(data);
       },
     );
+
+    final android = local
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+
+    // Android 8+ : un canal référencé par un message FCM qui n'existe pas
+    // encore est ignoré en silence par le système. Il faut le créer AVANT
+    // la première notification reçue en arrière-plan.
+    await android.createNotificationChannel(_canalChannel);
+
+    // Android 13+ : POST_NOTIFICATIONS. firebase_messaging.requestPermission()
+    // couvre le même permission, mais celle-ci est appelée plus tard (au
+    // getToken) et un refus laisserait les notifs locales muettes sans
+    // qu'on s'en aperçoive.
+    await android.requestNotificationsPermission();
   }
 
   @override

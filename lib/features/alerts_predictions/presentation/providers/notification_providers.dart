@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiosk_mind/features/alerts_predictions/data/data_sources/notification_remote_data_sources.dart';
 import 'package:kiosk_mind/features/alerts_predictions/data/repositories/notification_repository_impl.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/repositories/notification_repository.dart';
+import 'package:kiosk_mind/features/settings/presentation/providers/settings_providers.dart';
 
 import '../../../../routing/app_router.dart';
 import '../../../../routing/app_routes.dart';
@@ -39,11 +40,15 @@ final initialiserNotificationsProvider = FutureProvider.family<void, String>((
 
   /// Reçoit TOUTES les données de la notif, peu importe lequel des
   /// 3 cas l'a déclenché.
+  ///
+  /// payload serveur : `type`, `productId`, `userId` (functions/main.py).
   void traiterDonneesNotification(Map<String, dynamic> data) {
-    // Ouvre l'écran des alertes/prédictions. Pointeur produit exact
-    // : à faire quand une route dédiée (ex: /produit/:id) existera.
-    // Le centre de notifications (ScreenNotificationCenter) n'est pas
-    // encore câblé aux données — il ne faut donc pas le pousser ici.
+    final Object? productId = data['productId'];
+    if (productId is String && productId.isNotEmpty) {
+      goRouter.push(AppRoutes.productDetail.replaceFirst(':id', productId));
+      return;
+    }
+    // Payload sans produit ciblé : on retombe sur la liste des alertes.
     goRouter.push(AppRoutes.notificationsAlert);
   }
 
@@ -63,8 +68,11 @@ final initialiserNotificationsProvider = FutureProvider.family<void, String>((
     repository.enregistrerToken(userId, nouveauToken);
   });
 
-  // Cas 1 : premier plan — rien ne s'affiche automatiquement
+  // Cas 1 : premier plan — rien ne s'affiche automatiquement.
+  // Le toggle « Alertes de stock » masque l'affichage local ; côté
+  // arrière-plan c'est le serveur qui ne part pas (voir main.py).
   repository.onMessage.listen((message) {
+    if (!ref.read(stockAlertsProvider)) return;
     repository.afficherNotificationLocale(message);
   });
 

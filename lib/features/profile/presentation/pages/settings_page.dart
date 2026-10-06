@@ -6,6 +6,7 @@ import '../../../../core/storage/app_preferences_provider.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../routing/app_routes.dart';
+import '../../../auth/presentation/providers/auth_state_provider.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 import '../../../settings/presentation/widgets/change_password_dialog.dart';
 
@@ -130,11 +131,17 @@ class SettingsPage extends ConsumerWidget {
               onChanged: (bool enabled) {
                 ref.read(stockAlertsProvider.notifier).state = enabled;
                 ref.read(appPreferencesProvider).setStockAlertsEnabled(enabled);
+                final String? uid = ref.read(authStateProvider).valueOrNull;
+                if (uid != null) {
+                  synchroniserAlerteStock(uid, enabled);
+                }
                 AppToast.show(
                   ref,
-                  message:
-                      'Préférence enregistrée — Les notifications natives '
-                      'arrivent bientôt.',
+                  message: enabled
+                      ? 'Alertes de stock activées'
+                      : 'Alertes de stock désactivées — vous ne recevrez plus '
+                            'de notification, les alertes restent visibles dans '
+                            'l\'écran Alertes.',
                   type: AppToastType.info,
                 );
               },
