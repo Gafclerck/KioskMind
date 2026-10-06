@@ -47,9 +47,18 @@ class NotificationRemoteDataSourcesImpl
 
   @override
   Future<void> enregistrerToken(String userId, String token) async {
-    await firestore.collection('users').doc(userId).update({
-      'fcmTokens': FieldValue.arrayUnion([token]),
-    });
+    try {
+      await firestore.collection('users').doc(userId).update({
+        'fcmTokens': FieldValue.arrayUnion([token]),
+      });
+    } catch (erreur) {
+      // Pas de re-création du document : un users/{uid} partiel casserait
+      // les autres lecteurs (name, language...). On laisse plutôt l'init
+      // des notifications continuer — sans quoi AUCUN listener FCM ne
+      // serait posé et l'app ne recevrait plus du tout de notification.
+      // ignore: avoid_print
+      print('[notifications] Enregistrement du token impossible : $erreur');
+    }
   }
 
   @override
