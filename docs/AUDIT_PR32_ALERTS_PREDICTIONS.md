@@ -275,3 +275,79 @@ notifications en premier plan. **Seul Android est réellement testé.**
 
 12. iOS/macOS (`DarwinInitializationSettings`), fuseau du schedule, `channel_id` FCM,
     scaling d'UC14, assainissement de `CardAlert`.
+
+---
+
+## 8. Correctifs appliqués sur `feat/alert-prediction`
+
+Branche créée depuis `origin/develop` puis merge de `origin/feature/alertPrediction`
+(`c7fcb8d`), afin de conserver les derniers correctifs de `develop` (TTS, `formatCfa`).
+Conflit sur `sales_dashboard_page.dart` résolu en faveur de `develop` : le PR portait
+l'ancienne version dupliquée.
+
+### P0 traité
+
+| # | Correction | Commit |
+|---|---|---|
+| 1 | `_kUseEmulator` derrière `--dart-define=ALERTS_EMULATOR` (désactivé par défaut, plus de booléen à éditer) | `a69b025` |
+| 2 | `functions/requirements.txt` ré-encodé en UTF-8 (était UTF-16LE BOM) | `16a4a2f` |
+| 3 | `NEGATIVE_STOCK` résolu dans la branche `elif`, `PREDICTED_STOCKOUT` dans la branche `else` | `6cf5272` |
+| 4 | `max(1, round(jours))` pour la notification et `estimatedDaysLeft` | `6cf5272` |
+| 5 | `notifiedAt` écrit seulement si `_envoyer_notification` renvoie `True` (fonction désormais `-> bool`) | `6cf5272` |
+
+### P1 traité
+
+| # | Correction | Commit |
+|---|---|---|
+| 6 | AppBar avec retour ajoutée à `AlertPredictionScreen` | `1e7b136` |
+| 7 | `ScreenNotificationCenter` câblé à `activeAlertsProvider` + routé (`/notification-center`) | `a2c85a2`, `f273adb` |
+| 8 | `enregistrerToken` protégé en `try/catch` (un échec n'abandonne plus l'init FCM) | `6c19bab` |
+| 9 | Tests : 19 tests Python de la machine à états UC13/UC14 + 8 tests Dart du mapping `AlertsModel` | `7b1b728` |
+| 10 | `firestore.rules` **proposé** à la racine (non déployé, non référencé par `firebase.json`) | `b869cf8` |
+| 11 | `dart format` sur tout le feature (`eb5d59d`) ; `macos/GeneratedPluginRegistrant` régénéré sans `firebase_storage` (`51a9241`) | |
+
+### Fonctionnalités complétées
+
+- `Alert.readAt` / `estLue`, `AlertsRepository.markAllAsRead` (batch Firestore).
+- `AlertsModel.fromMap(id, data)` : testable, champs null-tolérants, `readAt` mappé.
+- `alertsRepositoryProvider` extrait d'`activeAlertsProvider` (réutilisé par le centre).
+- `CardAlert.onPressed` : boutons « Commander » et « Planifier » ouvrent le
+  saisir-mouvement de stock en entrée (`RecordStockMovementPage`, type `inbound`),
+  avec `SnackBar` si le produit n'est pas retrouvé.
+- `alert_messages.dart` (`titreAlerte` / `messageAlerte`) : une seule source de
+  libellés pour l'écran d'alertes et le centre de notifications.
+- `core/formatting/relative_time.dart` (`formatRelativeTime`) : sans dépendance
+  `intl` (déjà utilisée implicitement, évite d'ajouter un import).
+- Centre de notifications : regroupement AUJOURD'HUI / PLUS TÔT, états
+  loading/error/empty, bouton « Tout lire » → `markAllAsRead`, pastille `isUnread`.
+
+### `firestore.rules` (à valider, PAS déployé)
+
+Proposition non référencée par `firebase.json` : aucun risque de déploiement
+accidentel. Pour la valider, cf. l'en-tête du fichier. Résumé :
+
+- `users/{uid}` et ses sous-collections (`products`, `sales`, `dailyStats`,
+  `stockMovements`) : accès strictement limité à `request.auth.uid == uid`.
+- `alerts` (top-level, `{productId}_{type}`) : lecture réservée au propriétaire
+  (`userId == auth.uid`) ; **création et suppression refusées au client** (Admin
+  SDK des Cloud Functions uniquement) ; mise à jour limitée au champ `readAt`.
+- Toute autre collection : refusé par défaut.
+
+### Validations exécutées
+
+- `dart format` : 18 fichiers, 4 reformattés.
+- `flutter analyze` : **0 issue** (146 s).
+- `flutter test test/alerts_predictions` : **8/8 OK**.
+- `python3 functions/tests/test_alert_state_machine.py` : **19/19 OK**.
+- Harness d'audit `/tmp/opencode/audit_harness/test_uc13_uc14.py` : **tous les
+  checks passent** (14 checks sur `functions/main.py`).
+- `flutter test test/products_stock/stock_overview_provider_test.dart` : **+6 OK**.
+
+### Non exécutés / connus
+
+- `flutter test test/routing test/sales` : **échec d'environnement**, pas de
+  régression identifiée — `C:\` plein à 100 % (errno 112) ; le compilateur de tests
+  Flutter écrit dans `C:\Users\Hp\AppData\Local\Temp`. À relancer après libération
+  de `C:`.
+- Non traité (P2, hors périmètre) : iOS/macOS, fuseau du `schedule`, `channel_id`
+  FCM, scaling d'UC14, assainissement de `CardAlert`.
