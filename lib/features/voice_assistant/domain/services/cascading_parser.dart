@@ -28,8 +28,8 @@ final class CascadingParser implements IntentParser {
     required this.connectivity,
     required this.circuitBreaker,
     this.journal,
-    this.timeBudget = const Duration(milliseconds: 2000),
-  });
+      Duration? timeBudget,
+  }) : timeBudget = timeBudget ?? _defaultTimeBudget;
 
   final IntentParser local;
   final CloudIntentParser cloud;
@@ -40,7 +40,26 @@ final class CascadingParser implements IntentParser {
   /// without one, and so the cascade can be built in a context that does not care.
   final ParseOutcomeJournal? journal;
 
-  final Duration timeBudget;
+  Duration timeBudget;
+
+  static const Duration _defaultTimeBudget = Duration(milliseconds: 4500);
+  static const Duration _remoteTimeBudget = Duration(milliseconds: 4500);
+  static const Duration _localCriticalTimeBudget = Duration(milliseconds: 3500);
+
+  void setTimeBudget({
+    required bool isRemoteCloud,
+    required bool isLocalCriticalPath,
+  }) {
+    if (isRemoteCloud) {
+      timeBudget = _remoteTimeBudget;
+      return;
+    }
+    if (isLocalCriticalPath) {
+      timeBudget = _localCriticalTimeBudget;
+      return;
+    }
+    timeBudget = _defaultTimeBudget;
+  }
 
   @override
   Future<CommandProposal> parse(String raw) async {
