@@ -26,4 +26,15 @@ class AlertsRepositoryImpl implements AlertsRepository {
           return alerts;
         });
   }
+
+  @override
+  Future<void> markAllAsRead(List<String> alertIds) async {
+    if (alertIds.isEmpty) return;
+    final batch = firestore.batch();
+    final lue = Timestamp.fromDate(DateTime.now().toUtc());
+    for (final id in alertIds) {
+      batch.update(firestore.collection('alerts').doc(id), {'readAt': lue});
+    }
+    await batch.commit();
+  }
 }

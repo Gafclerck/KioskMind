@@ -14,6 +14,9 @@ class AlertsModel {
   final String status; // "ACTIVE" ou "RESOLVED"
   final DateTime createdAt;
 
+  /// Date de lecture (centre de notifications), null = alerte non lue.
+  final DateTime? readAt;
+
   const AlertsModel({
     required this.id,
     required this.type,
@@ -23,21 +26,31 @@ class AlertsModel {
     this.estimatedDaysLeft,
     required this.status,
     required this.createdAt,
+    this.readAt,
   });
 
   /// Construit le modèle à partir d'un document Firestore — gère le
   /// type Timestamp natif, contrairement à un simple DateTime.parse().
   factory AlertsModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    return AlertsModel.fromMap(doc.id, doc.data() as Map<String, dynamic>?);
+  }
+
+  /// Variante testable sans Firestore : [data] peut être null pour un
+  /// document vide (les champs ont alors des valeurs par défaut plutôt
+  /// qu'une exception au milieu d'une liste d'alertes).
+  factory AlertsModel.fromMap(String id, Map<String, dynamic>? data) {
+    final valeurs = data ?? const <String, dynamic>{};
     return AlertsModel(
-      id: doc.id,
-      type: data['type'] as String,
-      productId: data['productId'] as String,
-      productName: data['productName'] as String? ?? '',
-      stockAtCreation: (data['stockAtCreation'] as num?)?.toInt() ?? 0,
-      estimatedDaysLeft: (data['estimatedDaysLeft'] as num?)?.toInt(),
-      status: data['status'] as String,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      id: id,
+      type: valeurs['type'] as String? ?? '',
+      productId: valeurs['productId'] as String? ?? '',
+      productName: valeurs['productName'] as String? ?? '',
+      stockAtCreation: (valeurs['stockAtCreation'] as num?)?.toInt() ?? 0,
+      estimatedDaysLeft: (valeurs['estimatedDaysLeft'] as num?)?.toInt(),
+      status: valeurs['status'] as String? ?? 'ACTIVE',
+      createdAt:
+          (valeurs['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      readAt: (valeurs['readAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -50,6 +63,7 @@ class AlertsModel {
     estimatedDaysLeft: estimatedDaysLeft,
     status: status == 'ACTIVE' ? AlertStatus.active : AlertStatus.resolved,
     createdAt: createdAt,
+    readAt: readAt,
   );
 
   static AlertType _typeFromString(String value) {
@@ -61,6 +75,8 @@ class AlertsModel {
       case 'PREDICTED_STOCKOUT':
         return AlertType.predictedStockout;
       default:
+        // Type inconnu (données d'une version plus récente, corruption) :
+        // on affiche l'alerte en "stock bas" plutôt que de planter la liste.
         return AlertType.lowStock;
     }
   }

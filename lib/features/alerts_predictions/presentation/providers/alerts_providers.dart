@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kiosk_mind/features/alerts_predictions/data/repositories/alert_repository_impl.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/entities/alert.dart';
+import 'package:kiosk_mind/features/alerts_predictions/domain/repositories/alerts_repository.dart';
 import 'package:kiosk_mind/firebase_options.dart';
 
 // ── Test local avec l'émulateur (alerts_predictions uniquement) ──────
@@ -41,10 +42,13 @@ Future<FirebaseFirestore> _emulatorFirestore() async {
 }
 // ───────────────────────────────────────────────────────────────────
 
-/// StreamProvider "async*" : peut attendre (await) avant de produire
-/// le flux réel — utile ici pour résoudre l'instance Firestore à
-/// utiliser avant de lancer la vraie requête.
-final activeAlertsProvider = StreamProvider<List<Alert>>((ref) async* {
+/// Instance Firestore + uid à utiliser pour les alertes (émulateur ou
+/// production). Partagé par tous les providers du feature pour éviter
+/// de dupliquer la logique.
+///
+/// - émulateur : instance secondaire isolée, uid fixe `test_alerts_uid`
+/// - production : instance principale, uid de l'utilisateur connecté
+final alertsRepositoryProvider = FutureProvider<AlertsRepository>((ref) async {
   final String firestoreInstanceDescription;
   final FirebaseFirestore firestore;
   final String uid;
@@ -64,6 +68,13 @@ final activeAlertsProvider = StreamProvider<List<Alert>>((ref) async* {
   // ignore: avoid_print
   print('[alerts] Lecture depuis $firestoreInstanceDescription, uid=$uid');
 
-  final repository = AlertsRepositoryImpl(firestore: firestore, userId: uid);
+  return AlertsRepositoryImpl(firestore: firestore, userId: uid);
+});
+
+/// StreamProvider "async*" : peut attendre (await) avant de produire
+/// le flux réel — utile ici pour résoudre l'instance Firestore à
+/// utiliser avant de lancer la vraie requête.
+final activeAlertsProvider = StreamProvider<List<Alert>>((ref) async* {
+  final repository = await ref.watch(alertsRepositoryProvider.future);
   yield* repository.watchActiveAlerts();
 });
