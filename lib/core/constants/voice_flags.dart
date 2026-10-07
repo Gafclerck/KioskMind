@@ -22,7 +22,7 @@ const bool kVoiceUseMocks = bool.fromEnvironment(
 /// was. Silently answering from the rules is the one outcome nobody could diagnose.
 const bool kVoiceEnableCloud = bool.fromEnvironment(
   'VOICE_ENABLE_CLOUD',
-  defaultValue: false,
+  defaultValue: true,
 );
 
 /// The Google Gemini API key used for direct Cloud NLU parsing when provided.
