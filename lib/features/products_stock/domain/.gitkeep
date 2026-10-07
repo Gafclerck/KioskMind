@@ -1,1 +1,0 @@
-Entites (Product, StockMovement), use cases (CreateProduct, UpdateProduct, DeleteProduct, AddStockEntry, AddManualStockExit, GetStockStatus)

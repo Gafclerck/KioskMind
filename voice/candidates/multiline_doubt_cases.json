@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "currency": "XOF",
+  "catalog": "voice/golden/catalog_fixture.json",
+  "note": "Candidats pour le jeu fige, a faire relire par l'humain. Ecarts ici, pas dans voice/golden/ : ce fichier ne fait pas partie du jeu fige et n'est pas execute par la porte de sortie.",
+  "why": "Chaque cas porte un doute sur une ligne qui n'est pas la premiere. Avant la correction, la reponse completait la premiere ligne : un article nomme par le commerçant disparaissait et un autre recevait son compte, sans que rien ne le dise.",
+  "cases": [
+    {
+      "id": "c001",
+      "utterance": "vendu deux sucres et de l'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_huile_palme",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "ambiguousProduct",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "multi_items",
+        "ambiguous_product"
+      ],
+      "notes": "Le doubt porte sur l'huile, citee en deuxieme. La ligne sucre doit rester, et l'huile vaut une unite : le commerçant n'a pas dit de compte pour elle."
+    },
+    {
+      "id": "c002",
+      "utterance": "vendu de l'huile, deux sucres et trois laits",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_lait",
+              "qty": 3
+            },
+            {
+              "productId": "p_huile_palme",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "ambiguousProduct",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "multi_items",
+        "ambiguous_product"
+      ],
+      "notes": "Le doubt porte sur la premiere ligne d'une phrase a trois articles. Les deux autres doivent rester intactes."
+    },
+    {
+      "id": "c003",
+      "utterance": "vendu deux laits et du sucre",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 2
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 3
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "missingQuantity",
+            "value": 3
+          }
+        ]
+      },
+      "tags": [
+        "multi_items",
+        "missing_slot"
+      ],
+      "notes": "Le doute porte sur la quantite du sucre, cite en deuxieme. Le lait doit rester : il est complet."
+    },
+    {
+      "id": "c004",
+      "utterance": "vendu du sucre, deux laits et trois eaux",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_lait",
+              "qty": 2
+            },
+            {
+              "productId": "p_eau",
+              "qty": 3
+            },
+            {
+              "productId": "p_sucre",
+              "qty": 3
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "missingQuantity",
+            "value": 3
+          }
+        ]
+      },
+      "tags": [
+        "multi_items",
+        "missing_slot"
+      ],
+      "notes": "Le doute porte sur la premiere ligne d'une phrase a trois articles, cote quantite cette fois."
+    },
+    {
+      "id": "c005",
+      "utterance": "vendu deux sucres a sept cent cinquante et de l'huile",
+      "expected": {
+        "outcome": "ASK_CLARIFICATION",
+        "intent": "record_sale",
+        "handlerArgs": {
+          "items": [
+            {
+              "productId": "p_sucre",
+              "qty": 2
+            },
+            {
+              "productId": "p_huile_palme",
+              "qty": 1
+            }
+          ]
+        },
+        "resolution": [
+          {
+            "slot": "ambiguousProduct",
+            "value": "huile de palme"
+          }
+        ]
+      },
+      "tags": [
+        "multi_items",
+        "ambiguous_product",
+        "price"
+      ],
+      "notes": "Le montant annonce sur la premiere ligne ne doit pas etre reporte sur la ligne completee par la reponse : 750 francs pour du sucre ne dit rien du prix de l'huile."
+    }
+  ]
+}

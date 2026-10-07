@@ -7,6 +7,21 @@
 
 # The following line activates a set of recommended lints for Flutter apps,
 # packages, and plugins designed to encourage good coding practices.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+    # Le spike STT est un paquet Dart separe, avec son propre pubspec.yaml et ses
+    # propres dependances (speech_to_text, flutter_tts) qui n'entrent pas dans le
+    # pubspec.yaml principal. Sans cette exclusion, l'analyseur racine descend
+    # dans spikes/ et echoue sur des URI non resolus des le premier clone frais,
+    # donc en CI. Mesure et verifie en 0.5.
+    - spikes/**
 include: package:flutter_lints/flutter.yaml
 
 linter:
