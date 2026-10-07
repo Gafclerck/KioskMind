@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'cloud_call_failure.dart';
 import 'direct_gemini_caller.dart';
@@ -134,40 +134,23 @@ final class RodiumAiCaller {
     Map<String, dynamic> body, {
     Duration timeout = const Duration(milliseconds: 2000),
   }) async {
-    final HttpClient client = HttpClient();
-    try {
-      final HttpClientRequest request = await client
-          .postUrl(uri)
-          .timeout(timeout);
-      headers.forEach(request.headers.set);
-      final String jsonBody = jsonEncode(body);
-      request.headers.contentType = ContentType.json;
-      request.write(jsonBody);
+    final http.Response response = await http
+        .post(uri, headers: headers, body: jsonEncode(body))
+        .timeout(timeout);
 
-      final HttpClientResponse response = await request.close().timeout(
-        timeout,
-      );
-      final String responseBody = await utf8
-          .decodeStream(response)
-          .timeout(timeout);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final dynamic decoded = jsonDecode(responseBody);
-        if (decoded is Map<String, dynamic>) {
-          return decoded;
-        } else if (decoded is Map) {
-          return Map<String, dynamic>.from(decoded);
-        }
-      } else {
-        throw CloudCallFailure.fromResponse(
-          'Rodium AI',
-          response.statusCode,
-          responseBody,
-        );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      } else if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
-    } finally {
-      client.close();
     }
+    throw CloudCallFailure.fromResponse(
+      'Rodium AI',
+      response.statusCode,
+      response.body,
+    );
   }
 }
