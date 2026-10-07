@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kiosk_mind/core/firestore/offline_commit.dart';
 
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/stock_movement_repository.dart';
@@ -24,24 +25,35 @@ class StockMovementRepositoryImpl implements StockMovementRepository {
   final CollectionReference<Map<String, dynamic>> _movements;
 
   @override
-  Future<void> recordMovement(StockMovement movement) {
+  Future<void> recordMovement(StockMovement movement) async {
     final productRef = _products.doc(movement.productId);
     final movementRef = movement.id.isNotEmpty
         ? _movements.doc(movement.id)
         : _movements.doc();
 
-    // Transaction Firestore : le mouvement et la quantité du produit sont
-    // écrits ensemble. Sans cela un incident entre les deux écritures laisse
-    // le stock incohérent avec l'historique.
-    return _firestore.runTransaction<void>((transaction) async {
-      if (movement.id.isNotEmpty) {
-        final existingMovement = await transaction.get(movementRef);
+    // Idempotence en cas de rejeu. Hors-ligne sans cache, l'id stable du
+    // mouvement fait le même travail : le brouillon local ne sera appliqué
+    // qu'une fois au moment du sync.
+    if (movement.id.isNotEmpty) {
+      try {
+        final existingMovement = await movementRef.get();
         if (existingMovement.exists) {
-          // Déjà enregistré (idempotence en cas de rejeu)
           return;
         }
+      } on Exception {
+        // Lecture impossible (offline, cache froid) : on poursuit.
       }
-      final productSnapshot = await transaction.get(productRef);
+    }
+
+    // Le mouvement et la quantité du produit sont écrits ensemble dans un
+    // batch. Une transaction serait plus stricte mais ne peut jamais être
+    // servie hors-ligne : Firestore ne propose pas de transaction offline.
+    // La file locale synchronisera le batch au retour du réseau.
+    final batch = _firestore.batch();
+
+    final DocumentSnapshot<Map<String, dynamic>>? productSnapshot =
+        await _tryRead(productRef);
+    if (productSnapshot != null) {
       final data = productSnapshot.data();
       if (data == null) {
         throw const StockMovementFailure(
@@ -59,9 +71,33 @@ class StockMovementRepositoryImpl implements StockMovementRepository {
         );
       }
 
-      transaction.update(productRef, {'quantity': nextQuantity});
-      transaction.set(movementRef, StockMovementModel.toFirestore(movement));
-    });
+      batch.update(productRef, {'quantity': nextQuantity});
+    } else {
+      // Produit illisible (offline, cache froid) : la quantité exacte est
+      // inconnue, on ne peut pas la garder. L'incrément appliquera le
+      // mouvement de façon sûre au moment du sync ; la garde de stock
+      // négatif n'est simplement pas vérifiable ici.
+      batch.update(
+        productRef,
+        {'quantity': FieldValue.increment(movement.signedQuantity)},
+      );
+    }
+
+    batch.set(movementRef, StockMovementModel.toFirestore(movement));
+    await commitOffline(batch);
+  }
+
+  /// Reads [ref] or answers null when the read cannot succeed (offline, cache
+  /// froid). A genuine "document has no data" is reported by [productSnapshot]
+  /// as data() == null, so this never hides a missing product behind a null.
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _tryRead(
+    DocumentReference<Map<String, dynamic>> ref,
+  ) async {
+    try {
+      return await ref.get();
+    } on Exception {
+      return null;
+    }
   }
 
   @override
