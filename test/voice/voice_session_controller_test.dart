@@ -234,6 +234,58 @@ void main() {
       expect(harness.state.message, isNull);
       expect(harness.state.canListen, isTrue);
     });
+
+    test('submits what was heard when the engine finalises blank', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hear('vendu deux savon');
+      expect(harness.state.lastHeard, 'vendu deux savon');
+
+      harness.recognizer.hearFinal('');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(harness.intentsCalled, <String>['record_sale']);
+      expect(harness.recognizer.stopCount, 1);
+      expect(harness.recognizer.cancelCount, 1);
+    });
+
+    test('ignores a blank final when nothing was heard', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+
+      harness.recognizer.hearFinal('');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(harness.intentsCalled, isEmpty);
+      expect(harness.recognizer.stopCount, 0);
+      expect(harness.recognizer.cancelCount, 0);
+      expect(harness.state.status, VoiceSessionStatus.listening);
+    });
+
+    test('keeps the transcript when an interim comes back blank', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+      await harness.controller.startListening();
+      harness.recognizer.hear('vendu deux');
+      expect(harness.state.lastHeard, 'vendu deux');
+
+      harness.recognizer.hear('');
+
+      expect(harness.state.lastHeard, 'vendu deux');
+      expect(harness.state.status, VoiceSessionStatus.listening);
+    });
+
+    test('submit with an empty text does nothing', () async {
+      final SessionHarness harness = SessionHarness();
+      addTearDown(harness.dispose);
+
+      await harness.controller.submit('');
+
+      expect(harness.intentsCalled, isEmpty);
+      expect(harness.state.status, VoiceSessionStatus.idle);
+    });
   });
 
   group('a command that runs', () {
