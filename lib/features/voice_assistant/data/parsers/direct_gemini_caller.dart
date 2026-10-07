@@ -28,7 +28,7 @@ final class DirectGeminiCaller {
     required this.apiKey,
     required this.systemPrompt,
     this.model = 'gemini-1.5-flash',
-    this.timeout = const Duration(milliseconds: 2000),
+    this.timeout = const Duration(seconds: 10),
     HttpJsonPoster? httpPoster,
   }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
 
@@ -148,7 +148,7 @@ final class DirectGeminiCaller {
     Uri uri,
     Map<String, String> headers,
     Map<String, dynamic> body, {
-    Duration timeout = const Duration(milliseconds: 2000),
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     final http.Response response = await http
         .post(uri, headers: headers, body: jsonEncode(body))

@@ -24,7 +24,7 @@ final class RodiumAiCaller {
     required this.systemPrompt,
     this.baseUrl = 'https://api.rodiumai.io/v1',
     this.model = 'google/gemini-2.5-flash',
-    this.timeout = const Duration(milliseconds: 2000),
+    this.timeout = const Duration(seconds: 10),
     HttpJsonPoster? httpPoster,
   }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
 
@@ -132,7 +132,7 @@ final class RodiumAiCaller {
     Uri uri,
     Map<String, String> headers,
     Map<String, dynamic> body, {
-    Duration timeout = const Duration(milliseconds: 2000),
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     final http.Response response = await http
         .post(uri, headers: headers, body: jsonEncode(body))
