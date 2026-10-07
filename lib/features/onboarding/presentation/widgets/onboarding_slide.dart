@@ -22,18 +22,11 @@ class OnboardingSlide extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              SizedBox(
                 width: 280,
                 height: 280,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.colorScheme.primaryContainer,
-                ),
                 child: Image.asset(
                   image,
-                  width: 220,
-                  height: 220,
                   fit: BoxFit.contain,
                 ),
               ),
