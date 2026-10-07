@@ -3,7 +3,6 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/command_prop
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/doubt.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/cloud_intent_parser.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/cascading_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/circuit_breaker.dart';
@@ -13,7 +12,6 @@ import 'fake_clock.dart';
 void main() {
   late FakeClock clock;
   late CircuitBreaker breaker;
-  late _FakeConnectivityProbe connectivity;
   late _FakeCloudParser cloud;
   late _FakeLocalParser local;
   late CascadingParser cascading;
@@ -37,19 +35,17 @@ void main() {
       failureThreshold: 2,
       resetTimeout: const Duration(seconds: 15),
     );
-    connectivity = _FakeConnectivityProbe(online: true);
     cloud = _FakeCloudParser(result: cloudProposal);
     local = _FakeLocalParser(result: localProposal);
     cascading = CascadingParser(
       local: local,
       cloud: cloud,
-      connectivity: connectivity,
       circuitBreaker: breaker,
       timeBudget: const Duration(milliseconds: 100),
     );
   });
 
-  test('when online and circuit closed, uses cloud proposal', () async {
+  test('when circuit closed, uses cloud proposal', () async {
     final CommandProposal proposal = await cascading.parse('vendu deux sucres');
 
     expect(proposal.origin, ProposalOrigin.languageModel);
@@ -57,21 +53,6 @@ void main() {
     expect(local.callCount, 0);
     expect(breaker.state, CircuitState.closed);
   });
-
-  test(
-    'when offline, skips cloud parser and uses local parser immediately',
-    () async {
-      connectivity.online = false;
-
-      final CommandProposal proposal = await cascading.parse(
-        'vendu deux sucres',
-      );
-
-      expect(proposal.origin, ProposalOrigin.rules);
-      expect(cloud.callCount, 0);
-      expect(local.callCount, 1);
-    },
-  );
 
   test(
     'when circuit breaker is open, skips cloud parser and uses local parser',
@@ -157,15 +138,6 @@ void main() {
       expect(cloud.callCount, 2);
     },
   );
-}
-
-final class _FakeConnectivityProbe implements ConnectivityProbe {
-  _FakeConnectivityProbe({required this.online});
-
-  bool online;
-
-  @override
-  Future<bool> get isOnline => Future<bool>.value(online);
 }
 
 final class _FakeCloudParser implements CloudIntentParser {

@@ -3,15 +3,6 @@ import 'package:kiosk_mind/features/voice_assistant/data/formulator/ai_message_f
 import 'package:kiosk_mind/features/voice_assistant/data/formulator/cascading_message_formulator.dart';
 import 'package:kiosk_mind/features/voice_assistant/data/formulator/offline_natural_formulator.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/fact_result.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
-
-class _FakeConnectivityProbe implements ConnectivityProbe {
-  _FakeConnectivityProbe(this.online);
-  final bool online;
-
-  @override
-  Future<bool> get isOnline async => online;
-}
 
 void main() {
   group('OfflineNaturalFormulator', () {
@@ -92,42 +83,6 @@ void main() {
   });
 
   group('CascadingMessageFormulator', () {
-    test('uses offline natural formulation when offline', () async {
-      final OfflineNaturalFormulator offline = const OfflineNaturalFormulator();
-      final AiMessageFormulator ai = AiMessageFormulator(
-        apiKey: 'test-key',
-        httpPoster:
-            (uri, headers, body, {timeout = const Duration(seconds: 1)}) async {
-              throw Exception('Should not be called when offline');
-            },
-      );
-
-      final CascadingMessageFormulator cascading = CascadingMessageFormulator(
-        aiFormulator: ai,
-        offlineFormulator: offline,
-        connectivity: _FakeConnectivityProbe(false),
-      );
-
-      const FactResult fact = FactResult(
-        operation: 'record_sale',
-        data: <String, dynamic>{
-          'items': <Map<String, dynamic>>[
-            <String, dynamic>{'product': 'Lait', 'qty': 3},
-          ],
-          'total': 3000,
-        },
-      );
-
-      final String result = await cascading.formulate(
-        userUtterance: 'vends 3 laits',
-        facts: [fact],
-        staticFallback: 'Vente enregistrée.',
-      );
-
-      expect(result, contains('Lait'));
-      expect(result, contains('trois mille FCFA'));
-    });
-
     test('falls back to offline natural formulation if AI throws', () async {
       final OfflineNaturalFormulator offline = const OfflineNaturalFormulator();
       final AiMessageFormulator ai = AiMessageFormulator(
@@ -141,7 +96,6 @@ void main() {
       final CascadingMessageFormulator cascading = CascadingMessageFormulator(
         aiFormulator: ai,
         offlineFormulator: offline,
-        connectivity: _FakeConnectivityProbe(true),
       );
 
       const FactResult fact = FactResult(

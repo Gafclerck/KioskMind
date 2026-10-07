@@ -8,7 +8,6 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/decision_out
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/parse_route.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/cloud_intent_parser.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/cascading_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/local_only_parser.dart';
 
@@ -42,25 +41,6 @@ final class _StubCloudParser implements CloudIntentParser {
     callCount += 1;
     return proposal;
   }
-}
-
-final class _StubConnectivityProbe implements ConnectivityProbe {
-  _StubConnectivityProbe({required this.online});
-
-  bool online;
-
-  @override
-  Future<bool> get isOnline => Future<bool>.value(online);
-}
-
-/// A probe that counts, so a test can assert a route that was never taken.
-final class _CountingConnectivityProbe implements ConnectivityProbe {
-  _CountingConnectivityProbe(this.delegate);
-
-  final Future<bool> Function() delegate;
-
-  @override
-  Future<bool> get isOnline => delegate();
 }
 
 void main() {
@@ -97,13 +77,6 @@ void main() {
     test(
       'says noCredential instead of reaching the network without a key',
       () async {
-        final stubConnectivity = _StubConnectivityProbe(online: true);
-        int probeCount = 0;
-        final countingProbe = _CountingConnectivityProbe(() {
-          probeCount += 1;
-          return stubConnectivity.isOnline;
-        });
-
         final container = ProviderContainer(
           overrides: [
             voiceMockCatalogProvider.overrideWith((ref) async => catalog),
@@ -111,7 +84,6 @@ void main() {
             voiceEnableCloudProvider.overrideWithValue(true),
             voiceRodiumApiKeyProvider.overrideWithValue(''),
             voiceGeminiApiKeyProvider.overrideWithValue(''),
-            voiceConnectivityProbeProvider.overrideWithValue(countingProbe),
           ],
         );
         addTearDown(container.dispose);
@@ -124,10 +96,9 @@ void main() {
           ParseRouteReason.noCredential,
         );
 
-        // Le verrou cree par ce choix: sans cle, pas de sonde reseau par utterance,
-        // donc pas de 600 ms de latence payee pour apprendre un fait connu au demarrage.
+        // Without a key the parser never touches the network, so the cloud is
+        // never paid for on a command the rules can answer at startup.
         await parser.parse('vendu deux sucres');
-        expect(probeCount, equals(0));
       },
     );
 
@@ -161,7 +132,6 @@ void main() {
       'uses CascadingParser when cloud is on and a key is present',
       () async {
         final stubCloud = _StubCloudParser();
-        final stubConnectivity = _StubConnectivityProbe(online: true);
 
         final container = ProviderContainer(
           overrides: [
@@ -172,7 +142,6 @@ void main() {
             voiceCloudIntentParserProvider.overrideWith(
               (ref) async => stubCloud,
             ),
-            voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
           ],
         );
         addTearDown(container.dispose);
@@ -194,7 +163,6 @@ void main() {
             origin: ProposalOrigin.languageModel,
           ),
         );
-        final stubConnectivity = _StubConnectivityProbe(online: true);
 
         final container = ProviderContainer(
           overrides: [
@@ -205,7 +173,6 @@ void main() {
             voiceCloudIntentParserProvider.overrideWith(
               (ref) async => stubCloud,
             ),
-            voiceConnectivityProbeProvider.overrideWithValue(stubConnectivity),
           ],
         );
         addTearDown(container.dispose);

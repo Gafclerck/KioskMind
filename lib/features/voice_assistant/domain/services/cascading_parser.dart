@@ -3,18 +3,17 @@ import 'dart:async';
 import '../entities/command_proposal.dart';
 import '../entities/parse_route.dart';
 import '../ports/cloud_intent_parser.dart';
-import '../ports/connectivity_probe.dart';
 import '../ports/intent_parser.dart';
 import '../ports/parse_outcome_journal.dart';
 import 'circuit_breaker.dart';
 
 /// Orchestrates utterance interpretation across cloud (T2) and local (T1) parsers.
 ///
-/// When the device is online and the circuit breaker allows an attempt, it gives the
-/// cloud parser a strict time budget. If the cloud call succeeds and returns a
-/// proposal, the circuit breaker records success. If the device is offline, the
-/// circuit is open, or the cloud call times out or fails, the parser falls back
-/// immediately to the local rule-based parser on the exact same transcript.
+/// When the circuit breaker allows an attempt, it gives the cloud parser a strict
+/// time budget. If the cloud call succeeds and returns a proposal, the circuit
+/// breaker records success. If the circuit is open, or the cloud call times out or
+/// fails, the parser falls back immediately to the local rule-based parser on the
+/// exact same transcript.
 ///
 /// Every one of those routes ends in the same thing the merchant hears, so each of
 /// them is also recorded in [journal]. Falling back silently is what made this
@@ -25,7 +24,6 @@ final class CascadingParser implements IntentParser {
   CascadingParser({
     required this.local,
     required this.cloud,
-    required this.connectivity,
     required this.circuitBreaker,
     this.journal,
       Duration? timeBudget,
@@ -33,7 +31,6 @@ final class CascadingParser implements IntentParser {
 
   final IntentParser local;
   final CloudIntentParser cloud;
-  final ConnectivityProbe connectivity;
   final CircuitBreaker circuitBreaker;
 
   /// Where the route taken is recorded. Optional so a test can drive the cascade
@@ -63,10 +60,6 @@ final class CascadingParser implements IntentParser {
 
   @override
   Future<CommandProposal> parse(String raw) async {
-    final bool online = await connectivity.isOnline;
-    if (!online) {
-      return _local(raw, ParseRouteReason.offline);
-    }
     if (!circuitBreaker.canAttempt()) {
       return _local(raw, ParseRouteReason.circuitOpen);
     }

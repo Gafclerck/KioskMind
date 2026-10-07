@@ -11,7 +11,6 @@ import 'package:kiosk_mind/features/voice_assistant/domain/entities/parse_route.
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/product_snapshot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/entities/slot.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/cloud_intent_parser.dart';
-import 'package:kiosk_mind/features/voice_assistant/domain/ports/connectivity_probe.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/ports/intent_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/cascading_parser.dart';
 import 'package:kiosk_mind/features/voice_assistant/domain/services/circuit_breaker.dart';
@@ -36,15 +35,6 @@ ProductSnapshot _product(String id, {required String name}) {
     averageDailyQty: 1,
     isArchived: false,
   );
-}
-
-final class _Connectivity implements ConnectivityProbe {
-  _Connectivity(this.online);
-
-  bool online;
-
-  @override
-  Future<bool> get isOnline async => online;
 }
 
 final class _Cloud implements CloudIntentParser {
@@ -84,7 +74,7 @@ void main() {
       journal.record(
         ParseRouteEvent(
           utterance: 'premiere',
-          reason: ParseRouteReason.offline,
+          reason: ParseRouteReason.timeout,
         ),
       );
       journal.record(
@@ -107,7 +97,7 @@ void main() {
         journal.record(
           ParseRouteEvent(
             utterance: 'phrase $i',
-            reason: ParseRouteReason.offline,
+            reason: ParseRouteReason.timeout,
           ),
         );
       }
@@ -120,7 +110,7 @@ void main() {
     test('la lecture ne donne pas la main courante', () {
       final InMemoryParseOutcomeJournal journal = InMemoryParseOutcomeJournal();
       journal.record(
-        ParseRouteEvent(utterance: 'phrase', reason: ParseRouteReason.offline),
+        ParseRouteEvent(utterance: 'phrase', reason: ParseRouteReason.timeout),
       );
 
       expect(() => journal.events.clear(), throwsUnsupportedError);
@@ -131,7 +121,7 @@ void main() {
 
       expect(
         () => journal.record(
-          ParseRouteEvent(utterance: 'x', reason: ParseRouteReason.offline),
+          ParseRouteEvent(utterance: 'x', reason: ParseRouteReason.timeout),
         ),
         returnsNormally,
       );
@@ -178,7 +168,6 @@ void main() {
     late InMemoryParseOutcomeJournal journal;
     late FakeClock clock;
     late CircuitBreaker breaker;
-    late _Connectivity connectivity;
     late _Cloud cloud;
     late _Local local;
     late CascadingParser cascading;
@@ -198,13 +187,11 @@ void main() {
         failureThreshold: 2,
         resetTimeout: const Duration(seconds: 30),
       );
-      connectivity = _Connectivity(true);
       cloud = _Cloud(result: answered);
       local = _Local();
       cascading = CascadingParser(
         local: local,
         cloud: cloud,
-        connectivity: connectivity,
         circuitBreaker: breaker,
         journal: journal,
         timeBudget: const Duration(milliseconds: 60),
@@ -220,15 +207,6 @@ void main() {
         journal.events.first.utterance,
         equals('combien de sucre reste-t-il'),
       );
-    });
-
-    test('note hors ligne et ne contacte pas le cloud', () async {
-      connectivity.online = false;
-
-      await cascading.parse('combien de sucre reste-t-il');
-
-      expect(journal.events.single.reason, ParseRouteReason.offline);
-      expect(local.callCount, 1);
     });
 
     test('note le circuit ouvert et ne contacte pas le cloud', () async {
@@ -282,7 +260,6 @@ void main() {
       final CascadingParser sansJournal = CascadingParser(
         local: local,
         cloud: cloud,
-        connectivity: connectivity,
         circuitBreaker: breaker,
         timeBudget: const Duration(milliseconds: 60),
       );
