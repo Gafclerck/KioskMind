@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -30,6 +32,21 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
     required this.firestore,
     required this.auth,
   });
+
+  /// Writes [batch] and answers without waiting for the server when offline.
+  ///
+  /// Local persistence queues the write and synchronises it when connectivity
+  /// returns, so the merchant's answer must not block on the server round-trip:
+  /// once the timeout passes, the write is in the local queue and the call
+  /// reports success. A real failure (permissions, missing document) still
+  /// throws and reaches the caller.
+  Future<void> _commit(WriteBatch batch) async {
+    try {
+      await batch.commit().timeout(const Duration(seconds: 4));
+    } on TimeoutException {
+      return;
+    }
+  }
 
   String get uid {
     final user = auth.currentUser;
@@ -114,7 +131,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       SetOptions(merge: true),
     );
 
-    await batch.commit();
+    await _commit(batch);
 
     return savedSale;
   }
@@ -303,7 +320,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       updatedSale.toMap(),
     );
 
-    await batch.commit();
+    await _commit(batch);
 
     return updatedSale;
   }
@@ -373,7 +390,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       SetOptions(merge: true),
     );
 
-    await batch.commit();
+    await _commit(batch);
 
     return SaleModel(
       id: sale.id,
