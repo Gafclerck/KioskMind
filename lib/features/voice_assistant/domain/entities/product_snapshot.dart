@@ -56,4 +56,35 @@ final class ProductSnapshot {
       isArchived: isArchived,
     );
   }
+
+  /// Persistence form, used by the offline catalog snapshot stores.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'name': name,
+        'aliases': aliases,
+        'unit': unit,
+        'price': price,
+        'purchasePrice': purchasePrice,
+        'stock': stock,
+        'alertThreshold': alertThreshold,
+        'averageDailyQty': averageDailyQty,
+        'isArchived': isArchived,
+      };
+
+  /// Restores a snapshot persisted by [toJson]. Only called on trusted local
+  /// data, so field casts are safe and a missing optional stays null.
+  factory ProductSnapshot.fromJson(Map<String, dynamic> json) {
+    return ProductSnapshot(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      aliases: (json['aliases'] as List<dynamic>? ?? const <dynamic>[]).cast<String>(),
+      unit: json['unit'] as String,
+      price: (json['price'] as num).toDouble(),
+      purchasePrice: (json['purchasePrice'] as num?)?.toDouble(),
+      stock: (json['stock'] as num).toDouble(),
+      alertThreshold: (json['alertThreshold'] as num).toDouble(),
+      averageDailyQty: (json['averageDailyQty'] as num).toDouble(),
+      isArchived: json['isArchived'] as bool? ?? false,
+    );
+  }
 }

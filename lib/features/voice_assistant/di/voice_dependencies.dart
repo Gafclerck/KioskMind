@@ -13,7 +13,10 @@ import '../../../features/export_reporting/presentation/providers/export_provide
 import '../../../features/navigation/navigation_index_provider.dart';
 import '../../../features/products_stock/presentation/providers/product_providers.dart';
 import '../../../features/sales/presentation/providers/sales_provider.dart';
+import '../data/catalog/cached_product_catalog_reader.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
+import '../data/catalog/catalog_snapshot_store.dart';
+import '../data/catalog/in_memory_catalog_snapshot_store.dart';
 import '../data/catalog/in_memory_product_catalog.dart';
 import '../data/catalog/intent_catalog_loader.dart';
 import '../data/catalog/product_resolver.dart';
@@ -115,10 +118,26 @@ final FutureProvider<InMemoryProductCatalog> voiceMockCatalogProvider =
       return InMemoryProductCatalog(parseCatalogFixture(source));
     });
 
+/// Where the voice module remembers the last-known catalog for offline reads.
+///
+/// Defaults to memory so provider tests never touch a platform channel.
+/// `main()` overrides it with the disk-backed store to also survive a cold
+/// restart without a connection.
+final Provider<CatalogSnapshotStore> voiceCatalogSnapshotStoreProvider =
+    Provider<CatalogSnapshotStore>(
+  (Ref ref) => InMemoryCatalogSnapshotStore(),
+);
+
 /// The real product catalog reader, reading products from products_stock feature.
+///
+/// Wrapped in a snapshot-backed reader so the voice module keeps answering the
+/// catalog-grounded commands while Firestore is unreachable.
 final Provider<ProductCatalogReader> voiceRealProductCatalogReaderProvider =
     Provider<ProductCatalogReader>((Ref ref) {
-      return RealProductCatalogReader(ref.watch(productRepositoryProvider));
+      return CachedProductCatalogReader(
+        inner: RealProductCatalogReader(ref.watch(productRepositoryProvider)),
+        store: ref.watch(voiceCatalogSnapshotStoreProvider),
+      );
     });
 
 /// Active catalog reader:
