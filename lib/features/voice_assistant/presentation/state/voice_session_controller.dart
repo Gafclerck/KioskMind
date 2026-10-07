@@ -105,7 +105,7 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   /// over too, and because a test that has to fake a microphone to say two words
   /// is testing the fake.
   Future<void> submit(String words) async {
-    if (_busy) {
+    if (_busy || words.trim().isEmpty) {
       return;
     }
     _busy = true;
@@ -215,15 +215,31 @@ final class VoiceSessionController extends Notifier<VoiceSessionState> {
   }
 
   /// What a partial result changes: nothing but the transcript on screen.
+  ///
+  /// A blank interim is no news - some engines clear the hypothesis between two
+  /// words - so it never wipes what the merchant is still reading. A final is a
+  /// command even when the engine reports it blank: some recognisers finalise
+  /// offline as an empty result after the live hypotheses, and the words the
+  /// merchant saw on screen are the words that get submitted.
   void _onUtterance(SpeechUtterance utterance) {
     if (state.status != VoiceSessionStatus.listening) {
       return;
     }
+    final String words = utterance.words.trim();
     if (!utterance.isFinal) {
-      _set(state.copyWith(lastHeard: utterance.words));
+      if (words.isNotEmpty) {
+        _set(state.copyWith(lastHeard: utterance.words));
+      }
       return;
     }
-    unawaited(submit(utterance.words));
+    if (words.isNotEmpty) {
+      unawaited(submit(utterance.words));
+      return;
+    }
+    final String lastHeard = state.lastHeard.trim();
+    if (lastHeard.isNotEmpty) {
+      unawaited(submit(lastHeard));
+    }
   }
 
   /// Turns a finished turn into what the panel shows and the speaker reads.

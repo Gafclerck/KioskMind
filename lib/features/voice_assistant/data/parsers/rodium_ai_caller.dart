@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'cloud_call_failure.dart';
 import 'direct_gemini_caller.dart';
@@ -14,7 +14,7 @@ import 'direct_gemini_caller.dart';
 ///
 /// Features:
 /// - Connects to Rodium AI OpenAI-compatible endpoint (`/v1/chat/completions`).
-/// - Prompts Gemini models (default: `google/gemini-1.5-flash`) via Rodium AI gateway.
+/// - Prompts Gemini models (default: `google/gemini-2.5-flash`) via Rodium AI gateway.
 /// - Enforces Decision D5 catalog grounding and pure JSON output.
 /// - Sanitizes markdown code fences and returns [Map<String, dynamic>].
 /// - Handles HTTP errors, network timeouts, and non-200 responses gracefully.
@@ -23,8 +23,8 @@ final class RodiumAiCaller {
     required this.apiKey,
     required this.systemPrompt,
     this.baseUrl = 'https://api.rodiumai.io/v1',
-    this.model = 'google/gemini-1.5-flash',
-    this.timeout = const Duration(milliseconds: 2000),
+    this.model = 'google/gemini-2.5-flash',
+    this.timeout = const Duration(seconds: 10),
     HttpJsonPoster? httpPoster,
   }) : _httpPoster = httpPoster ?? _defaultHttpPoster;
 
@@ -132,42 +132,25 @@ final class RodiumAiCaller {
     Uri uri,
     Map<String, String> headers,
     Map<String, dynamic> body, {
-    Duration timeout = const Duration(milliseconds: 2000),
+    Duration timeout = const Duration(seconds: 10),
   }) async {
-    final HttpClient client = HttpClient();
-    try {
-      final HttpClientRequest request = await client
-          .postUrl(uri)
-          .timeout(timeout);
-      headers.forEach(request.headers.set);
-      final String jsonBody = jsonEncode(body);
-      request.headers.contentType = ContentType.json;
-      request.write(jsonBody);
+    final http.Response response = await http
+        .post(uri, headers: headers, body: jsonEncode(body))
+        .timeout(timeout);
 
-      final HttpClientResponse response = await request.close().timeout(
-        timeout,
-      );
-      final String responseBody = await utf8
-          .decodeStream(response)
-          .timeout(timeout);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final dynamic decoded = jsonDecode(responseBody);
-        if (decoded is Map<String, dynamic>) {
-          return decoded;
-        } else if (decoded is Map) {
-          return Map<String, dynamic>.from(decoded);
-        }
-      } else {
-        throw CloudCallFailure.fromResponse(
-          'Rodium AI',
-          response.statusCode,
-          responseBody,
-        );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      } else if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
       }
       return const <String, dynamic>{};
-    } finally {
-      client.close();
     }
+    throw CloudCallFailure.fromResponse(
+      'Rodium AI',
+      response.statusCode,
+      response.body,
+    );
   }
 }

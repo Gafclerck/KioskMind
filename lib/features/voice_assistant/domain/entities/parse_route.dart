@@ -1,10 +1,9 @@
 /// What happened to one utterance on its way to a proposal.
 ///
-/// The cascade has three places where an utterance stops being understood the way
-/// it should: the device is not online, the remote circuit is open, or the remote
-/// answer is late. The remote parser has three more: the call failed, the answer
-/// names no command, or it names one the app does not have. And two reasons say the
-/// thing simply worked.
+/// The cascade has two places where an utterance stops being understood the way
+/// it should: the remote circuit is open, or the remote answer is late. The remote
+/// parser has three more: the call failed, the answer names no command, or it names
+/// one the app does not have. And two reasons say the thing simply worked.
 ///
 /// Every one of those looks identical from the outside. The merchant hears "I did not
 /// understand", the merchant cannot tell a bad key from an empty catalogue from a
@@ -24,9 +23,6 @@ enum ParseRouteReason {
   /// mean the opposite to whoever is shipping: a device with no key can never reach
   /// a command the rules cannot hear.
   noCredential,
-
-  /// The device reported no usable connection.
-  offline,
 
   /// The remote circuit is open after repeated failures.
   circuitOpen,

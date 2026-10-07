@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../domain/entities/sale.dart';
 import '../../domain/exceptions/sales_exceptions.dart';
+import '../../../../core/firestore/offline_commit.dart';
 import '../models/sale_model.dart';
 
 abstract class SalesRemoteDataSource {
@@ -114,7 +117,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       SetOptions(merge: true),
     );
 
-    await batch.commit();
+    await commitOffline(batch);
 
     return savedSale;
   }
@@ -303,7 +306,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       updatedSale.toMap(),
     );
 
-    await batch.commit();
+    await commitOffline(batch);
 
     return updatedSale;
   }
@@ -373,7 +376,7 @@ class SalesRemoteDataSourceImpl implements SalesRemoteDataSource {
       SetOptions(merge: true),
     );
 
-    await batch.commit();
+    await commitOffline(batch);
 
     return SaleModel(
       id: sale.id,

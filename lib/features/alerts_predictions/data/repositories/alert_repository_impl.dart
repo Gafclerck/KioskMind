@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:kiosk_mind/core/firestore/offline_commit.dart';
 import 'package:kiosk_mind/features/alerts_predictions/data/models/alerts_model.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/entities/alert.dart';
 import 'package:kiosk_mind/features/alerts_predictions/domain/repositories/alerts_repository.dart';
@@ -35,6 +36,6 @@ class AlertsRepositoryImpl implements AlertsRepository {
     for (final id in alertIds) {
       batch.update(firestore.collection('alerts').doc(id), {'readAt': lue});
     }
-    await batch.commit();
+    await commitOffline(batch);
   }
 }

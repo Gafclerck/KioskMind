@@ -1,5 +1,4 @@
 import '../../domain/entities/fact_result.dart';
-import '../../domain/ports/connectivity_probe.dart';
 import '../../domain/ports/message_formulator.dart';
 import '../../domain/services/circuit_breaker.dart';
 import 'offline_natural_formulator.dart';
@@ -7,13 +6,12 @@ import 'offline_natural_formulator.dart';
 /// Orchestrates response formulation across Cloud AI and Offline Local engines.
 ///
 /// Seamlessly delivers:
-/// - Fluid, contextualized West African conversational AI when online.
-/// - Instant, natural, zero-latency template variations when offline or on poor network.
+/// - Fluid, contextualized West African conversational AI when the attempt succeeds.
+/// - Instant, natural, zero-latency template variations on failure.
 /// - Unbreakable fallback to deterministic static text under any circumstance.
 final class CascadingMessageFormulator implements MessageFormulator {
   CascadingMessageFormulator({
     required this.aiFormulator,
-    required this.connectivity,
     MessageFormulator? offlineFormulator,
     this.circuitBreaker,
   }) : offlineFormulator =
@@ -21,7 +19,6 @@ final class CascadingMessageFormulator implements MessageFormulator {
 
   final MessageFormulator aiFormulator;
   final MessageFormulator offlineFormulator;
-  final ConnectivityProbe connectivity;
   final CircuitBreaker? circuitBreaker;
 
   @override
@@ -37,11 +34,10 @@ final class CascadingMessageFormulator implements MessageFormulator {
       staticFallback: staticFallback,
     );
 
-    // 2. Check if online connectivity is available and circuit breaker is healthy
-    final bool online = await connectivity.isOnline;
+    // 2. Attempt the AI formulation when the circuit breaker allows it
     final bool canAttempt =
         circuitBreaker == null || circuitBreaker!.canAttempt();
-    if (!online || !canAttempt) {
+    if (!canAttempt) {
       return localNatural;
     }
 

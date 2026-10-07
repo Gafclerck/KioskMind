@@ -202,10 +202,10 @@ void main() {
   });
 
   group('the cloud flag', () {
-    test('is off by default, so a missing key is a recorded finding', () {
-      // Le cloud et le mock sont tous deux eteints par defaut, mais ils ne veut pas
-      // dire la meme chose: l'un enregistre `localOnly`, l'autre `noCredential`.
-      expect(kVoiceEnableCloud, isFalse);
+    test('is on by default, so a missing key gates the cloud', () {
+      // Le cloud est allume par defaut, c'est un choix de deploiement. Sans cle,
+      // le verrou qui reste est `noCredential`, pas `localOnly`.
+      expect(kVoiceEnableCloud, isTrue);
     });
 
     test('needs a key to be worth turning on', () {

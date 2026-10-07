@@ -13,7 +13,10 @@ import '../../../features/export_reporting/presentation/providers/export_provide
 import '../../../features/navigation/navigation_index_provider.dart';
 import '../../../features/products_stock/presentation/providers/product_providers.dart';
 import '../../../features/sales/presentation/providers/sales_provider.dart';
+import '../data/catalog/cached_product_catalog_reader.dart';
 import '../data/catalog/catalog_fixture_loader.dart';
+import '../data/catalog/catalog_snapshot_store.dart';
+import '../data/catalog/in_memory_catalog_snapshot_store.dart';
 import '../data/catalog/in_memory_product_catalog.dart';
 import '../data/catalog/intent_catalog_loader.dart';
 import '../data/catalog/product_resolver.dart';
@@ -21,7 +24,6 @@ import '../data/catalog/real_product_catalog_reader.dart';
 import '../data/clock/system_voice_clock.dart';
 import '../data/commands/session_command_ids.dart';
 import '../data/commands/voice_bindings.dart';
-import '../data/connectivity/data_connection_probe.dart';
 import '../data/diagnostics/in_memory_parse_outcome_journal.dart';
 import '../data/diagnostics/logging_parse_outcome_journal.dart';
 import '../data/extractors/item_list_extractor.dart';
@@ -62,7 +64,6 @@ import '../domain/entities/product_snapshot.dart';
 import '../domain/entities/voice_config.dart';
 import '../domain/ports/cloud_intent_parser.dart';
 import '../domain/ports/command_id_factory.dart';
-import '../domain/ports/connectivity_probe.dart';
 import '../domain/ports/handler_call_journal.dart';
 import '../domain/ports/intent_handler.dart';
 import '../domain/ports/intent_parser.dart';
@@ -117,10 +118,26 @@ final FutureProvider<InMemoryProductCatalog> voiceMockCatalogProvider =
       return InMemoryProductCatalog(parseCatalogFixture(source));
     });
 
+/// Where the voice module remembers the last-known catalog for offline reads.
+///
+/// Defaults to memory so provider tests never touch a platform channel.
+/// `main()` overrides it with the disk-backed store to also survive a cold
+/// restart without a connection.
+final Provider<CatalogSnapshotStore> voiceCatalogSnapshotStoreProvider =
+    Provider<CatalogSnapshotStore>(
+  (Ref ref) => InMemoryCatalogSnapshotStore(),
+);
+
 /// The real product catalog reader, reading products from products_stock feature.
+///
+/// Wrapped in a snapshot-backed reader so the voice module keeps answering the
+/// catalog-grounded commands while Firestore is unreachable.
 final Provider<ProductCatalogReader> voiceRealProductCatalogReaderProvider =
     Provider<ProductCatalogReader>((Ref ref) {
-      return RealProductCatalogReader(ref.watch(productRepositoryProvider));
+      return CachedProductCatalogReader(
+        inner: RealProductCatalogReader(ref.watch(productRepositoryProvider)),
+        store: ref.watch(voiceCatalogSnapshotStoreProvider),
+      );
     });
 
 /// Active catalog reader:
@@ -572,10 +589,6 @@ final Provider<String> voiceRodiumBaseUrlProvider = Provider<String>(
   (Ref ref) => kRodiumBaseUrl,
 );
 
-/// Real connectivity probe verifying actual Internet reachability.
-final Provider<ConnectivityProbe> voiceConnectivityProbeProvider =
-    Provider<ConnectivityProbe>((Ref ref) => DataConnectionProbe());
-
 /// Circuit breaker guarding against repeated remote service failures.
 final Provider<CircuitBreaker> voiceCircuitBreakerProvider =
     Provider<CircuitBreaker>((Ref ref) {
@@ -658,8 +671,8 @@ voiceCloudIntentParserProvider = FutureProvider<CloudIntentParser>((
 /// deployed behind [voiceCloudIntentParserProvider]'s last branch: `firebase.json`
 /// declares no `functions` section and `functions/` holds no source. Treating that
 /// branch as a working third option is what let a build with no key reach the network
-/// once per utterance and come back with nothing, paying the probe and the timeout to
-/// learn a fact it could have known at startup.
+/// once per utterance and come back with nothing, paying the timeout to learn a fact
+/// it could have known at startup.
 final Provider<bool> voiceHasCloudCredentialProvider = Provider<bool>(
   (Ref ref) =>
       ref.watch(voiceRodiumApiKeyProvider).isNotEmpty ||
@@ -699,7 +712,6 @@ final FutureProvider<IntentParser> voiceParserProvider =
       final parser = CascadingParser(
         local: local,
         cloud: await ref.watch(voiceCloudIntentParserProvider.future),
-        connectivity: ref.watch(voiceConnectivityProbeProvider),
         circuitBreaker: ref.watch(voiceCircuitBreakerProvider),
         journal: journal,
       );
@@ -781,9 +793,6 @@ Future<List<String>> _shopVocabulary(Ref ref) async {
 /// The natural response formulator (Cascading Cloud AI & Offline Natural).
 final Provider<MessageFormulator>
 voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
-  final ConnectivityProbe connectivity = ref.watch(
-    voiceConnectivityProbeProvider,
-  );
   final CircuitBreaker circuitBreaker = ref.watch(voiceCircuitBreakerProvider);
   final String rodiumApiKey = ref.watch(voiceRodiumApiKeyProvider);
   final String geminiApiKey = ref.watch(voiceGeminiApiKeyProvider);
@@ -810,7 +819,6 @@ voiceMessageFormulatorProvider = Provider<MessageFormulator>((Ref ref) {
 
   return CascadingMessageFormulator(
     aiFormulator: aiFormulator,
-    connectivity: connectivity,
     circuitBreaker: circuitBreaker,
   );
 });
