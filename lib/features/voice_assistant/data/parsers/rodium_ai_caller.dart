@@ -14,7 +14,7 @@ import 'direct_gemini_caller.dart';
 ///
 /// Features:
 /// - Connects to Rodium AI OpenAI-compatible endpoint (`/v1/chat/completions`).
-/// - Prompts Gemini models (default: `google/gemini-1.5-flash`) via Rodium AI gateway.
+/// - Prompts Gemini models (default: `google/gemini-2.5-flash`) via Rodium AI gateway.
 /// - Enforces Decision D5 catalog grounding and pure JSON output.
 /// - Sanitizes markdown code fences and returns [Map<String, dynamic>].
 /// - Handles HTTP errors, network timeouts, and non-200 responses gracefully.
@@ -23,7 +23,7 @@ final class RodiumAiCaller {
     required this.apiKey,
     required this.systemPrompt,
     this.baseUrl = 'https://api.rodiumai.io/v1',
-    this.model = 'google/gemini-1.5-flash',
+    this.model = 'google/gemini-2.5-flash',
     this.timeout = const Duration(milliseconds: 2000),
     HttpJsonPoster? httpPoster,
   }) : _httpPoster = httpPoster ?? _defaultHttpPoster;

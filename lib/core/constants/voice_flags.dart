@@ -41,10 +41,10 @@ const String kRodiumApiKey = String.fromEnvironment(
   defaultValue: '',
 );
 
-/// Optional model identifier for Rodium AI (defaults to 'google/gemini-1.5-flash').
+/// Optional model identifier for Rodium AI (defaults to 'google/gemini-2.5-flash').
 const String kRodiumModel = String.fromEnvironment(
   'RODIUM_MODEL',
-  defaultValue: 'google/gemini-1.5-flash',
+  defaultValue: 'google/gemini-2.5-flash',
 );
 
 /// Optional base URL for Rodium AI gateway (defaults to 'https://api.rodiumai.io/v1').
